@@ -1,7 +1,0 @@
-function trackPlot(xdata, ydata, idx)
-    hold off
-    plot(xdata, ydata)
-    hold on
-    plot(xdata(idx),ydata(idx),'rx')
-
-end
