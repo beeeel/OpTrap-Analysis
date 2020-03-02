@@ -6,31 +6,13 @@ The cell defomation analysis pipeline is made of modules. Some of these require 
 
 ## Summary of analysis scripts for Optical Trapping data
 
-Data handling:
 
-	Imstack = load_imstack( dir, treat, speed, trap, spots, rep)
-		- Wrapper for bioformats file opener
-		- Looks for directory 'dir' within Documents/data/OpTrap (can be changed)
-		- Other input arguments are parts of filename system I use to identify the dataset
-		- Returns a cell array Imstack{m}{n_frames,2} where m has always been 1
+Runners:
 
-	data = load_infos(treat, fieldList)
-		- Loops over files in Documents/data/OpTrap/infos to find ones starting with 'treat'
-		- Loads the mat file, extracts specified fields from the data struct 
-		- Returns a cell array with headed columns
-
-	view_stack(Imstack, [crop], [pause], [repeats])
-		- Creates a slideshow of the input Imstack
-		- Other input arguments optional and buggy
-		- Crop = [y1; y2; x1; x2] will draw a box to show a crop area on each frame. Can be a vector or a 4 x n_frames matrix
-		- Pause: number of seconds to wait between frames
-		- Repeats: number of times to loop over whole stack
-
-	PostProcessDataCurrent
-		- Legacy code for plotting results of PostProcessCellDeform (v1)
-		- I opened it for the first time when writing this document
-	
-Complete analysis functions:
+    PPCD_runner
+        - Holds some option arguments for modules
+        - Handles bulk loading, processing, and saving of analysed data
+        - Also produces useful summary plots
 
 	PostProcessCellDeform
 		- Original analysis pipeline
@@ -56,28 +38,19 @@ Complete analysis functions:
 		- Saves to infos folder
 		- Parameters for Analysis must be specified by editing the file
 
-Analysis modules:
+Modules:
 
 	find_cell
 		- Find cell using canny edge detection, gaussian filter then Hough transform
 		- Not very accurate
 		- Returns a struct with data for each frame
 
-	find_cell_opt
-		- Parameter optimisation version of find_cell
-		- Returns number of frames where at least 1 good circle was found
-
 	find_cell_v2
 		- Find cell using gaussian filter, Laplacian edge enhancement, then Hough transform
 		- Returns struct
 
-	find_cell_v2_opt
-		- Parameter optimisation version of find_cell_v2
-		- Returns number of frames where at least 1 good circle was found
-
-	iterate_find_cell
-		- Iterative solver for use with find_cell
-		- NB: I've not actually had any success with the iterative solvers, the result is too nonsmooth for iterative methods to work easily
+    find_cell_v3
+        - Contrast enhance, Hough transform. Attempt to speed up v2 (unsuccessful)
 
 	segment_cell
 		- Segments cell from image using edge detection
@@ -90,13 +63,27 @@ Analysis modules:
 		- Has several tuneable parameters
 		- Returns binary mask
 
-	segment_cell_v2_opt
-		- Parameter optimisation version of segment_cell_v2
-		- Returns a metric based on regionprops
+    segment_cell_v3
+        - Contrast enhance, threshold, dilate to complete circle and remove small objects
 
-	iterate_segment_cell_v3
-		- Iterative solver for use with segment_cell_v3
-		- NB: I've not actually had any success with the iterative solvers, the result is too nonsmooth for iterative methods to work easily
+    segment_cell_v4
+        - Simple Otsu threshold
+
+    segment_cell_v5
+        - Contrast enhancement and ActiveContour
+
+    segment_cell_v6
+        - Not very good
+
+    unwrap_cell_v1
+        - Interpolation to create polar co-ordinates image of cell, fit equation measure ellipse.
+        - Sensitive to poor centering
+
+    unwrap_cell_v2
+        - As v1 but with centering improvement option
+
+    LineMaxima_v1
+        - Find centre of cell from centre of bright ring around cell.
 
 	cell_radii
 		- Find cell radii using bright halo around cell
@@ -105,15 +92,24 @@ Analysis modules:
 
 	ellipseDetection
 		- Fits an ellipse by trying every pair of points to be major axes, and then using Hough to find an approoriate minor axis
-		- I've never used it
-		- Claims to be memory intensive
+		- Memory intensive - pass it a mask of the cell outline, not the whole cell
 
-	ellipse_fit_fun_final
-		- Fits ellipses to binary masks
-		- Does some kinda fancy stuff
-		- I've never used it
+Helpers:
 
-	ellipse_mask
-		- Creates an ellipsoidal mask when given the dimensions 
+	Imstack = load_imstack( dir, treat, speed, trap, spots, rep)
+		- Wrapper for bioformats file opener
+		- Looks for directory 'dir' within Documents/data/OpTrap (can be changed)
+		- Other input arguments are parts of filename system I use to identify the dataset
+		- Returns a cell array Imstack{m}{n_frames,2} where m has always been 1
 
-	
+	data = load_infos(treat, fieldList)
+		- Loops over files in Documents/data/OpTrap/infos to find ones starting with 'treat'
+		- Loads the mat file, extracts specified fields from the data struct 
+		- Returns a cell array with headed columns
+
+	view_stack(Imstack, [crop], [pause], [repeats])
+		- Creates a slideshow of the input Imstack
+		- Other input arguments optional and buggy
+		- Crop = [y1; y2; x1; x2] will draw a box to show a crop area on each frame. Can be a vector or a 4 x n_frames matrix
+		- Pause: number of seconds to wait between frames
+		- Repeats: number of times to loop over whole stack
