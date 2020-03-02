@@ -1,7 +1,10 @@
 # OpTrap-Analysis
 
+## Folder hierachy:
 
-##Summary of analysis scripts for Optical Trapping data
+The cell defomation analysis pipeline is made of modules. Some of these require inputs from previous modules (unwrap_cell needs the cell's location from find_cell or LineMaxima, for example). The modules are within their own folder. These are run by the runners, in their own folder. Some of the modules and runners use functions from helpers, depending on the file format you are loading.
+
+## Summary of analysis scripts for Optical Trapping data
 
 Data handling:
 
