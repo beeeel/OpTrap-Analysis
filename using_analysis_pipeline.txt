@@ -1,0 +1,65 @@
+Summary of analysis scripts for Optical Trapping data
+
+Data handling:
+
+	Imstack = bfopen( path_to_file )
+        - I used version 5.7.2 https://docs.openmicroscopy.org/bio-formats/5.7.2/users/matlab/index.html
+        - Newest version 6.1.0 https://docs.openmicroscopy.org/bio-formats/6.1.0/users/matlab/index.html
+		- Bioformats file opener
+		- Returns a cell array Imstack{m}{n_frames,2} where m has always been 1
+        - Each frame's image data is in Imstack{1}{frame,1}, and file path is in Imstack{1}{frame,2}
+
+	view_stack(Imstack, [crop], [pause], [repeats])
+		- Creates a slideshow of the input Imstack
+		- Other input arguments optional and buggy
+		- Crop = [y1; y2; x1; x2] will draw a box to show a crop area on each frame. Can be a vector or a 4 x n_frames matrix
+		- Pause: number of seconds to wait between frames
+		- Repeats: number of times to loop over whole stack
+
+    seg_quality
+        - Displays source image with segmentation and fitting overlayed
+        - Plots data from analysed info: Taylor parameter, centroid, area, orientation, ellipse fitting data
+        - Can be used for analysing which frames have poor segmentation
+        - Can save a .gif or .avi of the segmentation overlay with the analysis plots
+	
+Complete analysis functions:
+
+	PostProcessCellDeform_v2(Imstack, varargin)
+		- Updated analysis pipeline
+		- Different options for which modules to use
+		- Returns info struct with all processed data from the image series
+		- Can take input options to be passed to modules, and to choose module versions
+        - Example with input parameters: info = PostProcessCellDeform_v2(Imstack, 'find_cell', {'sc_up', 1.2}, 'segment_cell', {'iterations', 300, 'ellipseFitVal', 3});
+        - ↑ this example will give the argument 'sc_up' (scale up) = 1.2 to find_cell_v2, 
+        - ↑ 'iterations' = 300 and 'ellipseFitVal' = 3 to segment_cell_v5 (the default version numbers to run).
+        - Using ellipseFitVal != 0 will take a lot longer (possible hours) and doesn't give much better results.
+
+	PostProcessCellDeformBatch_v2(dirIn)
+		- Batch version of new pipeline
+		- Loads all tif datasets in rootdir/dirIn (rootdir is specified in function, i.e.: you will need to edit it if you want to run it on your computer)
+		- Runs processing with the same processing options
+		- Saves to infos folder - hardcoded so you will need to edit the file to make it save without error
+		- Parameters for Analysis must be specified by editing the file
+
+Analysis modules:
+
+	find_cell_v2(Imstack, varargin)
+		- Find cell using gaussian filter, Laplacian edge enhancement, then Hough transform
+		- Returns struct with centres (coordinate pairs for centre of cirlces), radius, fails (0 for a single circle found, 1 for no circles found, 2 for multiple circles found), and crop (in format [x0; x1; y0; y1])
+        - 9 optional input arguments
+
+    segment_cell_v5(Imstack, varargin)
+        - Create segmentation mask (logical array with pixel value of 1 where pixel is within cell, or 0 otherwise)
+        - Uses flat filter, Laplacian edge enhancement, and then active contour to reduce an initial circular mask to fit the cell
+        - Returns the mask and fitted ellipses (fits array is empty if ellipseFitVal is not 2,3 or 4)
+        - 16 optional input arguments
+
+	ellipseDetection
+		- Fits an ellipse by trying every pair of points to be major axes, and then using Hough to find an appropriate minor axis
+		- Memory intensive - creates an array containing the distances between each pair of points in the input mask, which can easily grow into the tens of thousands, so it's better to give this an outline
+
+	
+General notes: 
+    - You don't need to run the code using PostProcessCellDeform_v2 - this is just a tidy way of wrapping it up that I use because I'm lazy. When I've got a bit that doesn't work, I tend to resort to running individual sections of code to see where it went wrong.
+    - ellipseDetection might not be worth it, however I aim to make an ellipseDetection_v2 which will be a bit smarter and hopefully better.
+    - This approach to measuring cells (find, segment, measure) is probably not optimal. Integrating the finding steps into the segmentation module will make it more efficient and quicker. Replacing the segmentation with a method of measuring intensity radially from the centre of the cell might be more accurate and quicker.

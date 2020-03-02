@@ -1,0 +1,15 @@
+a = 1e-5; % Cell radius
+V = 2e-4; % Unperturbed flow speed
+
+% Flow velocities tangentially and normally to the sphere
+v_theta = @(r, theta) (V .* sin(theta) .* (r - a) ./r) .* (0.5 .* (r - a) + (1 ./ (2.*r)) .* (2 .* r + a) - (r.^2 - r.*a-a.^2)./(4 .* r.^2));
+v_r = @(r, theta) -(2 .* cos(theta) .* V .* (r -a).^2 .* (2*r +a))./(4.*r.^2);
+rho = 1e3; % Density of water
+p_0 = 1e5; % Atmospheric pressure
+g = 9.8; % Gravity
+mu = 8.9e-4; % Viscosity of water
+
+% Pressure with correction for gravity - not sure if this is needed
+p = @(r,theta) p_0 - rho.*g.*r.*cos(theta) + (3 .* mu .* V .* a .* cos(theta))./(2 .* r.^2);
+
+function v = v_norm(r, theta
