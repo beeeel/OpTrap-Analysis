@@ -245,7 +245,7 @@ function Par = ParseInputs(Imstack, Centres, Radius, varargin)
     addParameter(P,'ifNaN','mean',@(x) strcmpi(x,...
         validatestring(x,{'mean','last','centre'},FName,'ifNaN')))
     
-    parse(P,Imstack,Centres,Radius,varargin{:})
+    parse(P,Imstack,Centres,Radius,varargin)
     
     Par = P.Results;
     function ImstackTest(x)
