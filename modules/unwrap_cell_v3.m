@@ -109,7 +109,7 @@ end
 
 % Perform unwrapping and fitting with updated centre locations
 [Ia, idxa, Unwrapped] = Unwrap(Imstack, Radius, Centres + Offset(2:3,:), Par); 
-[Fits] = AndFit(Unwrapped, FitEqn, Radius, lb, ub, StartVal, Par);
+[Fits] = AndFit(Unwrapped, Ia, idxa, FitEqn, Radius, lb, ub, StartVal, Par);
 
 % Fix the equivalent fitting equations problem - if b>a
 Fits(3,:) = Fits(3,:) + (Fits(2,:) > Fits(1,:)) * pi/2;
