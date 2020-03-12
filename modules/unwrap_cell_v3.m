@@ -173,7 +173,7 @@ function Fits = AndFit(Unwrapped, Ia, idxa, FitEqn, Radius, lb, ub, StartVal, Pa
         for VarN = 1:length(FitVars) % Extract fitted values from cfit object
             Fits(VarN, frame) = fitobj.(FitVars{VarN});
         end
-        prog = ceil(100 * frame / length(Imstack{1}));
+        prog = ceil(100 * frame / size(Unwrapped,3));
         fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
     end
     fprintf('%s\r',repmat(' ',1,104))
