@@ -95,7 +95,7 @@ if ~isempty(varargin)
     end
 end
 %}
-Par = ParseInputs(Imstack, Centres, Radius, varargini{:});
+Par = ParseInputs(Imstack, Centres, Radius, varargin{:});
 error('done')
 % Fix any NaNs from find_cell failing
 switch Par.ifNaN
