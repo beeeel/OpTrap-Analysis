@@ -154,6 +154,7 @@ end
 function Fits = AndFit(Unwrapped, Ia, idxa, FitEqn, Radius, lb, ub, StartVal, Par)
 
     % Find the fitting variables to determine size of fits array
+    disp(FitEqn)
     FitVars = coeffnames(fittype(FitEqn));
 
     % Preallocate
