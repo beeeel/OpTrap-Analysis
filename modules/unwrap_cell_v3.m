@@ -217,9 +217,6 @@ end
 function Par = ParseInputs(Imstack, Centres, Radius, varargin)
 
     FStack = dbstack;
-    for idx = 1:length(FStack)
-        disp(FStack(idx))
-    end
     FName = FStack(2).name;
 
     P = inputParser();
@@ -248,7 +245,7 @@ function Par = ParseInputs(Imstack, Centres, Radius, varargin)
     addParameter(P,'ifNaN','mean',@(x) strcmpi(x,...
         validatestring(x,{'mean','last','centre'},FName,'ifNaN')))
     
-    parse(P,Imstack,varargin{:})
+    parse(P,Imstack,Centres,Radius,varargin{:})
     
     Par = P.Results;
     function ImstackTest(x)
