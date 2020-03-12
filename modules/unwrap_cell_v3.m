@@ -1,4 +1,4 @@
-function [Fits, varargout] = unwrap_cell_v3(Imstack, Centres, Radius, varargin)
+function [Fits, Unwrapped, varargout] = unwrap_cell_v3(Imstack, Centres, Radius, varargin)
 %UNWRAP_CELL_V3 - perform radial unwrapping of the cell using
 %interpolation, curve fitting or fourier analysis.
 % 
@@ -116,9 +116,9 @@ Fits(3,:) = Fits(3,:) + (Fits(2,:) > Fits(1,:)) * pi/2;
 Fits(3,:) = mod(Fits(3,:)+pi/2, pi) - pi/2;
 Fits(1:2,:) = [max(Fits(1:2,:)); min(Fits(1:2,:))];
 switch nargout
-    case 3; varargout = {Unwrapped, Ia};
-    case 4; varargout = {Unwrapped, Ia, FitEqn};
-    case 5; varargout = {Unwrapped, Ia, FitEqn, Offset};
+    case 3; varargout = {Ia};
+    case 4; varargout = {Ia, FitEqn};
+    case 5; varargout = {Ia, FitEqn, Offset};
 end
 end
 
@@ -164,7 +164,7 @@ function Fits = AndFit(Unwrapped, Ia, idxa, FitEqn, Radius, lb, ub, StartVal, Pa
     % For each frame, take angles corresponding to fit points and perform
     % the fit
     disp('Starting fitting')
-    for frame = 1:length(Imstack{1})
+    for frame = 1:size(Unwrapped, 3)
         % Take corresponding angles, repeat them and unwrap
         th_fit = repmat(Theta(idxa(:,:,frame)),1,Par.n_reps) + ...
             reshape(360*(0:Par.n_reps-1).*ones(length(Theta(idxa(:,:,frame))),1),1,[]);
