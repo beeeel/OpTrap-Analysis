@@ -17,6 +17,8 @@ RowFirsts = zeros(NRows,1);
 RowLasts = zeros(NRows,1);
 ColFirsts = zeros(NCols,1);
 ColLasts = zeros(NCols,1);
+NERows = zeros(1,NRows);
+NECols = zeros(1,NCols);
 
 if strcmpi(P.Results.Filt,'flat'); Kernel = ones(P.Results.KSize)./P.Results.KSize.^2; end
 FiltIm = zeros(NRows,NCols,'like',Imstack{1}{1,1});
@@ -31,12 +33,9 @@ for Frame = 1:NFrames
     BWIm = SharpIm >= Thresh;
     
     FindFirstsAndLasts()
-    Centres(1,Frame) = median(mean([RowFirsts,RowLasts],2));
-    Centres(2,Frame) = median(mean([ColFirsts,ColLasts],2));
-    if Frame == 50
-        disp('hammertime')
-        %error('stop')
-    end
+    Centres(1,Frame) = median(mean([RowFirsts(NERows(NERows~=0)),RowLasts(NERows(NERows~=0))],2));
+    Centres(2,Frame) = median(mean([ColFirsts(NECols(NECols~=0)),ColLasts(NECols(NECols~=0))],2));
+
     ProgressBar(Frame/NFrames);
 end
 

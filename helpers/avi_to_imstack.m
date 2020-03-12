@@ -15,6 +15,8 @@ Imstack{1} = cell(N_frames,2);
 for frame = 1:N_frames
     if strcmp(v.VideoFormat, 'RGB24')
         Imstack{1}{frame,1} = rgb2gray(squeeze(vid(:,:,:,frame)));
+    elseif strcmp(v.VideoFormat,'Grayscale')
+        Imstack{1}{frame,1} = squeeze(vid(:,:,:,frame));
     end
     Imstack{1}{frame,2} = [file_path ' ' num2str((frame - 1) / v.FrameRate) 's'];
 end
