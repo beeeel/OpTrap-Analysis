@@ -50,53 +50,8 @@ function [Fits, varargout] = unwrap_cell_v3(Imstack, Centres, Radius, varargin)
 %Note: This will throw "Error using reshape" if you try and run it with
 % only one frame, or a single frame's worth of centres/radii.
 
-fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN'};
-defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean'};
-
-Par = cell2struct(defaults, fields,2);
-def_argin = 3;
-
-%{
-% Parse inputs and create struct with parameters given
-if ~isempty(varargin)
-    if mod(nargin,2) == 0 % Imstack counts towards nargin
-        error('Please supply arguments in name-value pairs');
-    end
-    stack = dbstack;
-    % For each field, display it depending on its size and contents
-    fprintf('Input arguments for %s:\n',stack(1).name)
-    for field = 1:(nargin - def_argin)/2
-        if size(varargin{2 * field}, 2) < 4 && ...
-                size(varargin{2 * field},1) == 1
-            if isnumeric(varargin{2 * field})
-                disp([varargin{2 * field - 1}, ' = ', ...
-                    num2str(varargin{2 * field})]);
-            elseif iscell(varargin{2 * field})
-                fprintf([varargin{2 * field - 1}, ': '])
-                for idx = 1:length(varargin{2 * field})/2
-                    if isnumeric(varargin{2*field}{2*idx})
-                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
-                            num2str(varargin{2*field}{2*idx})]);
-                    else
-                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
-                            varargin{2 * field}{2 * idx}])
-                    end
-                end
-            end
-        else
-            disp([varargin{2 * field - 1}, ' = size[', ...
-                num2str([size(varargin{2 * field},1), size(varargin{2 * field},2)])...
-                , ']']);
-        end
-        % And put it into the par struct
-        Par.(varargin{2*field - 1}) = varargin{2*field};
-    end
-end
-%}
 Par = ParseInputs(Imstack, Centres, Radius, varargin{:});
-error('done')
+
 % Fix any NaNs from find_cell failing
 switch Par.ifNaN
     case 'last' % Take the last good value
@@ -128,7 +83,9 @@ ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
 StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
 
 % Perform unwrapping and fitting for off-centreness
-[Offset, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
+
+[Ia, idxa, Unwrapped] = Unwrap(Imstack, Radius, Centres, Par);
+Offset = AndFit(Unwrapped, Ia, idxa, CircleEqn, Radius,  lb, ub, StartVal, Par);
 
 % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
 % polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
@@ -151,7 +108,8 @@ else
 end
 
 % Perform unwrapping and fitting with updated centre locations
-[Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres + Offset(2:3,:), lb, ub, StartVal, Par);
+[Ia, idxa, Unwrapped] = Unwrap(Imstack, Radius, Centres + Offset(2:3,:), Par); 
+[Fits] = AndFit(Unwrapped, FitEqn, Radius, lb, ub, StartVal, Par);
 
 % Fix the equivalent fitting equations problem - if b>a
 Fits(3,:) = Fits(3,:) + (Fits(2,:) > Fits(1,:)) * pi/2;
@@ -164,15 +122,11 @@ switch nargout
 end
 end
 
-function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
-
-    % Find the fitting variables to determine size of fits array
-    FitVars = coeffnames(fittype(FitEqn));
+function [Ia, idxa, Unwrapped] = Unwrap(Imstack, Radius, Centres, Par)
 
     % Preallocate
     Theta = linspace(1,360,Par.n_theta);
     Rs = (1:round(Par.sc_up * max(Radius)))';
-    Fits = zeros(length(FitVars),length(Imstack{1}));
 
     % For speed, everything is in one call to interp3, returning single
     % which is then cast to uint16. The first argument is the whole
@@ -185,7 +139,7 @@ function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, 
         single(repmat(reshape(1:length(Imstack{1}),1,1,length(Imstack{1})),length(Rs),Par.n_theta)),...  % Zq
         Par.inter_method));                                                                             % METHOD
     fprintf('Finished unwrapping at %gs\n',toc)
-
+    
     % Find the maxes and apply filtering based on deviation from median
     % (will need large tolerance for large deformation) - maybe 0.25 for D
     % = 0.1 To make this more robust, only check for maxes away from the
@@ -194,6 +148,18 @@ function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, 
     [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
     Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
     idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
+
+end
+
+function Fits = AndFit(Unwrapped, Ia, idxa, FitEqn, Radius, lb, ub, StartVal, Par)
+
+    % Find the fitting variables to determine size of fits array
+    FitVars = coeffnames(fittype(FitEqn));
+
+    % Preallocate
+    Fits = zeros(length(FitVars),size(Unwrapped,3));
+    Theta = linspace(1,360,Par.n_theta);
+    Rs = (1:round(Par.sc_up * max(Radius)))';
     
     % For each frame, take angles corresponding to fit points and perform
     % the fit
@@ -240,15 +206,11 @@ function Par = ParseInputs(Imstack, Centres, Radius, varargin)
         validatestring(x,{'linear','nearest','spline','cubic','makima'},FName,'inter_method')))
     addParameter(P,'sc_down',0.5,@(x) validateattributes(x,{'numeric'},...
         {'nonempty','positive','<',1},FName,'sc_down'))
-    addParameter(P,'centering',true,@(x) validateattributes(x,{'logical'},...
+    addParameter(P,'centering',false,@(x) validateattributes(x,{'logical'},...
         {'nonempty'},FName,'centering'))
     addParameter(P,'ifNaN','mean',@(x) strcmpi(x,...
         validatestring(x,{'mean','last','centre'},FName,'ifNaN')))
-    disp(P)
-   disp(Imstack)
-  disp(Centres)
- disp(Radius)
-disp(varargin) 
+    
     parse(P,Imstack,Centres,Radius,varargin{:})
     
     Par = P.Results;
