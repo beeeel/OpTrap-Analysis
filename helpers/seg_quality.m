@@ -1,39 +1,39 @@
 %% Load data
-dataset = ["LS174T" "normoxia" "11"];
-
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '16';
 infosdir = '/home/ppxwh2/Documents/data/OpTrap/infos/';
 if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty
-if strcmp(dataset(1:end-1),'0610hela')
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info-hela_ctrl_s_020_tr_70_' dataset(end) '.mat'])
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/0610/Deformation/hela_ctrl_s_020_tr_70_' dataset(end) '_MMStack.ome.tif']
+
+if strcmp(CellType,'hela')
+    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info-hela_ctrl_s_020_tr_70_' Num '.mat'])
+    imfile = ['/home/ppxwh2/Documents/data/OpTrap/0610/Deformation/hela_ctrl_s_020_tr_70_' Num '_MMStack.ome.tif']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
-        Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,dataset(end));
+        Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,Num);
     end
-elseif strcmp(dataset(1:end-1),'Jenna')
-    load(strcat('/home/ppxwh2/Documents/data/OpTrap/infos/info_Jenna_test_no_erode',dataset(end),'.mat'))
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',dataset(end),'_MMStack.ome.tif']
+elseif strcmp(Set,'Jenna')
+    error('you need to update this branch of the load operation')
+    load(strcat('/home/ppxwh2/Documents/data/OpTrap/infos/info_Jenna_test_no_erode',Num,'.mat'))
+    imfile = ['/home/ppxwh2/Documents/data/OpTrap/1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',Num,'_MMStack.ome.tif']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = bfopen(imfile);
     end
-elseif strcmp(dataset(1:7),'oldHL60')
-    cellType = 'HL60';
-    if strcmp(dataset(8:12),'drugs')
-        setName = '_with_drugs';
-        matName = ['_190717_HL60_' dataset(13:end) '_0.020mm-1_1'];
-    elseif strcmp(dataset(8:12),'normo')
-        setName = '_normoxia'; 
-        matName = ['_100717_' dataset(13:end) '_' cellType '_1']; 
+elseif strcmp(CellType,'HL60')
+    if strcmp(Set,'with_drugs')
+        matName = ['_190717_HL60_' Num '_0.020mm-1_1'];
+    elseif strcmp(Set,'normoxia')
+        matName = ['_100717_' Num '_' CellType '_1']; 
     end
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info_' cellType setName matName '.mat'])
+    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info_' CellType '_' Set matName '.mat'])
     imfile = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/'...
-        cellType '/' cellType setName '/' matName(2:end) '.avi']
+        CellType '/' CellType '_' Set '/' matName(2:end) '.avi']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = avi_to_imstack(imfile)
     end
 elseif strcmp(dataset(1),'LS174T')
-    imfile = ['200717_' char(dataset(end)) '_LS174T_' char(dataset(2)) '_1.avi'];
-    if strcmp(dataset(2),'hypoxia'); imfile(2) = '1'; end
-    load([infosdir 'info_seg_LS174T_' char(dataset(2)) '_' imfile '.mat'])
+    imfile = ['200717_' Num '_LS174T_' Set '_1.avi'];
+    if strcmp(Set,'hypoxia'); imfile(2) = '1'; end
+    load([infosdir 'info_seg_LS174T_' Set '_' imfile(1:end-4) '.mat'])
     Imstack = avi_to_imstack(['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/LS174T/' imfile]);
 end
 
@@ -57,8 +57,8 @@ end
 show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'none' or 'linemax' - source of overlay on top of mask (linemax is centre only)
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
-pt_mode = 'data';           % Analysis or data - do you want to look at the data, or analyse why it isn't working
-frs =100:200;                 % Frames to display
+pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
+frs =700;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -70,6 +70,7 @@ XFontSize = 12;
 YFontSize = 12;
 TFontSize = 12;
 
+if isempty(whos('offset')); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); 
 elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
 
@@ -187,12 +188,16 @@ for frame = frs
         subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
         trackPlot(Xdata,[info.TaylorParameter],frame)
         title('Taylor Parameter [regionprops]','FontSize',TFontSize)
-        ylim([0, 1.1*max([info.TaylorParameter])])
+        YMax = 1.1*max([info.TaylorParameter]);
+        if isnan(YMax); YMax = 1; end
+        ylim([0, YMax])
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 2)
         trackPlot(Xdata,(0.07^2)*[info.Area],frame)
         title('Area [regionprops]','FontSize',TFontSize), ylabel('\mu m^2','FontSize',YFontSize)
-        ylim([0, 1.1*max([info.Area])]*(0.07^2))
+        YMax = 1.1*max([info.Area])*(0.07^2);
+        if isnan(YMax); YMax = 1; end
+        ylim([0, YMax])
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
         hold off
