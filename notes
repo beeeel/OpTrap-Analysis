@@ -1,0 +1,38 @@
+action count (n_reps)
+    for each origin:
+        action move to origin + offset (user def)
+        action fluo
+        action move to origin
+        action count (n_count)
+        action scope etc
+        action move to origin + offset
+        action fluo
+
+count  inputs as [n_count, n_reps]
+axis   inputs as [offset, 0, 0]
+origin inputs as [X1, Y1; X2, Y2;...]
+
+OR
+
+action count (n_reps)
+    for each origin:
+        action move to origin
+        action fluo
+        action laserson
+        action count (n_count)
+        action scope etc
+        action lasersoff
+        action fluo
+
+
+count  inputs as [n_count, n_reps]
+axis   not needed
+origin inputs as [X1, Y1; X2, Y2;...]
+
+
+Unwrap quantification:
+    Augment data with rotations
+        Try simulated data rotations with the same noise - see if fitting converges on ground truth
+        Unwrapping error could be reduced with this form of reprocessing
+    Augment data with resampling
+        Real data with real errors can be tested to determine sensitivity of technique

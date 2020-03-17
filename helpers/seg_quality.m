@@ -1,3 +1,7 @@
+%% Notes:
+% This needs to be turned into a few functions - a loader function, a
+% figure function with proper functionality (overlays, 2-6 plots, choice on
+% what the plots are)
 %% Load data
 CellType = 'LS174T';
 Set = 'normoxia';
@@ -56,9 +60,9 @@ end
 
 show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'none' or 'linemax' - source of overlay on top of mask (linemax is centre only)
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
-n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
+n_plots = 0;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =700;                 % Frames to display
+frs =50;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -139,7 +143,7 @@ for frame = frs
         plot(centres(1,frame),centres(2,frame),'y.','MarkerSize',16)
     elseif strcmp(show_mask,'none')
         aa = imagesc(Imstack{1}{frame,1});
-        colormap(aa.Parent,'pink')
+        colormap(aa.Parent,'gray')
         hold on
     end
     axis image off
@@ -354,7 +358,33 @@ for item = plots'
         end
     end
 end
-
+%% For putting a single frame with fitting
+[file, path] = uiputfile('*.png','Save your images');
+frames = [50, 700];
+figure(14)
+for frame = frames
+    aa = imagesc(Imstack{1}{frame,1});
+    colormap(aa.Parent,'gray')
+    hold on
+    axis image off
+    % Using unwrap cell fitting
+    plot(info(frame).uMajorAxisLength .* cos(theta) .* cos(info(frame).uOrientation) ...
+        - info(frame).uMinorAxisLength .* sin(theta) .* sin(-info(frame).uOrientation)...
+        + centres(1,frame) + offset(2,frame),... % x values end here
+        info(frame).uMajorAxisLength .* cos(theta) .* sin(-info(frame).uOrientation) ...
+        + info(frame).uMinorAxisLength .* sin(theta) .* cos(info(frame).uOrientation)...
+        + centres(2,frame) + offset(3,frame),'k--','LineWidth',2)
+    plot(centres(1,frame) + offset(2,frame),centres(2,frame) + offset(3,frame),'kx')
+    ax = gca;
+    ax.Children(1).LineWidth = 6;
+    ax.Children(1).MarkerEdgeColor = 'red';
+    ax.Children(1).MarkerSize = 12;
+    ax.Children(2).LineWidth = 6;
+    ax.Children(2).Color = [1 0 0];
+    Fr = getframe(ax);
+    SaveFile = [file(1:end-4) '_fr' num2str(frame) '.png'];
+    imwrite(Fr.cdata,[path SaveFile])
+end
 %% Function trackPlot used above
 function trackPlot(xdata, ydata, idx, varargin)
     hold off
