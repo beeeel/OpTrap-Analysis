@@ -1,6 +1,7 @@
 function [Errors, Dvals] = SimulateUnwrapFitting(Ia, varargin)
 %% Calculate the minimum deformation threshold to be detectable above noise
-% This needs input parsing to be added
+% This needs input parsing to be added - prority is "bin edges" from
+% histcounts
 
 
 % First find at standard deviations for the first 30 frames
