@@ -119,13 +119,13 @@ tic
 
 % Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
 % convert to polar (r = x.^2 + y.^2)
-CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175*x) + dx).^2 + (r .* sin(0.0175*x) + dy).^2);
+CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
 lb = [0, -size(Imstack{1}{1,1})/2];
 ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
 StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
 
 % Perform unwrapping and fitting for off-centreness
-[Offset, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
+[Offset, ~, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
 
 % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
 % polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
@@ -134,12 +134,12 @@ StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
 % (orientation of ellipse). For an off-centre elipse, x = a cos(t) + dx, y
 % = a sin(t) + dy.
 if ~Par.centering
-    FitEqn = @(a, b, phi, x) sqrt((a * cos(0.0175*x + phi)).^2 + (b * sin(0.0175*x + phi)).^2 );
+    FitEqn = @(a, b, phi, x) sqrt((a .* cos(0.0175.*x + phi)).^2 + (b .* sin(0.0175.*x + phi)).^2 );
     lb = [0 0 0];
     ub = [inf inf pi];
     StartVal = [repmat(Radius',1,2) repmat(1.5,size(Radius,2),1)]; % Use radius from find_cell as a start point
 elseif Par.centering
-    FitEqn = @(a, b, phi, dx, dy, x) sqrt((a * cos(0.0175*x + phi) + dx).^2 + (b * sin(0.0175*x + phi) + dy).^2 );
+    FitEqn = @(a, b, phi, dx, dy, x) sqrt((a .* cos(0.0175.*x + phi) + dx).^2 + (b .* sin(0.0175.*x + phi) + dy).^2 );
     lb = [0 0 0 -size(Imstack{1}{1,1})/2];
     ub = [inf inf pi size(Imstack{1}{1,1})/2];
     StartVal = [repmat(Radius',1,2) repmat([1.5 0 0],size(Radius,2),1)];
@@ -148,7 +148,7 @@ else
 end
 
 % Perform unwrapping and fitting with updated centre locations
-[Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres + Offset(2:3,:), lb, ub, StartVal, Par);
+[Fits, Ia, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres + Offset(2:3,:), lb, ub, StartVal, Par);
 
 % Fix the equivalent fitting equations problem - if b>a
 Fits(3,:) = Fits(3,:) + (Fits(2,:) > Fits(1,:)) * pi/2;
@@ -158,10 +158,11 @@ switch nargout
     case 3; varargout = {Unwrapped, Ia};
     case 4; varargout = {Unwrapped, Ia, FitEqn};
     case 5; varargout = {Unwrapped, Ia, FitEqn, Offset};
+    case 6; varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs};
 end
 end
 
-function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
+function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
 
     % Find the fitting variables to determine size of fits array
     FitVars = coeffnames(fittype(FitEqn));
@@ -170,6 +171,7 @@ function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, 
     Theta = linspace(1,360,Par.n_theta);
     Rs = (1:round(Par.sc_up * max(Radius)))';
     Fits = zeros(length(FitVars),length(Imstack{1}));
+    Errs = Fits;
 
     % For speed, everything is in one call to interp3, returning single
     % which is then cast to uint16. The first argument is the whole
@@ -204,6 +206,8 @@ function [Fits, Ia, Unwrapped] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, 
         for VarN = 1:length(FitVars) % Extract fitted values from cfit object
             Fits(VarN, frame) = fitobj.(FitVars{VarN});
         end
+        ConfInt = confint(fitobj);
+        Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
         prog = ceil(100 * frame / length(Imstack{1}));
         fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
     end

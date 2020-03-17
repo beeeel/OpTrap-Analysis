@@ -1,7 +1,7 @@
 %% Load data
 CellType = 'LS174T';
 Set = 'normoxia';
-Num = '16';
+Num = '11';
 infosdir = '/home/ppxwh2/Documents/data/OpTrap/infos/';
 if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty
 
@@ -72,7 +72,7 @@ TFontSize = 12;
 
 if isempty(whos('offset')); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); 
-elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
+elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
 
 if n_plots == 4; sbplt = [4 2 4]; 
 elseif n_plots == 6; sbplt = [6 2 6]; end
