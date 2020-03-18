@@ -34,7 +34,7 @@ elseif strcmp(CellType,'HL60')
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = avi_to_imstack(imfile)
     end
-elseif strcmp(dataset(1),'LS174T')
+elseif strcmp(CellType,'LS174T')
     imfile = ['200717_' Num '_LS174T_' Set '_1.avi'];
     if strcmp(Set,'hypoxia'); imfile(2) = '1'; end
     load([infosdir 'info_seg_LS174T_' Set '_' imfile(1:end-4) '.mat'])
