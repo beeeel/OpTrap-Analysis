@@ -211,6 +211,8 @@ end
 if size(whos('seg_cell_args'),1) == 0
     % Segment_cell only takes input arguments for v2 onwards.
     switch seg_cell_v
+        case 0
+            seg_cell_args = {};
         case 2
             seg_cell_args = {'Ethresh', 0.5473, ...
             'sigma', 1, 'Fthresh', 0.5739, 'ellipseFitVal', 0};
@@ -222,7 +224,7 @@ if size(whos('seg_cell_args'),1) == 0
         case 4
             seg_cell_args = {};
         case 5
-            seg_cell_args = {'iterations',200};
+            seg_cell_args = {'iterations',200,'Lsigma', 0.1, 'Lalpha', 5, 'Lbeta', 10};
         case 6
             seg_cell_args = {};
     end
@@ -290,11 +292,11 @@ InfoValues = [FindValues, UnwrapValues, SegValues, metadat{1}, [0;0]];
 %     [0; 0]];
 
 MetaFields = {'filepath', 'N_Frames','Frame_size', 'TotalRunTime', ...
-    'Find_cell_time', 'Unwrap_cell_time', 'Segment_cell_time', ...
+    'Find_cell_time', 'Unwrap_cell_time', 'Segment_cell_time', 'Line_maxima_time',...
     'Find_cell_args', 'find_cell_v', 'Segment_cell_args', 'seg_cell_v', ...
     'Unwrap_cell_args', 'unwrap_cell_v', 'Line_maxima_args', 'line_maxima_v'};
 MetaValues = {metadat{1}, N_frames, sz_frame,0, ...
-    0, 0, 0,...
+    0, 0, 0, 0,...
     find_cell_args, find_cell_v, seg_cell_args, seg_cell_v, ...
     unwrap_cell_args, unwrap_cell_v, line_maxima_args, line_maxima_v};
 
@@ -305,15 +307,19 @@ meta = cell2struct(MetaValues, MetaFields, 2);
 % Tidy it to remove excess fields
 if seg_cell_v == 0
     info = rmfield(info,SegFields );
+    meta = rmfield(meta, {'Segment_cell_time','Segment_cell_args'});
 end
 if find_cell_v == 0
     info = rmfield(info, FindFields);
+    meta = rmfield(meta, {'Find_cell_time','Find_cell_args'});
 end
 if unwrap_cell_v == 0
     info = rmfield(info, UnwrapFields);
+    meta = rmfield(meta, {'Unwrap_cell_time','Unwrap_cell_args'});
 end
 if line_maxima_v == 0
     info = rmfield(info, 'mCentres');
+    meta = rmfield(meta, {'Line_maxima_time','Line_maxima_args'});
 end
 
 
@@ -391,22 +397,20 @@ if unwrap_cell_v ~= 0
     disp('Unwrapping cells');
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     before = toc;
-    if find_cell_v ~= 0
-        switch unwrap_cell_v
-            case 1
-                UnwrapFits = unwrap_cell_v1(Imstack, [info.centres], [info.radius], unwrap_cell_args{:});
-            case 2
-                [UnwrapFits, ~, ~, ~, UnwrapOffset] = unwrap_cell_v2(Imstack, [info.centres], [info.radius], unwrap_cell_args{:});
-            otherwise
-                error('huh')
-        end
+    if line_maxima_v == 0
+        Centres = [info.centres];
+        Radii = [info.radius];
     else
-        switch unwrap_cell_v
-            case 2
-                [UnwrapFits, ~, ~, ~, UnwrapOffset] = unwrap_cell_v2(Imstack, [info.mCentres], repmat(min(sz_frame)/2,1,N_frames), unwrap_cell_args{:});
-            otherwise
-                error('huh')
-        end
+        Centres = [info.mCentres];
+        Radii = repmat(min(sz_frame)/2,1,N_frames);
+    end
+    switch unwrap_cell_v
+        case 1
+            UnwrapFits = unwrap_cell_v1(Imstack, Centres, Radii, unwrap_cell_args{:});
+        case 2
+            [UnwrapFits, ~, ~, ~, UnwrapOffset] = unwrap_cell_v2(Imstack, Centres, Radii, unwrap_cell_args{:});
+        otherwise
+            error('huh')
     end
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Unwrapped cells')
@@ -435,6 +439,7 @@ if unwrap_cell_v ~= 0
     disp('Unwrapped cells and finished')
     toc
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
+    clear Centres Radii
 end
 
 if seg_cell_v ~= 0

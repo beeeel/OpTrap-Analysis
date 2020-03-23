@@ -5,13 +5,14 @@ function PPCD_runner(varargin)
 p = inputParser;
 
 % Which datasets
-CellDefault = 'HL60';
-DSetsDefault = {'normoxia','drugs','normoxia','hypoxia'} ;
+CellDefault = {'HL60','LS174T'};
+DSetsDefault = {{'normoxia','drugs'}, {'hypoxia'}} ;
 NumsDefault = 1:20;
 
 % What settings
-FindVerDefault = 0;
+FindVerDefault = 2;
 FindDefault = {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
+%FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
 SegDefault = {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
 UnwrapDefault = {'centering', 1};
 
@@ -27,60 +28,77 @@ FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
 
 ParseInputs();
 
-for idx = 1:length(p.Results.DSets)
-    DSet = p.Results.DSets{idx};
-    if idx == 2; p.Results.CellType = 'LS174T'; end
-    FolderName = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/' p.Results.CellType '/'];
-    
-    for Num = p.Results.Nums
-        RunNo = num2str(Num);
-        if strcmp(p.Results.CellType, 'HL60')
-            if strcmp(DSet,'normoxia')
-                SetName = 'HL60_normoxia';
-                if str2double(RunNo) <= 10
-                    FileName = ['100717_' RunNo '_HL60_1.avi'];
-                else
-                    FileName = ['HL60_' RunNo '_0.020mms-1_1.avi'];
-                end
-            elseif strcmp(DSet,'drugs')
-                SetName = 'HL60_with_drugs';
-                FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
-            end
-            Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
-        elseif strcmp(p.Results.CellType,'LS174T')
-            SetName = [p.Results.CellType '_' DSet];
-            FileName = ['200717_' RunNo '_' p.Results.CellType '_' DSet '_1.avi'];
-            if strcmp(DSet,'hypoxia')
-                FileName(2) = '1';
-            end
-            Imstack = avi_to_imstack([FolderName FileName]);
-        elseif strcmp(p.Results.CellType,'HeLa')
-            
-        end
-        %%
-        
-        [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',FindVerDefault,...
-            'find_cell',p.Results.FindOpts, 'seg_cell_v',5,'segment_cell', p.Results.SegOpts, ...
-            'unwrap_cell_v',2,'unwrap_cell', p.Results.UnwrapOpts);
-        
-        
-        if p.Results.SummFig == true
-            MakeSummFig();
-        end
-        
-        if p.Results.ToSave
-            if ~p.Results.SaveAll
-                FieldNames = fieldnames(info);
-                for fld = FieldNames'
-                    if sum(strcmp(fld{:},p.Results.KeepFields)) == 0
-                        info = rmfield(info, fld{:});
+for idx = 1:length(p.Results.CellType)
+    FolderName = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/' p.Results.CellType{idx} '/'];
+    disp(FolderName)
+    for Didx = 1:length(p.Results.DSets{idx})
+        DSet = p.Results.DSets{idx}{Didx};
+        disp(DSet)
+        %%{
+        for Num = p.Results.Nums
+            RunNo = num2str(Num);
+            if strcmp(p.Results.CellType{idx}, 'HL60')
+                if strcmp(DSet,'normoxia')
+                    SetName = 'HL60_normoxia';
+                    if str2double(RunNo) <= 10
+                        FileName = ['100717_' RunNo '_HL60_1.avi'];
+                    else
+                        FileName = ['HL60_' RunNo '_0.020mms-1_1.avi'];
                     end
+                elseif strcmp(DSet,'drugs')
+                    SetName = 'HL60_with_drugs';
+                    FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
                 end
-                save([p.Results.InfosDir 'info_reduced_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
-            else
-                save([p.Results.InfosDir 'info_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
+            elseif strcmp(p.Results.CellType{idx},'LS174T')
+                SetName = [p.Results.CellType{idx} '_' DSet];
+                FileName = ['200717_' RunNo '_' p.Results.CellType{idx} '_' DSet '_1.avi'];
+                if strcmp(DSet,'hypoxia')
+                    FileName(2) = '1';
+                end
+                Imstack = avi_to_imstack([FolderName FileName]);
+            elseif strcmp(p.Results.CellType{idx},'HeLa')
+            elseif strcmp(p.Results.CellType{idx}, 'MV411')
+                if strcmp(DSet,'normoxia')
+                    SetName = 'MV411_normoxia';
+                    if str2double(RunNo) <= 10
+                        FileName = ['100717_' RunNo '_ MV411_1.avi'];
+                    else
+                        FileName = ['MV411_' RunNo '_0.020mms-1_1.avi'];
+                    end
+                elseif strcmp(DSet,'drugs')
+                    SetName = 'MV411_with_drugs';
+                    FileName = ['180717_' RunNo '_MV411_0.020mms-1_1.avi'];
+                end
+                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
+                
+            end
+            %%
+            
+            [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',p.Results.FindVer,...
+                'find_cell',p.Results.FindOpts, 'seg_cell_v',5,'segment_cell', p.Results.SegOpts, ...
+                'unwrap_cell_v',2,'unwrap_cell', p.Results.UnwrapOpts);
+            
+            
+            if p.Results.SummFig == true
+                MakeSummFig(info);
+            end
+            
+            if p.Results.ToSave
+                if ~p.Results.SaveAll
+                    FieldNames = fieldnames(info);
+                    for fld = FieldNames'
+                        if sum(strcmp(fld{:},p.Results.KeepFields)) == 0
+                            info = rmfield(info, fld{:});
+                        end
+                    end
+                    save([p.Results.InfosDir 'info_reduced_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                else
+                    save([p.Results.InfosDir 'info_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                end
             end
         end
+        %}
     end
 end
 
@@ -100,42 +118,65 @@ end
         addParameter(p,'SaveAll',SaveAllDefault,@(x)validateattributes(x,{'logical'},{'nonempty'},FName,'SaveAll'))
         addParameter(p,'SummFig',SummFigDefault,@(x)validateattributes(x,{'logical'},{'nonempty'},FName,'SummFig'))
         addParameter(p,'CellType',CellDefault,@(x)validateattributes(x,...
-            {'string','char'},{'nonempty','row','scalartext'},FName,'CellType'))
+            {'cell'},{'nonempty','row'},FName,'CellType'))
         addParameter(p,'InfosDir',InfosDirDefault,@(x)validateattributes(x,...
             {'string','char'},{'nonempty','row','scalartext'},FName,'InfosDir'))
         addParameter(p,'FigSaveDir',FigSaveDirDefault,@(x)validateattributes(x,...
             {'string','char'},{'nonempty','row','scalartext'},FName,'FigSaveDir'))
-        addParameter(p,'DSets',DSetsDefault,@(x)validateattributes(x,...
-            {'cell'},{'nonempty','row'},FName,'DSets'))
+        addParameter(p,'DSets',DSetsDefault,ValidateDSets)
         addParameter(p,'Nums',NumsDefault,@(x)validateattributes(x,...
             {'numeric'},{'nonempty','row','nonnegative'},FName,'Nums'))
         
         parse(p,varargin{:});
+        
+        function ValidateDSets(x)
+            validateattributes(x,{'cell'},{'nonempty','row'},FName,'DSets')
+            for y = x
+                validateattributes(y,{'cell'},{'nonempty'},FName,'DSets')
+                for z = y
+                    validateattributes(z,{'string','char'},{'nonempty','scalartext'},FName,'DSets')
+                end
+            end
+        end
     end
 %%
-    function MakeSummFig()
+    function MakeSummFig(info)
+        NX = 3;
+        NY = 2;
         figure
-        subplot(221)
+        subplot(NX, NY, 1)
         plot([info.MajorAxisLength]), hold on
         plot([info.MinorAxisLength]), hold off
         legend('Major','Minor')
         title('Regionprops axes')
-        subplot(222)
+        subplot(NX, NY, 2)
         plot([info.TaylorParameter]), hold on
         plot([info.uTaylorParameter]), hold off
         legend('Regionprops','Unwrap')
         title('Taylor parameters')
-        subplot(223)
+        subplot(NX, NY, 3)
         plot([info.Area])
         title('Area')
-        subplot(224)
+        subplot(NX, NY, 4)
         if p.Results.FindVer
             plot([info.radius])
-            title('Radius (find_cell)')
+            title('Radius (find\_cell)')
         else
             plot([info.mCentres]')
-            title('Centres (Line_Maxima)')
+            title('Centres (Line\_Maxima)')
         end
+        if NY == 3
+            subplot(NX, NY, 5)
+            if isfield(info,'mCentres')
+                plot([info.mCentres]')
+                title('Centres (Line\_Maxima)')
+            end
+            subplot(NX, NY, 6)
+            if isfield(info,'centres')
+                plot([info.centres]')
+                title('Centres (find\_cell)')
+            end
+        end 
         hgsave([p.Results.FigSaveDir, strjoin({SetName,RunNo,'summaryplot'},'_')])
         close
 
