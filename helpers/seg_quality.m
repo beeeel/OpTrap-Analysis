@@ -6,12 +6,13 @@
 CellType = 'LS174T';
 Set = 'normoxia';
 Num = '11';
-infosdir = '/home/ppxwh2/Documents/data/OpTrap/infos/';
+datadir = '/home/will/Documents/data/OpTrap/';
+infosdir = [datadir 'infos/'];
 if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty
 
 if strcmp(CellType,'hela')
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info-hela_ctrl_s_020_tr_70_' Num '.mat'])
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/0610/Deformation/hela_ctrl_s_020_tr_70_' Num '_MMStack.ome.tif']
+    load([infosdir 'info-hela_ctrl_s_020_tr_70_' Num '.mat'])
+    imfile = [datadir '0610/Deformation/hela_ctrl_s_020_tr_70_' Num '_MMStack.ome.tif']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,Num);
     end
@@ -38,7 +39,7 @@ elseif strcmp(CellType,'LS174T')
     imfile = ['200717_' Num '_LS174T_' Set '_1.avi'];
     if strcmp(Set,'hypoxia'); imfile(2) = '1'; end
     load([infosdir 'info_seg_LS174T_' Set '_' imfile(1:end-4) '.mat'])
-    Imstack = avi_to_imstack(['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/LS174T/' imfile]);
+    Imstack = avi_to_imstack([datadir '2017_10_movies-from-aishah/LS174T/' imfile]);
 end
 
 %% Segmentation video
