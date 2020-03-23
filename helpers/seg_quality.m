@@ -1,33 +1,45 @@
+%% Notes:
+% This needs to be turned into a few functions - a loader function, a
+% figure function with proper functionality (overlays, 2-6 plots, choice on
+% what the plots are)
 %% Load data
-dataset = 'oldHL60drugs5';
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '11';
+datadir = '/home/will/Documents/data/OpTrap/';
+infosdir = [datadir 'infos/'];
 if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty
-if strcmp(dataset(1:end-1),'0610hela')
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info-hela_ctrl_s_020_tr_70_' dataset(end) '.mat'])
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/0610/Deformation/hela_ctrl_s_020_tr_70_' dataset(end) '_MMStack.ome.tif']
+
+if strcmp(CellType,'hela')
+    load([infosdir 'info-hela_ctrl_s_020_tr_70_' Num '.mat'])
+    imfile = [datadir '0610/Deformation/hela_ctrl_s_020_tr_70_' Num '_MMStack.ome.tif']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
-        Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,dataset(end));
+        Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,Num);
     end
-elseif strcmp(dataset(1:end-1),'Jenna')
-    load(strcat('/home/ppxwh2/Documents/data/OpTrap/infos/info_Jenna_test_no_erode',dataset(end),'.mat'))
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',dataset(end),'_MMStack.ome.tif']
+elseif strcmp(Set,'Jenna')
+    error('you need to update this branch of the load operation')
+    load(strcat('/home/ppxwh2/Documents/data/OpTrap/infos/info_Jenna_test_no_erode',Num,'.mat'))
+    imfile = ['/home/ppxwh2/Documents/data/OpTrap/1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',Num,'_MMStack.ome.tif']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = bfopen(imfile);
     end
-elseif strcmp(dataset(1:7),'oldHL60')
-    cellType = 'HL60';
-    if strcmp(dataset(8:12),'drugs')
-        setName = '_with_drugs';
-        matName = ['_190717_HL60_' dataset(13:end) '_0.020mm-1_1'];
-    elseif strcmp(dataset(8:12),'normo')
-        setName = '_normoxia'; 
-        matName = ['_100717_' dataset(13:end) '_' cellType '_1']; 
+elseif strcmp(CellType,'HL60')
+    if strcmp(Set,'with_drugs')
+        matName = ['_190717_HL60_' Num '_0.020mm-1_1'];
+    elseif strcmp(Set,'normoxia')
+        matName = ['_100717_' Num '_' CellType '_1']; 
     end
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info_' cellType setName matName '.mat'])
+    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info_' CellType '_' Set matName '.mat'])
     imfile = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/'...
-        cellType '/' cellType setName '/' matName(2:end) '.avi']
+        CellType '/' CellType '_' Set '/' matName(2:end) '.avi']
     if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
         Imstack = avi_to_imstack(imfile)
     end
+elseif strcmp(CellType,'LS174T')
+    imfile = ['200717_' Num '_LS174T_' Set '_1.avi'];
+    if strcmp(Set,'hypoxia'); imfile(2) = '1'; end
+    load([infosdir 'info_seg_LS174T_' Set '_' imfile(1:end-4) '.mat'])
+    Imstack = avi_to_imstack([datadir '2017_10_movies-from-aishah/LS174T/' imfile]);
 end
 
 %% Segmentation video
@@ -47,11 +59,11 @@ end
 % a .gif or .avi from the slideshow. If flythrough is set to 0, you need to
 % press enter on the command window to advance each frame.
 
-show_fit = 'linemax';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'none' or 'linemax' - source of overlay on top of mask (linemax is centre only)
+show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'none' or 'linemax' - source of overlay on top of mask (linemax is centre only)
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
-n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
-pt_mode = 'data';           % Analysis or data - do you want to look at the data, or analyse why it isn't working
-frs =50:10:100;                 % Frames to display
+n_plots = 0;                % Number of plots - 6 includes ellipse fitting results
+pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
+frs =50;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -63,7 +75,9 @@ XFontSize = 12;
 YFontSize = 12;
 TFontSize = 12;
 
-if run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
+if isempty(whos('offset')); run_unwrap = 1; end
+if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); 
+elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
 
 if n_plots == 4; sbplt = [4 2 4]; 
 elseif n_plots == 6; sbplt = [6 2 6]; end
@@ -86,10 +100,12 @@ end
 if meta.seg_cell_v == 5; fits = [info.ellipse_fits]; end
 theta = 0:0.01:2*pi;
 if strcmp(pt_mode,'analysis'); crops = [info.crop]; end
-if strcmp(show_mask,'initial') || strcmp(show_fit,'unwrap')
+if strcmp(show_mask,'initial')
     [rr, cc] = meshgrid(1:size(Imstack{1}{1,1},2),...
         1:size(Imstack{1}{1,1},1));
     centres = [info.centres];
+elseif strcmp(show_fit,'unwrap') && meta.line_maxima_v
+    centres = [info.mCentres];
 end
 Xdata = 1:size(info,2);
 
@@ -128,7 +144,7 @@ for frame = frs
         plot(centres(1,frame),centres(2,frame),'y.','MarkerSize',16)
     elseif strcmp(show_mask,'none')
         aa = imagesc(Imstack{1}{frame,1});
-        colormap(aa.Parent,'pink')
+        colormap(aa.Parent,'gray')
         hold on
     end
     axis image off
@@ -164,88 +180,92 @@ for frame = frs
     elseif strcmp(show_fit, 'unwrap')
         % Using unwrap cell fitting
         plot(info(frame).uMajorAxisLength .* cos(theta) .* cos(info(frame).uOrientation) ...
-            - info(frame).uMinorAxisLength .* sin(theta) .* sin(info(frame).uOrientation)...
+            - info(frame).uMinorAxisLength .* sin(theta) .* sin(-info(frame).uOrientation)...
             + centres(1,frame) + offset(2,frame),... % x values end here
-            info(frame).uMajorAxisLength .* cos(theta) .* sin(info(frame).uOrientation) ...
+            info(frame).uMajorAxisLength .* cos(theta) .* sin(-info(frame).uOrientation) ...
             + info(frame).uMinorAxisLength .* sin(theta) .* cos(info(frame).uOrientation)...
             + centres(2,frame) + offset(3,frame),'k--','LineWidth',2)
         plot(centres(1,frame) + offset(2,frame),centres(2,frame) + offset(3,frame),'kx')
     elseif strcmp(show_fit,'linemax')
         plot(Centres(1,frame),Centres(2,frame),'kx')
     end
-    
-    subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
-    trackPlot(Xdata,[info.TaylorParameter],frame)
-    title('Taylor Parameter [regionprops]','FontSize',TFontSize)
-    ylim([0, 1.1*max([info.TaylorParameter])])
-    
-    subplot(sbplt(1), sbplt(2), sbplt(3) + 2)
-    trackPlot(Xdata,(0.07^2)*[info.Area],frame)
-    title('Area [regionprops]','FontSize',TFontSize), ylabel('\mu m^2','FontSize',YFontSize)
-    ylim([0, 1.1*max([info.Area])]*(0.07^2))
-    
-    subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
-    hold off
-    plot(centroids(1:2:end)*0.07)
-    hold on
-    plot(centroids(2:2:end)*0.07)
-    plot(frame,centroids(2*frame - 1)*0.07,'rx')
-    plot(frame,centroids(2*frame)*0.07, 'rx')
-    ylim([0 length(Imstack{1}{1,1})]*0.07), ylabel('\mu m','FontSize',YFontSize)
-    title('Centroids of mask [regionprops]','FontSize',TFontSize)
-    if n_plots == 4; xlabel('frame number'); end
-    
-    subplot(sbplt(1), sbplt(2), sbplt(3) + 4)
-    if strcmp(pt_mode,'data')
-        trackPlot(Xdata,[info.Orientation],frame,'x')
-        title('Angle of long axis above horizontal [regionprops]','FontSize',TFontSize)
-        ylabel('Angle (^{o})','FontSize',YFontSize)
-        ylim([-90 90])
-    elseif strcmp(pt_mode,'analysis')
-        trackPlot(Xdata,[info.radius],frame)
-        title('Radius [find\_cell]','FontSize',TFontSize)
-    end
-    if n_plots == 4; xlabel('frame number','FontSize',XFontSize); end
-
-    if n_plots == 6
-        subplot(sbplt(1), sbplt(2), sbplt(3) + 5)
-        if strcmp(pt_mode,'data')
-            if strcmp(show_fit,'ellipseDetection')
-                trackPlot(Xdata,(fits(3,:)-fits(4,:))./(fits(3,:)+fits(4,:)),frame)
-                title('Taylor Parameter [ellipse fitting]','FontSize',TFontSize)
-            elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
-                trackPlot(Xdata,[info.uTaylorParameter],frame)
-                title('Taylor Parameter [unwrapping]','FontSize',TFontSize)
-                ylim([0 0.03])
-            end
-        elseif strcmp(pt_mode,'analysis')
-            trackPlot(repmat(Xdata,4,1)',[info.crop]',frame)
-            title('Crop box corner co-ordinates [find\_cell]','FontSize',TFontSize), ylabel('px','FontSize',YFontSize)
-            legend('x0','x1','y0','y1')
-        end
-        xlabel('Frame number','FontSize',XFontSize)
+    if n_plots
+        subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
+        trackPlot(Xdata,[info.TaylorParameter],frame)
+        title('Taylor Parameter [regionprops]','FontSize',TFontSize)
+        YMax = 1.1*max([info.TaylorParameter]);
+        if isnan(YMax); YMax = 1; end
+        ylim([0, YMax])
         
-        subplot(sbplt(1), sbplt(2), sbplt(3) + 6)
+        subplot(sbplt(1), sbplt(2), sbplt(3) + 2)
+        trackPlot(Xdata,(0.07^2)*[info.Area],frame)
+        title('Area [regionprops]','FontSize',TFontSize), ylabel('\mu m^2','FontSize',YFontSize)
+        YMax = 1.1*max([info.Area])*(0.07^2);
+        if isnan(YMax); YMax = 1; end
+        ylim([0, YMax])
+        
+        subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
+        hold off
+        plot(centroids(1:2:end)*0.07)
+        hold on
+        plot(centroids(2:2:end)*0.07)
+        plot(frame,centroids(2*frame - 1)*0.07,'rx')
+        plot(frame,centroids(2*frame)*0.07, 'rx')
+        ylim([0 length(Imstack{1}{1,1})]*0.07), ylabel('\mu m','FontSize',YFontSize)
+        title('Centroids of mask [regionprops]','FontSize',TFontSize)
+        if n_plots == 4; xlabel('frame number'); end
+        
+        subplot(sbplt(1), sbplt(2), sbplt(3) + 4)
         if strcmp(pt_mode,'data')
-            if strcmp(show_fit,'ellipseDetection')
-                
-                %     trackPlot(Xdata, [info.MajorAxisLength]/2 - [info.radius], frame)
-                trackPlot(Xdata, fits(5,:), frame)
-                ylim([-90 90]), title('Angle of long axis above horizontal [ellipse fitting]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
-            elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
-                trackPlot(Xdata, (180/pi)*[info.uOrientation], frame, 'x')
-                ylim([-90 90])
-                title('Angle of long axis above horizontal [unwrapping]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
-            end
+            trackPlot(Xdata,[info.Orientation],frame,'x')
+            title('Angle of long axis above horizontal [regionprops]','FontSize',TFontSize)
+            ylabel('Angle (^{o})','FontSize',YFontSize)
+            ylim([-90 90])
         elseif strcmp(pt_mode,'analysis')
-            trackPlot(repmat(Xdata,2,1)',[info.find_fails; info.seg_fails]',frame)
-            title('Success metrics [find\_cell, seg\_cell]','FontSize',TFontSize)
-            legend('find','seg')
-            ylim([-1 3])
+            trackPlot(Xdata,[info.radius],frame)
+            title('Radius [find\_cell]','FontSize',TFontSize)
         end
+        if n_plots == 4; xlabel('frame number','FontSize',XFontSize); end
+        
+        if n_plots == 6
+            subplot(sbplt(1), sbplt(2), sbplt(3) + 5)
+            if strcmp(pt_mode,'data')
+                if strcmp(show_fit,'ellipseDetection')
+                    trackPlot(Xdata,(fits(3,:)-fits(4,:))./(fits(3,:)+fits(4,:)),frame)
+                    title('Taylor Parameter [ellipse fitting]','FontSize',TFontSize)
+                elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
+                    trackPlot(Xdata,[info.uTaylorParameter],frame)
+                    title('Taylor Parameter [unwrapping]','FontSize',TFontSize)
+                    ylim([0 0.06])
+                end
+            elseif strcmp(pt_mode,'analysis')
+                trackPlot(repmat(Xdata,4,1)',[info.crop]',frame)
+                title('Crop box corner co-ordinates [find\_cell]','FontSize',TFontSize), ylabel('px','FontSize',YFontSize)
+                legend('x0','x1','y0','y1')
+            end
+            %xlabel('Frame number','FontSize',XFontSize)
+            
+            subplot(sbplt(1), sbplt(2), sbplt(3) + 6)
+            if strcmp(pt_mode,'data')
+                if strcmp(show_fit,'ellipseDetection')
+                    
+                    %     trackPlot(Xdata, [info.MajorAxisLength]/2 - [info.radius], frame)
+                    trackPlot(Xdata, fits(5,:), frame)
+                    ylim([-90 90]), title('Angle of long axis above horizontal [ellipse fitting]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
+                elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
+                    trackPlot(Xdata, (180/pi)*[info.uOrientation], frame, 'x')
+                    ylim([-90 90])
+                    title('Angle of long axis above horizontal [unwrapping]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
+                end
+            elseif strcmp(pt_mode,'analysis')
+                trackPlot(repmat(Xdata,2,1)',[info.find_fails; info.seg_fails]',frame)
+                title('Success metrics [find\_cell, seg\_cell]','FontSize',TFontSize)
+                legend('find','seg')
+                ylim([-1 3])
+            end
             xlabel('Frame number','FontSize',XFontSize)
+        end
     end
-    
     if makevid == 0 && flythrough == 0
         input('')
     elseif makevid == 0 && flythrough == 1
@@ -310,24 +330,62 @@ hold off
 
 %% View summary plots
 % Open all plots from a given set.
-Dset = 'HL60_normoxia';
-Posn = [-3523 1100 568 434];
+Dset = 'LS174T_normoxia';
+%Posn = [-3523 1100 568 434];
+Posn = [-3289        1075         568         434];
 plots = dir('/home/ppxwh2/Documents/data/OpTrap/processing_plots');
+Offset = 10; % Files are opened in alphabetical order. Use this to shift to later files
+N_max = 10;
+N_plots = 0;
 for item = plots'
-    if length(item.name) > 4
-        if strcmp(item.name(end-3:end),'.fig') && contains(item.name,Dset)
-            open(strcat('~/Documents/data/OpTrap/processing_plots/',item.name));
-            drawnow;
-            h = gcf;
-            h.Name = item.name(1:end-4);
-            Posn = Posn + [25 -25 0 0];
-            h.Position = Posn;
-            subplot(2,2,2)
-            ylim([0,0.1])
+    if N_plots < N_max
+        if length(item.name) > 4
+            if strcmp(item.name(end-3:end),'.fig') && contains(item.name,Dset)
+                if Offset <= 0
+                    %disp(item.name)
+                    open(strcat('~/Documents/data/OpTrap/processing_plots/',item.name));
+                    drawnow;
+                    h = gcf;
+                    h.Name = item.name(1:end-4);
+                    Posn = Posn + [25 -25 0 0];
+                    h.Position = Posn;
+                    subplot(3,2,2)
+                    ylim([0,0.1])
+                    N_plots = N_plots + 1;
+                else
+                    Offset = Offset - 1;
+                end
+            end
         end
     end
 end
-
+%% For putting a single frame with fitting
+[file, path] = uiputfile('*.png','Save your images');
+frames = [50, 700];
+figure(14)
+for frame = frames
+    aa = imagesc(Imstack{1}{frame,1});
+    colormap(aa.Parent,'gray')
+    hold on
+    axis image off
+    % Using unwrap cell fitting
+    plot(info(frame).uMajorAxisLength .* cos(theta) .* cos(info(frame).uOrientation) ...
+        - info(frame).uMinorAxisLength .* sin(theta) .* sin(-info(frame).uOrientation)...
+        + centres(1,frame) + offset(2,frame),... % x values end here
+        info(frame).uMajorAxisLength .* cos(theta) .* sin(-info(frame).uOrientation) ...
+        + info(frame).uMinorAxisLength .* sin(theta) .* cos(info(frame).uOrientation)...
+        + centres(2,frame) + offset(3,frame),'k--','LineWidth',2)
+    plot(centres(1,frame) + offset(2,frame),centres(2,frame) + offset(3,frame),'kx')
+    ax = gca;
+    ax.Children(1).LineWidth = 6;
+    ax.Children(1).MarkerEdgeColor = 'red';
+    ax.Children(1).MarkerSize = 12;
+    ax.Children(2).LineWidth = 6;
+    ax.Children(2).Color = [1 0 0];
+    Fr = getframe(ax);
+    SaveFile = [file(1:end-4) '_fr' num2str(frame) '.png'];
+    imwrite(Fr.cdata,[path SaveFile])
+end
 %% Function trackPlot used above
 function trackPlot(xdata, ydata, idx, varargin)
     hold off

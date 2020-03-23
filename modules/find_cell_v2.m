@@ -34,7 +34,7 @@ end
 fields = {'Gfilt',  'Lsigma', 'Lalpha', 'Lbeta', 'max_d', 'Rs', ...
     'subFoV', 'sc_up', 'Polarity','EThresh','ETScale','Sensitivity'...
     'Verbose'};
-defaults = {10, 250, 0.9, 2, 250, [100 200], ...
+defaults = {3, 0.1, 5, 10, 250, [100 200], ...
     def_FoV, 1.25, 'dark',NaN, 1, 0.85,...
     false};
 
@@ -86,6 +86,8 @@ for frame = 1:size(Imstack{1}, 1)
     % use the default from graythresh.
     if ~isfinite(par.EThresh)
         EThresh = graythresh(imadjust(ImLap)) * par.ETScale;
+    else
+        EThresh = par.EThresh;
     end
     [Cs, Rs] = imfindcircles(imadjust(ImLap), par.Rs,  'ObjectPolarity',par.Polarity,'EdgeThreshold',EThresh,'Sensitivity',par.Sensitivity);
     
