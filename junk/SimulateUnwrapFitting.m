@@ -7,7 +7,7 @@ function [DErrors, Dvals] = SimulateUnwrapFitting(Ia, Dvals, varargin)
 % First find at standard deviations for the first 30 frames
 tol = 0.15;
 n_repeats = 50;
-n_frames = 30;
+n_frames = 100;
 n_theta = 360;
 n_reps = 5;
 
