@@ -19,6 +19,11 @@ N_frames = size(Imstack{1},1);
 tol = 0.15;
 idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for values included in fitting
 
+%% Plotting variables
+FSize = 16;
+
+Tdata = linspace(0,9.99,size(Imstack{1},1));
+
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
@@ -32,14 +37,19 @@ DErrs = DRelErrs.* [info.uTaylorParameter];
 figure(87)
 clf
 hold on
-errorbar([info.uTaylorParameter],DErrs,'.')
+errorbar(Tdata, [info.uTaylorParameter],DErrs,'.')
+xlabel('Time (s)','FontSize',FSize)
+ylabel('Deformation','FontSize',FSize)
+title({'Deformation with effors from standard' 'deviation of relaxed cell edge position'},...
+    'FontSize',FSize)
+
 %% Compare these errors to simulated errors
 % Take the dataset, bin it into 10 bands which will all have the same
 % relative error. Calculate relative errors by simulating data for each
 % deformation band, fitting simulated data and using error against ground
 % truth as assumed error on actual result.
 
-NBins = 10;
+NBins = 100;
 [N, Edges] = histcounts([info.uTaylorParameter],NBins);
 if Edges(1) == 0; Edges = Edges(2:end); end
 [Errors, Dvals] = SimulateUnwrapFitting(Ia,Edges);
@@ -47,17 +57,15 @@ if Edges(1) == 0; Edges = Edges(2:end); end
 Banding = sum([info.uTaylorParameter] > Dvals',1);
 Banding(Banding==0) = 1;
 
-Xdata = linspace(0,9.99,size(Imstack{1},1));
 %%
-FSize = 16;
 
 figure(88)
 clf
 hold on
-Line = errorbar(Xdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
+Line = errorbar(Tdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
 Line.Marker = 'x';
 Line.MarkerEdgeColor = 'r';
-title('Deformation with errors from simulated data','FontSize',FSize)
+title({'Deformation with errors from simulated data' 'using noise similar to first 100 frames'},'FontSize',FSize)
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation','FontSize',FSize)
 %% Calculate error from residuals
