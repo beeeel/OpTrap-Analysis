@@ -122,7 +122,7 @@ end
 
 [aug_fits, ~, aug_Ia, ~, ~, FitErrs] = ...
         unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'parallel',true);
-%%
+%% Plots
 XData = repmat(Rotations,1,length(Frames)) + reshape(2*pi*repmat(0:length(Frames)-1,length(Rotations),1),1,[]);
 figure(89)
 clf
@@ -136,6 +136,20 @@ clf
 hold on
 plot(XData,aug_fits(1,:))
 plot(XData,aug_fits(2,:))
+%%
+% Major and Minor axes, each frame stacked
+figure(91)
+% clf
+for row = [1,2]
+    subplot(2,1,row)
+    hold on
+    plot(repmat(Rotations,length(Frames),1)',reshape(aug_fits(row,:),length(Frames),[])')
+    Ax = gca;
+    Ax.XTickLabel = {'0', 'π/4','π/2','3π4','π','5π/4','3π/2','7π/4','2π'};
+    Ax.XTick = (0:8)*pi/4;
+end
+
+
 %% Compare fitting with and without rotations
 
 AugD = Fits2Ds(aug_fits);
@@ -183,17 +197,17 @@ hold on
 errorbar(Frames,FitD(Frames),PltErrs(1,:))
 %%
 function CalculateMem(Imstack, Frames, NRotations)
-    SingleFrame = Imstack{1}{1,1};
-    Var = whos('SingleFrame');
-    MemNeeded = Var.bytes * length(Frames) * NRotations;
-    fprintf('Rough memory needed: %g GB\n', MemNeeded ./ 1e8)
-    if MemNeeded > 10e9
-        warning('Large amount of memory requested, are you sure?')
-        In = input('y to continue','s');
-        if ~strcmp(In, 'y')
-            error('Download more RAM')
-        end
+SingleFrame = Imstack{1}{1,1};
+Var = whos('SingleFrame');
+MemNeeded = Var.bytes * length(Frames) * NRotations;
+fprintf('Rough memory needed: %g GB\n', MemNeeded ./ 1e8)
+if MemNeeded > 10e9
+    warning('Large amount of memory requested, are you sure?')
+    In = input('y to continue','s');
+    if ~strcmp(In, 'y')
+        error('Download more RAM')
     end
+end
 end
 
 function Ds = Fits2Ds(fits)
@@ -201,5 +215,5 @@ Ds = (fits(1,:) - fits(2,:))./(fits(1,:) + fits(2,:));
 end
 
 function R = Rot2D(angle)
-    R = [cos(angle), -sin(angle); sin(angle), cos(angle)];
+R = [cos(angle), -sin(angle); sin(angle), cos(angle)];
 end

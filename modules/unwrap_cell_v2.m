@@ -55,6 +55,7 @@ fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
     0, 'mean',false, 'simple'};
 
+
 Par = cell2struct(defaults, fields,2);
 def_argin = 3;
 
