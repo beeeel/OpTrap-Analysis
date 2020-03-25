@@ -122,8 +122,7 @@ end
 
 [aug_fits, ~, aug_Ia, ~, ~, FitErrs] = ...
         unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'parallel',true);
-%% Plots
-% 
+%%
 XData = repmat(Rotations,1,length(Frames)) + reshape(2*pi*repmat(0:length(Frames)-1,length(Rotations),1),1,[]);
 figure(89)
 clf
@@ -137,8 +136,23 @@ clf
 hold on
 plot(XData,aug_fits(1,:))
 plot(XData,aug_fits(2,:))
+%% Compare fitting with and without rotations
+
+AugD = Fits2Ds(aug_fits);
+FitD = Fits2Ds(u_fits);
+AugErrs = AugD-repmat(FitD(Frames),1,NRotations);
+PltErrs = mean(reshape(AugErrs,1,[],NRotations),3);
+
+%AugErrs = aug_fits - repmat(u_fits(:,Frames),1,NRotations);
+%PltErrs = squeeze(mean(abs(reshape(AugErrs,3,[],NRotations)),3));
+
+%PltFits = squeeze(mean(reshape(aug_fits,3,[],NRotations),3));
 %%
-% Major and Minor axes, each frame stacked
+figure(91)
+clf
+hold on
+errorbar(Frames,FitD(Frames),PltErrs(1,:))
+%% Major and Minor axes, each frame stacked
 figure(91)
 % clf
 for row = [1,2]
@@ -181,6 +195,7 @@ function CalculateMem(Imstack, Frames, NRotations)
         end
     end
 end
+
 function Ds = Fits2Ds(fits)
 Ds = (fits(1,:) - fits(2,:))./(fits(1,:) + fits(2,:));
 end
