@@ -11,7 +11,7 @@ if ~isempty(whos('info')) && ~isempty(whos('meta')) && ~isempty(whos('Imstack'))
 end
 
 if force_run_unwrap || isempty(whos('Ia')) || isempty(whos('unwrapped'))
-    [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = ...
+    [u_fits, ~, Ia, FitEqn, offset, FitErrs] = ...
         unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); %#ok<UNRCH>
 end
 N_frames = size(Imstack{1},1);
@@ -77,8 +77,8 @@ Residuals = squeeze(Ia) - FitEqn(u_fits(1,:), u_fits(2,:), u_fits(3,:),Thetas);
 RMS = sqrt(mean(Residuals.^2,1));
 
 %% Augment data with rotations
-Frames = 1:100:1000;
-NRotations = 20;
+Frames = 1:10:1000;
+NRotations = 10;
 
 Rotations = linspace(0, 2*pi, NRotations);
 RCentres = zeros(2,length(Frames)*length(Rotations));
@@ -92,7 +92,7 @@ for frame = Frames
     end
 end
 
-[aug_fits, aug_unwrapped, aug_Ia, ~, ~, FitErrs] = ...
+[aug_fits, ~, aug_Ia, ~, ~, FitErrs] = ...
         unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35);
 %%
 XData = repmat(Rotations,1,length(Frames)) + reshape(2*pi*repmat(0:length(Frames)-1,length(Rotations),1),1,[]);
@@ -107,7 +107,27 @@ clf
 hold on
 plot(XData,aug_fits(1,:))
 plot(XData,aug_fits(2,:))
+%% Compare fitting with and without rotations
+
+AugD = Fits2Ds(aug_fits);
+FitD = Fits2Ds(u_fits);
+AugErrs = AugD-repmat(FitD(Frames),1,NRotations);
+PltErrs = mean(reshape(AugErrs,1,[],NRotations),3);
+
+%AugErrs = aug_fits - repmat(u_fits(:,Frames),1,NRotations);
+%PltErrs = squeeze(mean(abs(reshape(AugErrs,3,[],NRotations)),3));
+
+%PltFits = squeeze(mean(reshape(aug_fits,3,[],NRotations),3));
 %%
+figure(91)
+clf
+hold on
+errorbar(Frames,FitD(Frames),PltErrs(1,:))
+%%
+function Ds = Fits2Ds(fits)
+Ds = (fits(1,:) - fits(2,:))./(fits(1,:) + fits(2,:));
+end
+
 function R = Rot2D(angle)
     R = [cos(angle), -sin(angle); sin(angle), cos(angle)];
 end
