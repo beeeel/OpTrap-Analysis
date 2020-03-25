@@ -74,9 +74,11 @@ Residuals = squeeze(Ia) - FitEqn(u_fits(1,:), u_fits(2,:), u_fits(3,:),Thetas);
 RMS = sqrt(mean(Residuals.^2,1));
 
 %% Augment data with rotations
-Frames = 1:10:1000;
-NRotations = 10;
+Frames = 100:250:1000;
+NRotations = 1000;
 
+CalculateMem(Imstack, Frames, NRotations);
+clear AugStack
 Rotations = linspace(0, 2*pi, NRotations);
 RCentres = zeros(2,length(Frames)*length(Rotations));
 FrCount = 1;
@@ -90,8 +92,9 @@ for frame = Frames
 end
 
 [aug_fits, ~, aug_Ia, ~, ~, FitErrs] = ...
-        unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35);
-%%
+        unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'parallel',true);
+%% Plots
+% 
 XData = repmat(Rotations,1,length(Frames)) + reshape(2*pi*repmat(0:length(Frames)-1,length(Rotations),1),1,[]);
 figure(89)
 clf
@@ -99,11 +102,26 @@ hold on
 Line = errorbar(XData,aug_fits(3,:),FitErrs(3,:));
 plot(2*pi*reshape([1; 1].* (1:length(Frames)),1,[]),0.5*pi*reshape([-1; 1; 1; -1].* ones(1,length(Frames)/2),1,[]),'r--')
 
+% Major and Minor axes along all fitted frames
 figure(90)
 clf
 hold on
 plot(XData,aug_fits(1,:))
 plot(XData,aug_fits(2,:))
+%%
+% Major and Minor axes, each frame stacked
+figure(91)
+% clf
+for row = [1,2]
+    subplot(2,1,row)
+    hold on
+    plot(repmat(Rotations,length(Frames),1)',reshape(aug_fits(row,:),length(Frames),[])')
+    Ax = gca;
+    Ax.XTickLabel = {'0', 'π/4','π/2','3π4','π','5π/4','3π/2','7π/4','2π'};
+    Ax.XTick = (0:8)*pi/4;
+end
+
+
 %% Compare fitting with and without rotations
 
 AugD = Fits2Ds(aug_fits);
@@ -121,6 +139,17 @@ clf
 hold on
 errorbar(Frames,FitD(Frames),PltErrs(1,:))
 %%
+function CalculateMem(Imstack, Frames, NRotations)
+    SingleFrame = Imstack{1}{1,1};
+    Var = whos('SingleFrame');
+    if Var.bytes * Frames * NRotations > 2e9
+        warning('Large amount of memory requested, are you sure?')
+        In = input('y to continue','s');
+        if ~strcmp(In, 'y')
+            error('Download more RAM')
+        end
+    end
+end
 function Ds = Fits2Ds(fits)
 Ds = (fits(1,:) - fits(2,:))./(fits(1,:) + fits(2,:));
 end
