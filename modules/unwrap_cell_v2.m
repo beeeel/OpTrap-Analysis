@@ -198,15 +198,13 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
         single(repmat(reshape(1:length(Imstack{1}),1,1,length(Imstack{1})),length(Rs),Par.n_theta)),...  % Zq
         Par.inter_method));                                                                             % METHOD
     fprintf('Finished unwrapping at %gs\n',toc)
-
+    
     % Find the maxes and apply filtering based on deviation from median
     % (will need large tolerance for large deformation) - maybe 0.25 for D
     % = 0.1 To make this more robust, only check for maxes away from the
     % centre (r=0) - do this by indexing a range restricted according to
     % Par.sc_down
-    [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
-    Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
-    idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
+    [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par);
     
     % For each frame, take angles corresponding to fit points and perform
     % the fit
@@ -252,4 +250,10 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
     end
     fprintf('%s\r',repmat(' ',1,104))
     fprintf('Fitted data at %gs\n',toc)
+end
+
+function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
+    [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
+    Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
+    idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
 end
