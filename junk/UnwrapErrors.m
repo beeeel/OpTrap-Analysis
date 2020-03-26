@@ -18,21 +18,18 @@ end
 
 if force_run_unwrap || isempty(whos('Ia')) || isempty(whos('unwrapped'))
     [u_fits, ~, Ia, FitEqn, offset, ~] = ...
-        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); %#ok<UNRCH>
+        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'edge_method','gradient'); %#ok<UNRCH>
 end
 N_frames = size(Imstack{1},1);
 
 tol = 0.15;
 idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for values included in fitting
-<<<<<<< HEAD
-=======
 
 %% Plotting variables
 FSize = 16;
 
 Tdata = linspace(0,9.99,size(Imstack{1},1));
 
->>>>>>> Adapted to running on home PC
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);

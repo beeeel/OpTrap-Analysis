@@ -51,9 +51,9 @@ function [Fits, varargout] = unwrap_cell_v2(Imstack, Centres, Radius, varargin)
 % only one frame, or a single frame's worth of centres/radii.
 
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN','parallel'};
+    'centering', 'ifNaN','parallel','edge_method'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false};
+    0, 'mean',false, 'simple'};
 
 Par = cell2struct(defaults, fields,2);
 def_argin = 3;
@@ -253,7 +253,23 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
 end
 
 function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
-    [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
-    Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
-    idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
+switch Par.edge_method
+    case 'simple'
+        [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
+        Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
+        idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
+    case 'gradient'
+        Unwrapped = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
+        Gy = zeros(size(Unwrapped));
+        Filt = zeros(size(Unwrapped));
+        tic
+        for frame = 1:size(Unwrapped,3)
+            Filt(:,:,frame) = imgaussfilt(Unwrapped(:,:,frame),5,'FilterSize',[31,1]);
+            [~, Gy(:,:,frame )] = imgradientxy(Unwrapped(:,:,frame));
+        end
+        toc
+        
+        
+end
+
 end
