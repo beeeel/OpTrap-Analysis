@@ -19,6 +19,7 @@ for frame = 1:N_frames
         Imstack{1}{frame,1} = squeeze(vid(:,:,:,frame));
     end
     Imstack{1}{frame,2} = [file_path ' ' num2str((frame - 1) / v.FrameRate) 's'];
+    ProgressBar(frame/N_frames)
 end
 
 end
