@@ -24,18 +24,12 @@ N_frames = size(Imstack{1},1);
 
 tol = 0.15;
 idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for values included in fitting
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> Adapted to running on home PC
 
 %% Plotting variables
 FSize = 16;
 
 Tdata = linspace(0,9.99,size(Imstack{1},1));
 
-<<<<<<< HEAD
 %% Calculate error from standard deviation of deformation from select frames
 Frs = 1:90;
 DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
@@ -51,9 +45,6 @@ if true
     saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set, Num},'_') '_std_D.fig'])
 end
 
-=======
->>>>>>> Adapted to running on home PC
->>>>>>> Adapted to running on home PC
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
@@ -70,20 +61,12 @@ DErrs = DRelErrs.* [info.uTaylorParameter];
 figure(87)
 clf
 hold on
-<<<<<<< HEAD
 errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation','FontSize',FSize)
 title({'Deformation with effors from standard' 'deviation of relaxed cell deformation'},...
     'FontSize',FSize)
-=======
-errorbar(Tdata, [info.uTaylorParameter],DErrs,'.')
-xlabel('Time (s)','FontSize',FSize)
-ylabel('Deformation','FontSize',FSize)
-title({'Deformation with effors from standard' 'deviation of relaxed cell edge position'},...
-    'FontSize',FSize)
 
->>>>>>> Adapted to running on home PC
 %% Compare these errors to simulated errors
 % Take the dataset, bin it into 10 bands which will all have the same
 % relative error. Calculate relative errors by simulating data for each
@@ -98,22 +81,13 @@ if Edges(1) == 0; Edges = Edges(2:end); end
 Banding = sum([info.uTaylorParameter] > Dvals',1);
 Banding(Banding==0) = 1;
 
-<<<<<<< HEAD
-
 Xdata = linspace(0,9.99,size(Imstack{1},1));
-=======
->>>>>>> Adapted to running on home PC
 %%
 
 figure(88)
 clf
 hold on
-<<<<<<< HEAD
-
-Line = errorbar(Xdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
-=======
-Line = errorbar(Tdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
->>>>>>> Adapted to running on home PC
+Line = errorbar(Xdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter],'xr');
 Line.Marker = 'x';
 Line.MarkerEdgeColor = 'r';
 title({'Deformation with errors from simulated data' 'using noise similar to first 100 frames'},'FontSize',FSize)
