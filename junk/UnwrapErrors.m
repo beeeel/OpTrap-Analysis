@@ -3,7 +3,7 @@
 % "gold standard" errors from fitting to simulated data
 
 %% Check data is correctly loaded
-force_run_unwrap = false;
+force_run_unwrap = true;
 % Check correct info, meta and Imstack are loaded
 
 if ~isempty(whos('info')) && ~isempty(whos('meta')) && ~isempty(whos('Imstack'))
@@ -12,7 +12,7 @@ end
 
 if force_run_unwrap || isempty(whos('Ia')) || isempty(whos('unwrapped'))
     [u_fits, ~, Ia, FitEqn, offset, ~] = ...
-        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); %#ok<UNRCH>
+        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'edge_method','gradient'); %#ok<UNRCH>
 end
 N_frames = size(Imstack{1},1);
 
