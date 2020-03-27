@@ -5,7 +5,8 @@
 %% Load data
 CellType = 'LS174T';
 Set = 'normoxia';
-Num = '11';
+% I have nums 2,6,9,11,14,16,19
+Num = '19';
 datadir = '/home/will/Documents/data/OpTrap/';
 infosdir = [datadir 'infos/'];
 if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty

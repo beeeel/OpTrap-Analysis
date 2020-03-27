@@ -3,7 +3,7 @@
 % "gold standard" errors from fitting to simulated data
 
 %% Check data is correctly loaded
-force_run_unwrap = true;
+force_run_unwrap = false;
 % Check correct info, meta and Imstack are loaded
 
 if ~isempty(whos('info')) && ~isempty(whos('meta')) && ~isempty(whos('Imstack'))
@@ -12,7 +12,7 @@ end
 
 if force_run_unwrap || isempty(whos('Ia')) || isempty(whos('unwrapped'))
     [u_fits, ~, Ia, FitEqn, offset, ~] = ...
-        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'edge_method','gradient'); %#ok<UNRCH>
+        unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'edge_method','simple'); %#ok<UNRCH>
 end
 N_frames = size(Imstack{1},1);
 
@@ -24,25 +24,40 @@ FSize = 16;
 
 Tdata = linspace(0,9.99,size(Imstack{1},1));
 
+%% Calculate error from standard deviation of deformation from select frames
+Frs = 1:90;
+DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
+figure(86)
+clf
+hold on
+errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
+xlabel('Time (s)','FontSize',FSize)
+ylabel('Deformation (Taylor Paramater: scale 0 to 1)','FontSize',FSize)
+title({'Deformation with effors from standard' 'deviation of relaxed cell deformation' ['Set: ' strjoin({CellType,Set,Num})]},...
+    'FontSize',FSize)
+if true
+    saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set, Num},'_') '_std_D.fig'])
+end
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
 Diff = u_fits(1,:) - u_fits(2,:);
-%StDev = reshape(std(Ia,0,2),[],N_frames);
 
-DErrs = repmat(std([info(1:90).uTaylorParameter],0,2),1,N_frames);
+% Try indexing Ia here to select 90 frames - maybe skip or rejig error propagation??
+StDev = reshape(std(Ia,0,2),[],N_frames);
 
-% DRelErrs = ((StDev./u_fits(1,:)).*((1./Sum) - Diff./Sum.^2)).^2 + ...
-%     ((StDev./u_fits(2,:)).*((-1./Sum) - Diff./Sum.^2)).^2;
-% DErrs = DRelErrs.* [info.uTaylorParameter];
+% error propagation from error on edge to 
+DRelErrs = ((StDev./u_fits(1,:)).*((1./Sum) - Diff./Sum.^2)).^2 + ...
+    ((StDev./u_fits(2,:)).*((-1./Sum) - Diff./Sum.^2)).^2;
+DErrs = DRelErrs.* [info.uTaylorParameter];
 
 figure(87)
 clf
 hold on
-errorbar(Tdata, [info.uTaylorParameter],DErrs,'.')
+errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation','FontSize',FSize)
-title({'Deformation with effors from standard' 'deviation of relaxed cell edge position'},...
+title({'Deformation with effors from standard' 'deviation of relaxed cell deformation'},...
     'FontSize',FSize)
 
 %% 
