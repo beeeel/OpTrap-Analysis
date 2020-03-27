@@ -66,9 +66,6 @@ xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation','FontSize',FSize)
 title({'Deformation with effors from standard' 'deviation of relaxed cell deformation'},...
     'FontSize',FSize)
-
-%% 
-
 %% Compare these errors to simulated errors
 % Take the dataset, bin it into 10 bands which will all have the same
 % relative error. Calculate relative errors by simulating data for each
@@ -83,15 +80,19 @@ if Edges(1) == 0; Edges = Edges(2:end); end
 Banding = sum([info.uTaylorParameter] > Dvals',1);
 Banding(Banding==0) = 1;
 
+
+Xdata = linspace(0,9.99,size(Imstack{1},1));
 %%
+FSize = 16;
 
 figure(88)
 clf
 hold on
-Line = errorbar(Tdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
+
+Line = errorbar(Xdata,[info.uTaylorParameter],Errors(Banding).*[info.uTaylorParameter]);
 Line.Marker = 'x';
 Line.MarkerEdgeColor = 'r';
-title({'Deformation with errors from simulated data' 'using noise similar to first 100 frames'},'FontSize',FSize)
+title('Deformation with errors from simulated data','FontSize',FSize)
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation','FontSize',FSize)
 %% Calculate error from residuals
@@ -123,6 +124,7 @@ end
 [aug_fits, ~, aug_Ia, ~, ~, FitErrs] = ...
         unwrap_cell_v2(AugStack, RCentres , repmat(100,1,size(AugStack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'parallel',true);
 %% Plots
+
 XData = repmat(Rotations,1,length(Frames)) + reshape(2*pi*repmat(0:length(Frames)-1,length(Rotations),1),1,[]);
 figure(89)
 clf
