@@ -2,6 +2,8 @@ function [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num)
 %% [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num)
 % Load an Imstack, and according meta and info structs
 
+validateattributes(Num,{'string','char'},{'nonempty','scalartext'},'Num')
+
 [~, HName] = system('hostname');
 HName = strsplit(HName);
 if strcmp(HName{1}, 'will-linux')
