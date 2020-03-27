@@ -36,8 +36,8 @@ end
 
 %% Save
 if SvPng
-    saveas(gcf,['~/png/EQ/D_error_std_multiplot_' strjoin({CellType, Set},'_') '.png'])
+    saveas(gcf,['~/png/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_std_D.png'])
 end
 if SvFig
-    saveas(gcf,['~/fig/EQ/D_error_std_multiplot_' strjoin({CellType, Set},'_') '.fig'])
+    saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_std_D.fig'])
 end
