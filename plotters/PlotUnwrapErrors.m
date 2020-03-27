@@ -6,8 +6,8 @@ function [Imstack, info, meta] = PlotUnwrapErrors(CellType, Set, Num, varargin)
 if nargin > 3
     [SvFig, SvPng] = varargin{:};
 else
-    SvFig = true;
-    SvPng = true;
+    SvFig = false;
+    SvPng = false;
 end
 
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
