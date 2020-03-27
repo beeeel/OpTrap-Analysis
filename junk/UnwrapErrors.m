@@ -3,6 +3,12 @@
 % "gold standard" errors from fitting to simulated data
 
 %% Check data is correctly loaded
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '11';
+
+[Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
+
 force_run_unwrap = false;
 % Check correct info, meta and Imstack are loaded
 
@@ -38,6 +44,7 @@ title({'Deformation with effors from standard' 'deviation of relaxed cell deform
 if true
     saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set, Num},'_') '_std_D.fig'])
 end
+
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
