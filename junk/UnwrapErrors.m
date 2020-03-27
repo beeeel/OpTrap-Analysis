@@ -27,23 +27,11 @@ idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for valu
 
 %% Plotting variables
 FSize = 16;
+Frs = 1:90;
+SvFig = true;
+SvPng = true;
 
 Tdata = linspace(0,9.99,size(Imstack{1},1));
-
-%% Calculate error from standard deviation of deformation from select frames
-Frs = 1:90;
-DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
-figure(86)
-clf
-hold on
-errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
-xlabel('Time (s)','FontSize',FSize)
-ylabel('Deformation (Taylor Paramater: scale 0 to 1)','FontSize',FSize)
-title({'Deformation with effors from standard' 'deviation of relaxed cell deformation' ['Set: ' strjoin({CellType,Set,Num})]},...
-    'FontSize',FSize)
-if true
-    saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set, Num},'_') '_std_D.fig'])
-end
 
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
