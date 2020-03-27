@@ -3,7 +3,12 @@ function [Imstack, info, meta] = PlotUnwrapErrors(CellType, Set, Num, varargin)
 %% Plot deformation for one dataset with errors from std of relaxed deformation
 % This needs a proper input parser soon
 
-[SvFig, SvPng] = varargin{:};
+if nargin > 3
+    [SvFig, SvPng] = varargin{:};
+else
+    SvFig = true;
+    SvPng = true;
+end
 
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
 
@@ -22,10 +27,11 @@ Frs = 1:90;
 Tdata = linspace(0,9.99,size(Imstack{1},1));
 %% Calculate error from standard deviation of deformation from select frames
 DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
-figure(86)
-clf
+%figure(Fh)
+%clf
 hold on
 errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
+ylim([0 0.06])
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation (Taylor Paramater: scale 0 to 1)','FontSize',FSize)
 title({'Deformation with effors from standard' 'deviation of relaxed cell deformation' ['Set: ' strjoin({CellType,Set,Num})]},...
