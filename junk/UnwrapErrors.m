@@ -3,6 +3,7 @@
 % "gold standard" errors from fitting to simulated data
 
 %% Check data is correctly loaded
+<<<<<<< HEAD
 CellType = 'LS174T';
 Set = 'normoxia';
 Num = '11';
@@ -10,6 +11,9 @@ Num = '11';
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
 
 force_run_unwrap = false;
+=======
+force_run_unwrap = true;
+>>>>>>> c5264318da6fb29a75c3b41bc983fb07d9d43db1
 % Check correct info, meta and Imstack are loaded
 
 if ~isempty(whos('info')) && ~isempty(whos('meta')) && ~isempty(whos('Imstack'))
