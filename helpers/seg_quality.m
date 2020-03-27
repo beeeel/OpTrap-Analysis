@@ -5,7 +5,7 @@
 %% Load data
 CellType = 'LS174T';
 Set = 'normoxia';
-Num = '14';
+Num = '11';
 
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
 

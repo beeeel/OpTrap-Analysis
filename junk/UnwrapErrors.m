@@ -3,6 +3,12 @@
 % "gold standard" errors from fitting to simulated data
 
 %% Check data is correctly loaded
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '11';
+
+[Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
+
 force_run_unwrap = false;
 % Check correct info, meta and Imstack are loaded
 
@@ -18,7 +24,6 @@ N_frames = size(Imstack{1},1);
 
 tol = 0.15;
 idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for values included in fitting
-
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
