@@ -10,14 +10,14 @@ Set = 'normoxia';
 Fh = figure(9);
 Nums = [2 9 11 14 16 19];
 for Num = 1:length(Nums)
-    if Subplots
+    if SubPlots
         subplot(length(Nums),1,Num)
         cla
     end
     [~, ~, ~] = PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
 end
 
-if Subplots
+if SubPlots
     %% Fixup if subplots
     Axs = ones(length(Fh.Children));
     for Ax = Fh.Children'
@@ -36,8 +36,8 @@ end
 
 %% Save
 if SvPng
-    saveas(gcf,['~/png/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_std_D.png'])
+    saveas(gcf,['~/png/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_sc_std_D.png'])
 end
 if SvFig
-    saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_std_D.fig'])
+    saveas(gcf,['~/fig/EQ/D_' strjoin({CellType, Set},'_') '_multiplot_sc_std_D.fig'])
 end

@@ -31,7 +31,7 @@ DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
 %clf
 hold on
 errorbar(Tdata, [info.uTaylorParameter],DErrs,'.','MarkerEdgeColor','r');
-ylim([0 0.06])
+% ylim([0 0.06])
 xlabel('Time (s)','FontSize',FSize)
 ylabel('Deformation (Taylor Paramater: scale 0 to 1)','FontSize',FSize)
 title({'Deformation with effors from standard' 'deviation of relaxed cell deformation' ['Set: ' strjoin({CellType,Set,Num})]},...

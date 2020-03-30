@@ -17,12 +17,12 @@ if force_run_unwrap || isempty(whos('Ia')) || isempty(whos('unwrapped'))
     [u_fits, ~, Ia, FitEqn, offset, ~] = ...
         unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'edge_method','simple'); %#ok<UNRCH>
 end
+% Plotting variables
 N_frames = size(Imstack{1},1);
 
 tol = 0.15;
 idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2); % Indexes for values included in fitting
 
-%% Plotting variables
 FSize = 16;
 Frs = 1:90;
 SvFig = true;
@@ -30,6 +30,19 @@ SvPng = true;
 
 Tdata = linspace(0,9.99,size(Imstack{1},1));
 
+%% Show some fits on the deformed cells
+% Put the fits from the correct and wrong frames on and see if the eye can
+% distinguish. If no, can we trust this?
+
+% Frs = [200, 950];
+% for frame = Frs
+%     subplot(2,length(Frs),1)
+%     imagesc(Imstack{1}{frame,1})
+%     hold on
+% end
+
+
+%% Below here is just stuff that doesn't work
 %% Calculate error from standard deviation of relaxed cell edge position
 % This doesn't produce big enough errors 
 Sum = sum(u_fits(1:2,:),1);
