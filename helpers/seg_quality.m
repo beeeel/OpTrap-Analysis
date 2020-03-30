@@ -35,37 +35,29 @@ frs =50;                 % Frames to display
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
-run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
+run_unwrap = 1;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
 
 % Font sizes for axes and titles
-XFontSize = 12;
-YFontSize = 12;
-TFontSize = 12;
+FontSizes.XFontSize = 12;
+FontSizes.YFontSize = 12;
+FontSizes.TFontSize = 12;
 
 if isempty(whos('offset')); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); 
 elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
 
-if n_plots == 4; sbplt = [4 2 4]; 
+if n_plots == 4; sbplt = [4 2 4];
 elseif n_plots == 6; sbplt = [6 2 6]; end
 
 filename = strsplit(info(1).filepath,{'/','.','_'});
 fname = strjoin({'seg',filename{9:15}},'_'); % Filename base for saving - seg_(original filename)
 h = figure(13);
 
-
 centroids = [info.Centroid];
-if run_unwrap
-    for fr = 1:length(Imstack{1})
-        info(fr).uMajorAxisLength = u_fits(1,fr);
-        info (fr).uMinorAxisLength = u_fits(2,fr);
-        info(fr).uOrientation = u_fits(3,fr);
-        info(fr).uTaylorParameter = (u_fits(1,fr) - u_fits(2,fr))./(u_fits(1,fr) + u_fits(2,fr));
-    end
-end
-
-if meta.seg_cell_v == 5; fits = [info.ellipse_fits]; end
 theta = 0:0.01:2*pi;
+Xdata = 1:size(info,2);
+if run_unwrap; info = N_UpdateInfoUfits(info, u_fits); end
+if meta.seg_cell_v == 5; fits = [info.ellipse_fits]; end
 if strcmp(pt_mode,'analysis'); crops = [info.crop]; end
 if strcmp(show_mask,'initial')
     [rr, cc] = meshgrid(1:size(Imstack{1}{1,1},2),...
@@ -74,26 +66,12 @@ if strcmp(show_mask,'initial')
 elseif strcmp(show_fit,'unwrap') && meta.line_maxima_v
     centres = [info.mCentres];
 end
-Xdata = 1:size(info,2);
 
 if makevid == 2; v = VideoWriter(strcat(fname,'.avi')); v.FrameRate = 4; open(v); end
 for frame = frs
     if length(whos('unwrapped','Ia','fiteqn')) == 3
         subplot(2,2,2)
-        imagesc(1:360,(1:size(unwrapped,1))*0.07,unwrapped(:,:,frame))
-        hold on
-        plot(0.07 * Ia(:,:,frame),'r.')
-        plot(0.07 * FitEqn(info(frame).uMajorAxisLength, info(frame).uMinorAxisLength, ...
-            info(frame).uOrientation, 1:360),'k:','LineWidth',3)
-        hold off
-        title('Unwrapped cell with fitting data and Centroid fitted data','FontSize',TFontSize)
-        xlabel('CW angle from +x (degrees)','FontSize',XFontSize)
-        ylabel('Radius (\mum)','FontSize',YFontSize)
-        legend('Column max','Fitted ellipse')
-        % add grid, change xticks
-        ax = gca;
-        ax.XTick = 0:90:360;
-        grid on
+        PlotUnwrappedAndFit(unwrapped, Ia, info, FitEqn, FSs,frame)
         subplot(2,2,1)
     else
         subplot(2,1,1)
@@ -118,119 +96,87 @@ for frame = frs
     if size(Imstack{1}{1,1},1) == 1080
         ylim([270, 810]), xlim([480, 1440])
     end
-    title(['Segmentation and fitting: frame ' num2str(frame)],'FontSize',TFontSize+4)
-    % Draw the ellipse on - for an ellipse with centre (x0, y0), semi-axis
-    % lengths (a,b), oriented at an angle phi above horizontal, the
-    % cartesian equations from the polar are as follows:
-    % x = a cos(theta) cos(phi) - b sin(theta) sin(phi) + x0
-    % y = a cos(theta) sin(phi) + b sin(theta) cos(phi) + y0
-    % Which is translated into indexed variables below
+    title(['Segmentation and fitting: frame ' num2str(frame)],'FontSize',FontSizes.TFontSize+4)
     
+    % Draw fitted ellipse
     if strcmp(show_fit, 'regionProps')
         % Using regionprops fitting
-        plot(0.5 * info(frame).MajorAxisLength .* cos(theta) .* cos(info(frame).Orientation) ...
-            - 0.5 * info(frame).MinorAxisLength .* sin(theta) .* sin(info(frame).Orientation)...
-            + info(frame).Centroid(1),... % x values end here
-            0.5 * info(frame).MajorAxisLength .* cos(theta) .* sin(info(frame).Orientation) ...
-            + 0.5 * info(frame).MinorAxisLength .* sin(theta) .* cos(info(frame).Orientation)...
-            + info(frame).Centroid(2),'k--','LineWidth',2)
-        plot(centroids(frame*2-1),centroids(frame*2),'kx')
+        PlotEllipseOverlay(info(frame).MajorAxisLength, info(frame).MinorAxisLength, ...
+            info(frame).Orientation,centroids(frame*2-1:frame*2))
     elseif strcmp(show_fit, 'ellipseDetection')
         % Using ellipseDetection fitting
-        plot( info(frame).fits(3) .* cos(theta) .* cos(info(frame).fits(5)) ...
-            - info(frame).fits(4) .* sin(theta) .* sin(info(frame).fits(5))...
-            + info(frame).fits(1),... % x values end here
-            info(frame).fits(3) .* cos(theta) .* sin(info(frame).fits(5)) ...
-            + info(frame).fits(4) .* sin(theta) .* cos(info(frame).fits(5))...
-            + info(frame).fits(2),'y','LineWidth',2)
-        plot(fits(1,frame),fits(2,frame),'kx')
+        PlotEllipseOverlay(2 * info(frame).fits(3), 2 * info(frame).fits(4),...
+            info(frame).fits(5),info(frame).fits(1:2))
     elseif strcmp(show_fit, 'unwrap')
         % Using unwrap cell fitting
-        plot(info(frame).uMajorAxisLength .* cos(theta) .* cos(info(frame).uOrientation) ...
-            - info(frame).uMinorAxisLength .* sin(theta) .* sin(-info(frame).uOrientation)...
-            + centres(1,frame) + offset(2,frame),... % x values end here
-            info(frame).uMajorAxisLength .* cos(theta) .* sin(-info(frame).uOrientation) ...
-            + info(frame).uMinorAxisLength .* sin(theta) .* cos(info(frame).uOrientation)...
-            + centres(2,frame) + offset(3,frame),'k--','LineWidth',2)
-        plot(centres(1,frame) + offset(2,frame),centres(2,frame) + offset(3,frame),'kx')
+        PlotEllipseOverlay(2*info(frame).uMajorAxisLength, 2*info(frame).uMinorAxisLength,...
+            info(frame).uOrientation, centres(:,frame) + offset(2:3,frame))
     elseif strcmp(show_fit,'linemax')
         plot(Centres(1,frame),Centres(2,frame),'kx')
     end
+    
+    % Draw plots below
     if n_plots
         subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
-        trackPlot(Xdata,[info.TaylorParameter],frame)
-        title('Taylor Parameter [regionprops]','FontSize',TFontSize)
-        YMax = 1.1*max([info.TaylorParameter]);
-        if isnan(YMax); YMax = 1; end
-        ylim([0, YMax])
+        N_PlotTaylorRP(Xdata, info, frame, FontSizes)
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 2)
-        trackPlot(Xdata,(0.07^2)*[info.Area],frame)
-        title('Area [regionprops]','FontSize',TFontSize), ylabel('\mu m^2','FontSize',YFontSize)
-        YMax = 1.1*max([info.Area])*(0.07^2);
-        if isnan(YMax); YMax = 1; end
-        ylim([0, YMax])
+        N_PlotAreaRP(Xdata, info, frame, FontSizes)
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
-        hold off
-        plot(centroids(1:2:end)*0.07)
-        hold on
-        plot(centroids(2:2:end)*0.07)
-        plot(frame,centroids(2*frame - 1)*0.07,'rx')
-        plot(frame,centroids(2*frame)*0.07, 'rx')
-        ylim([0 length(Imstack{1}{1,1})]*0.07), ylabel('\mu m','FontSize',YFontSize)
-        title('Centroids of mask [regionprops]','FontSize',TFontSize)
+        N_PlotCentreRP(centroids, frame, length(Imstack{1}{1,1}), FontSizes)
+        
         if n_plots == 4; xlabel('frame number'); end
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 4)
         if strcmp(pt_mode,'data')
-            trackPlot(Xdata,[info.Orientation],frame,'x')
-            title('Angle of long axis above horizontal [regionprops]','FontSize',TFontSize)
-            ylabel('Angle (^{o})','FontSize',YFontSize)
+            N_trackPlot(Xdata,[info.Orientation],frame,'x')
+            title('Angle of long axis above horizontal [regionprops]','FontSize',FontSizes.TFontSize)
+            ylabel('Angle (^{o})','FontSize',FontSizes.YFontSize)
             ylim([-90 90])
         elseif strcmp(pt_mode,'analysis')
-            trackPlot(Xdata,[info.radius],frame)
-            title('Radius [find\_cell]','FontSize',TFontSize)
+            N_trackPlot(Xdata,[info.radius],frame)
+            title('Radius [find\_cell]','FontSize',FontSizes.TFontSize)
         end
-        if n_plots == 4; xlabel('frame number','FontSize',XFontSize); end
+        if n_plots == 4; xlabel('frame number','FontSize',FontSizes.XFontSize); end
         
         if n_plots == 6
             subplot(sbplt(1), sbplt(2), sbplt(3) + 5)
             if strcmp(pt_mode,'data')
                 if strcmp(show_fit,'ellipseDetection')
-                    trackPlot(Xdata,(fits(3,:)-fits(4,:))./(fits(3,:)+fits(4,:)),frame)
-                    title('Taylor Parameter [ellipse fitting]','FontSize',TFontSize)
+                    N_trackPlot(Xdata,(fits(3,:)-fits(4,:))./(fits(3,:)+fits(4,:)),frame)
+                    title('Taylor Parameter [ellipse fitting]','FontSize',FontSizes.TFontSize)
                 elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
-                    trackPlot(Xdata,[info.uTaylorParameter],frame)
-                    title('Taylor Parameter [unwrapping]','FontSize',TFontSize)
+                    N_trackPlot(Xdata,[info.uTaylorParameter],frame)
+                    title('Taylor Parameter [unwrapping]','FontSize',FontSizes.TFontSize)
                     ylim([0 0.06])
                 end
             elseif strcmp(pt_mode,'analysis')
-                trackPlot(repmat(Xdata,4,1)',[info.crop]',frame)
-                title('Crop box corner co-ordinates [find\_cell]','FontSize',TFontSize), ylabel('px','FontSize',YFontSize)
+                N_trackPlot(repmat(Xdata,4,1)',[info.crop]',frame)
+                title('Crop box corner co-ordinates [find\_cell]','FontSize',FontSizes.TFontSize), ylabel('px','FontSize',FontSizes.YFontSize)
                 legend('x0','x1','y0','y1')
             end
-            %xlabel('Frame number','FontSize',XFontSize)
+            %xlabel('Frame number','FontSize',FontSizes.XFontSize)
             
             subplot(sbplt(1), sbplt(2), sbplt(3) + 6)
             if strcmp(pt_mode,'data')
                 if strcmp(show_fit,'ellipseDetection')
                     
                     %     trackPlot(Xdata, [info.MajorAxisLength]/2 - [info.radius], frame)
-                    trackPlot(Xdata, fits(5,:), frame)
-                    ylim([-90 90]), title('Angle of long axis above horizontal [ellipse fitting]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
+                    N_trackPlot(Xdata, fits(5,:), frame)
+                    ylim([-90 90]), title('Angle of long axis above horizontal [ellipse fitting]','FontSize',FontSizes.TFontSize), ylabel('Angle (^o)','FontSize',FontSizes.YFontSize)
                 elseif max(strcmp(show_fit,{'unwrap','regionProps'})) == 1
-                    trackPlot(Xdata, (180/pi)*[info.uOrientation], frame, 'x')
+                    N_trackPlot(Xdata, (180/pi)*[info.uOrientation], frame, 'x')
                     ylim([-90 90])
-                    title('Angle of long axis above horizontal [unwrapping]','FontSize',TFontSize), ylabel('Angle (^o)','FontSize',YFontSize)
+                    title('Angle of long axis above horizontal [unwrapping]','FontSize',FontSizes.TFontSize), ylabel('Angle (^o)','FontSize',FontSizes.YFontSize)
                 end
             elseif strcmp(pt_mode,'analysis')
-                trackPlot(repmat(Xdata,2,1)',[info.find_fails; info.seg_fails]',frame)
-                title('Success metrics [find\_cell, seg\_cell]','FontSize',TFontSize)
+                N_trackPlot(repmat(Xdata,2,1)',[info.find_fails; info.seg_fails]',frame)
+                title('Success metrics [find\_cell, seg\_cell]','FontSize',FontSizes.TFontSize)
                 legend('find','seg')
                 ylim([-1 3])
             end
-            xlabel('Frame number','FontSize',XFontSize)
+            xlabel('Frame number','FontSize',FontSizes.XFontSize)
         end
     end
     if makevid == 0 && flythrough == 0
@@ -353,8 +299,43 @@ for frame = frames
     SaveFile = [file(1:end-4) '_fr' num2str(frame) '.png'];
     imwrite(Fr.cdata,[path SaveFile])
 end
-%% Function trackPlot used above
-function trackPlot(xdata, ydata, idx, varargin)
+%% Functions used above
+function N_PlotTaylorRP(Xdata, info, frame, FontSizes)
+N_trackPlot(Xdata,[info.TaylorParameter],frame)
+title('Taylor Parameter [regionprops]','FontSize',FontSizes.TFontSize)
+YMax = 1.1*max([info.TaylorParameter]);
+if isnan(YMax); YMax = 1; end
+ylim([0, YMax])
+end
+
+function N_PlotAreaRP(Xdata, info, frame, FontSizes)
+N_trackPlot(Xdata,(0.07^2)*[info.Area],frame)
+title('Area [regionprops]','FontSize',FontSizes.TFontSize), ylabel('\mu m^2','FontSize',FontSizes.YFontSize)
+YMax = 1.1*max([info.Area])*(0.07^2);
+if isnan(YMax); YMax = 1; end
+ylim([0, YMax])
+end
+        
+function N_PlotCentreRP(centroids, frame, FrSize, FontSizes)
+plot(centroids(1:2:end)*0.07)
+hold on
+plot(centroids(2:2:end)*0.07)
+plot(frame,centroids(2*frame - 1)*0.07,'rx')
+plot(frame,centroids(2*frame)*0.07, 'rx')
+ylim([0 FrSize]*0.07), ylabel('\mu m','FontSize',FontSizes.YFontSize)
+title('Centroids of mask [regionprops]','FontSize',FontSizes.TFontSize)
+end
+
+function N_UpdateInfoUfits(info, u_fits)
+for fr = 1:length(info)
+    info(fr).uMajorAxisLength = u_fits(1,fr);
+    info (fr).uMinorAxisLength = u_fits(2,fr);
+    info(fr).uOrientation = u_fits(3,fr);
+    info(fr).uTaylorParameter = (u_fits(1,fr) - u_fits(2,fr))./(u_fits(1,fr) + u_fits(2,fr));
+end
+end
+
+function N_trackPlot(xdata, ydata, idx, varargin)
     hold off
     if nargin == 3;     plot(xdata, ydata)
     elseif nargin == 4; plot(xdata, ydata, varargin{:})
