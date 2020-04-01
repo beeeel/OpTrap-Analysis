@@ -28,14 +28,14 @@ Num = '11';
 
 show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'none' or 'linemax' - source of overlay on top of mask (linemax is centre only)
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
-n_plots = 0;                % Number of plots - 6 includes ellipse fitting results
+n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =50;                 % Frames to display
+frs =140:200;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
-run_unwrap = 1;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
+run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
 
 % Font sizes for axes and titles
 FontSizes.XFontSize = 12;
@@ -118,17 +118,21 @@ for frame = frs
     % Draw plots below
     if n_plots
         subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
+        cla
         N_PlotTaylorRP(Xdata, info, frame, FontSizes)
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 2)
+        cla
         N_PlotAreaRP(Xdata, info, frame, FontSizes)
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
+        cla
         N_PlotCentreRP(centroids, frame, length(Imstack{1}{1,1}), FontSizes)
         
         if n_plots == 4; xlabel('frame number'); end
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 4)
+        cla
         if strcmp(pt_mode,'data')
             N_trackPlot(Xdata,[info.Orientation],frame,'x')
             title('Angle of long axis above horizontal [regionprops]','FontSize',FontSizes.TFontSize)
@@ -142,6 +146,7 @@ for frame = frs
         
         if n_plots == 6
             subplot(sbplt(1), sbplt(2), sbplt(3) + 5)
+            cla
             if strcmp(pt_mode,'data')
                 if strcmp(show_fit,'ellipseDetection')
                     N_trackPlot(Xdata,(fits(3,:)-fits(4,:))./(fits(3,:)+fits(4,:)),frame)
@@ -326,7 +331,7 @@ ylim([0 FrSize]*0.07), ylabel('\mu m','FontSize',FontSizes.YFontSize)
 title('Centroids of mask [regionprops]','FontSize',FontSizes.TFontSize)
 end
 
-function N_UpdateInfoUfits(info, u_fits)
+function info = N_UpdateInfoUfits(info, u_fits)
 for fr = 1:length(info)
     info(fr).uMajorAxisLength = u_fits(1,fr);
     info (fr).uMinorAxisLength = u_fits(2,fr);
