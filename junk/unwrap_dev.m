@@ -5,24 +5,14 @@
 % equation for ellipse.
 %% Load
 % Load imstack and info file - this contains the results from find_cell
-dataset = 'Jenna3';
-if strcmp(dataset(1:4),'0610') 
-    load(['/home/ppxwh2/Documents/data/OpTrap/infos/info-hela_ctrl_s_020_tr_70_' dataset(end) '.mat'])
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/0610/Deformation/hela_ctrl_s_020_tr_70_' dataset(end) '_MMStack.ome.tif']
-    if ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
-        Imstack = bfopen(imfile);
-    end
-elseif strcmp(dataset(1:end-1),'Jenna')
-    load(strcat('/home/ppxwh2/Documents/data/OpTrap/infos/info_Jenna_test_no_erode',dataset(end),'.mat'))
-    imfile = ['/home/ppxwh2/Documents/data/OpTrap/1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',dataset(end),'_MMStack.ome.tif']
-    if isempty(whos('Imstack')) || ~strcmp(imfile, Imstack{1}{1,2}(1:length(imfile)))
-        Imstack = bfopen(imfile);
-    end
-end
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '11';
+[Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
 %% Unpack stuff from info
 % These were made by find_cell_v2
-centres = [info.centres];
-radii = [info.radius];
+centres = [info.mCentres];
+radii = min([info.mCentres] - min(size(Imstack{1}{1,1})));
 %% Unwrap and fit to radial equation for ellipse
 % Parameters
 sc_up = 1.0;
