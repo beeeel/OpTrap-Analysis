@@ -22,13 +22,16 @@ KeepDefault = {'uTaylorParameter','TaylorParameter','Area','centres','filepath'}
 SaveAllDefault = false;
             
 % Where to save
-InfosDirDefault = '/home/ppxwh2/Documents/data/OpTrap/infos/';
+InfosDirDefault = '~/Documents/data/OpTrap/infos/';
 FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
+
+% Saved names are of form info_seg_ProcName_SetName_Filename.mat
+ProcName = 'Unwrap-Grad';
 
 ParseInputs();
 
 for idx = 1:length(Par.CellType)
-    FolderName = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
+    FolderName = ['/home/will/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
     disp(FolderName)
     for Didx = 1:length(Par.DSets{idx})
         DSet = Par.DSets{idx}{Didx};
@@ -36,12 +39,11 @@ for idx = 1:length(Par.CellType)
         %%{
         for Num = Par.Nums
             RunNo = num2str(Num);
-            Imstack = N_LoadImstack();
+            [Imstack, SetName, FileName] = N_LoadImstack();
             %%
             [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',Par.FindVer,...
                 'find_cell',Par.FindOpts, 'seg_cell_v',Par.SegVer,'segment_cell', Par.SegOpts, ...
                 'unwrap_cell_v',2,'unwrap_cell', Par.UnwrapOpts);
-            
             
             if Par.SummFig == true
                 MakeSummFig(info);
@@ -55,9 +57,9 @@ for idx = 1:length(Par.CellType)
                             info = rmfield(info, fld{:});
                         end
                     end
-                    save([Par.InfosDir 'info_reduced_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_reduced_seg_' strjoin({ProcName, SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
                 else
-                    save([Par.InfosDir 'info_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_seg_' strjoin({ProcName, SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
                 end
             end
         end
@@ -89,7 +91,7 @@ end
             {'string','char'},{'nonempty','row','scalartext'},FName,'InfosDir'))
         addParameter(p,'FigSaveDir',FigSaveDirDefault,@(x)validateattributes(x,...
             {'string','char'},{'nonempty','row','scalartext'},FName,'FigSaveDir'))
-        addParameter(p,'DSets',DSetsDefault,ValidateDSets)
+        addParameter(p,'DSets',DSetsDefault,@(x)ValidateDSets(x))
         addParameter(p,'Nums',NumsDefault,@(x)validateattributes(x,...
             {'numeric'},{'nonempty','row','nonnegative'},FName,'Nums'))
         
@@ -106,7 +108,7 @@ end
         end
     end
 %%
-    function Imstack = N_LoadImstack()
+    function [Imstack, SetName, FileName]  = N_LoadImstack()
             if strcmp(Par.CellType{idx}, 'HL60')
                 if strcmp(DSet,'normoxia')
                     SetName = 'HL60_normoxia';
@@ -150,17 +152,35 @@ end
         NY = 2;
         figure
         subplot(NX, NY, 1)
-        plot([info.MajorAxisLength]), hold on
-        plot([info.MinorAxisLength]), hold off
+        cla, hold on
+        if meta.seg_cell_v
+            plot([info.MajorAxisLength])
+            plot([info.MinorAxisLength])
+            title('Regionprops axes')
+        elseif meta.unwrap_cell_v
+            plot([info.uMajorAxisLength])
+            plot([info.uMinorAxisLength])
+            title('Unwrap axes')
+        end
         legend('Major','Minor')
-        title('Regionprops axes')
         subplot(NX, NY, 2)
-        plot([info.TaylorParameter]), hold on
-        plot([info.uTaylorParameter]), hold off
-        legend('Regionprops','Unwrap')
+        cla, hold on
+        if meta.seg_cell_v && meta.unwrap_cell_v
+            plot([info.TaylorParameter])
+            plot([info.uTaylorParameter])
+            legend('Regionprops','Unwrap')
+        elseif meta.unwrap_cell_v
+            plot([info.uTaylorParameter])
+            legend('Unwrap')
+        elseif meta.seg_cell_v
+            plot([info.TaylorParameter])
+            legend('Regionprops')
+        end
         title('Taylor parameters')
         subplot(NX, NY, 3)
-        plot([info.Area])
+        if meta.seg_cell_v
+            plot([info.Area])
+        end
         title('Area')
         subplot(NX, NY, 4)
         if Par.FindVer
@@ -181,9 +201,9 @@ end
                 plot([info.centres]')
                 title('Centres (find\_cell)')
             end
-        end 
+        end
         hgsave([Par.FigSaveDir, strjoin({SetName,RunNo,'summaryplot'},'_')])
         close
-
-end
+        
+    end
 end

@@ -126,7 +126,7 @@ function [info, meta] = PostProcessCellDeform_v2(Imstack, varargin)
 % * Added LineMaxima_v1 - Another way of finding the cell centre, using
 % contrast enhancement to find the bright edge of the cell
 % * Restructured preallocation of info and metadata to enhance readability
-tic
+StartTime = cputime;
 
 % Module control parameters - these are overridden by user-defined inputs
 find_cell_v = 2; % Find_cell accurately crops images after circle finding
@@ -322,12 +322,11 @@ if line_maxima_v == 0
     meta = rmfield(meta, {'Line_maxima_time','Line_maxima_args'});
 end
 
-
 %% Run find_cell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if find_cell_v ~= 0
-    before = toc;
+    before = cputime;
     % 1-Find cells,
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Finding cells');
@@ -352,10 +351,10 @@ if find_cell_v ~= 0
         end
     end
     clear cell_dat
-    meta.Find_cell_time = toc - before;
+    meta.Find_cell_time = cputime - before;
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Found cells');
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
 else
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
@@ -367,7 +366,7 @@ if line_maxima_v ~= 0
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Finding cells with line maxima');
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
-    before = toc;
+    before = cputime;
     switch line_maxima_v
         case 1
             Centres = LineMaxima_v1(Imstack,line_maxima_args{:});
@@ -376,7 +375,7 @@ if line_maxima_v ~= 0
     end
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Found cells with line maxima')
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Parsing output')
@@ -384,10 +383,10 @@ if line_maxima_v ~= 0
     for frame = 1:N_frames
         info(frame).mCentres = Centres(:,frame);
     end
-    meta.Line_maxima_time = toc - before;
+    meta.Line_maxima_time = cputime - before;
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Found cells and finished')
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
 end
 
@@ -396,7 +395,7 @@ if unwrap_cell_v ~= 0
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Unwrapping cells');
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
-    before = toc;
+    before = cputime;
     if line_maxima_v == 0
         Centres = [info.centres];
         Radii = [info.radius];
@@ -414,7 +413,7 @@ if unwrap_cell_v ~= 0
     end
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Unwrapped cells')
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Parsing output')
@@ -434,10 +433,10 @@ if unwrap_cell_v ~= 0
         info(frame).uFlatness = ( UnwrapFits(1,frame) - ...
             UnwrapFits(2,frame)) /  UnwrapFits(1,frame);
     end
-    meta.Unwrap_cell_time = toc - before;
+    meta.Unwrap_cell_time = cputime - before;
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Unwrapped cells and finished')
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     clear Centres Radii
 end
@@ -447,7 +446,7 @@ if seg_cell_v ~= 0
     disp('Masking cells');
     fprintf('Using segment_cell_v%d\n', seg_cell_v);
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
-    before = toc;
+    before = cputime;
     %% Run segment_cell
     % Segment cell to get masks array - segment_cell_v2 and newer iterate over
     % image stack.
@@ -499,7 +498,7 @@ if seg_cell_v ~= 0
     clear fits
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Masked cells');
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
@@ -582,13 +581,13 @@ if seg_cell_v ~= 0
 
     end
     fprintf('%s\r',repmat(' ',1,104))
-    meta.Segment_cell_time = toc - before;
+    meta.Segment_cell_time = cputime - before;
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Measured cells and finished');
-    toc
+    fprintf('%g s elapsed\n',cputime)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
 else
     disp('Skipping segment_cell')
 end
-meta.TotalRunTime = toc;
+meta.TotalRunTime = cputime - StartTime;
 end
