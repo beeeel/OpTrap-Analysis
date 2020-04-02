@@ -64,145 +64,110 @@ fits(3,:) = mod(fits(3,:)+pi/2, pi) - pi/2;
 fits(1:2,:) = [max(fits(1:2,:)); min(fits(1:2,:))];
 fprintf('%s\n',repmat(' ',1,104))
 fprintf('Fitted data in %gs\n',toc)
-%% Analysis of fits
-figure(34)
-subplot(4,1,1)
-hold off
-plot(0.07*fits(1,:).^2)
-title('Fitted major and minor axis')
-hold on
-plot(0.07*fits(2,:).^2)
-ylabel('axis (\mum)')
-% ylim([110 120])
 
-subplot(4,1,2)
-hold off
-plot(abs(fits(1,:) - fits(2,:))./(fits(1,:)+fits(2,:)))
-title('Taylor deformation parameter')
-hold on
+%% Unwrap functions
+function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
 
-subplot(4,1,3)
-hold off
-plot(0.07*centres')
-title('Centres')
-ylabel('position (\mum)')
+    % Find the fitting variables to determine size of fits array
+    FitVars = coeffnames(fittype(FitEqn));
 
-subplot(4,1,4)
-plot(fits(3,:),'.')
-title('Orientation')
-ylabel('\theta (rad)')
-%% 1 frame plot
-% Shows raw image and unwrapped image with the column maxes and fitted line
-frame = 300;
-xq = centres(1,frame) + r .* cos(theta*pi/180);
-yq = centres(2,frame) + r .* sin(theta*pi/180);
-figure(41)
-subplot(2,1,1)
-hold off
-imagesc(Imstack{1}{frame,1})
-hold on
-plot(centres(1,frame), centres(2,frame),'k.','MarkerSize',16)
-plot(centres(1,frame)+radii(frame)*cos(thetaR), ...
-    centres(2,frame)+radii(frame)*sin(thetaR),':k','LineWidth',2)
-plot(xq(:,1:30:end),yq(:,1:30:end),'k--')
-axis image off
-title('cell')
-subplot(2,1,2)
-title('Unwrapped cell')
-hold off
-a = imagesc(1:360,r*0.07,unwrapped(:,:,frame)); a.Parent.YAxis.Direction = 'normal';
-hold on
-plot(repmat((1:30:360),2,1),repmat(0.07*r([1,end]),1,12),'k--')
-[~,I] = max(unwrapped(:,:,frame));
-idx =  I > (1-tol)*median(I,2) & I < (1+tol)*median(I,2);
-plot(theta(~idx), 0.07*I(~idx),'xr','MarkerSize',4)
-plot(theta(idx), 0.07*I(idx),'.k')
-plot(1:360, 0.07*fiteqn(fits(1,frame), fits(2,frame), fits(3,frame), 1:360),...
-    'r-')
-legend off
-xlabel('Angle (degrees)'), ylabel('radius (\mum)'); 
+    % Preallocate
+    Theta = linspace(1,360,Par.n_theta);
+    Rs = (1:round(Par.sc_up * max(Radius)))';
+    Fits = zeros(length(FitVars),length(Imstack{1}));
+    Errs = Fits;
 
-%% Calculate the minimum deformation threshold to be detectable above noise
-% First find at standard deviations for the first 30 frames
-n_frames = 30;
-n_sims = 1000;
-n_theta = 360;
-n_reps = 10;
-Drange = [0 0.1];
-
-theta = linspace(single(1),single(360),n_theta);
-Dvals = linspace(Drange(1),Drange(2),n_sims);
-sim_data = zeros(n_theta,n_sims);
-sim_fits = zeros(3,n_sims);
-R = sqrt(mean(Ia(idxa(:,:,1:n_frames)),'all'));
-orientn = - pi/2 + pi*rand(1,n_sims);
-rng('shuffle')
-devs = zeros(n_frames,1);
-
-for frame = 1:n_frames
-    devs(frame) = std(Ia(:,idxa(:,:,frame),frame));
+    % Debugging memory usage
+    Sz = size(Imstack{1}{1,1});
+    Frs = length(Imstack{1});
+    Sgl = single(1);
+    Sgl = whos('Sgl');
+    SglMem = Sgl.bytes;
+    MemNeeded = (Sz(1) * Sz(2) * Frs + 4 * ( Par.n_theta * length(Rs) * Frs)) * SglMem ./ 1e9;
+    fprintf('About to request %g GB of memory. Gulp!\n',MemNeeded)
+    
+    % For speed, everything is in one call to interp3, returning single
+    % which is then cast to uint16. The first argument is the whole
+    % imagestack, the remaining are x, y, z query points, all arguments are
+    % cast to single for memory efficiency
+    Unwrapped = uint16(interp3(...
+        single(cat(3,Imstack{1}{:,1})),...                                                              % V
+        single(reshape(Centres(1,:),1,1,length(Centres)) + Rs.*cos(Theta*pi/180)),...                    % Xq
+        single(reshape(Centres(2,:),1,1,length(Centres)) + Rs.*sin(Theta*pi/180)),...                    % Yq
+        single(repmat(reshape(1:length(Imstack{1}),1,1,length(Imstack{1})),length(Rs),Par.n_theta)),...  % Zq
+        Par.inter_method));                                                                             % METHOD
+    fprintf('Finished unwrapping at %gs\n',toc)
+    
+    % Find the maxes and apply filtering based on deviation from median
+    % (will need large tolerance for large deformation) - maybe 0.25 for D
+    % = 0.1 To make this more robust, only check for maxes away from the
+    % centre (r=0) - do this by indexing a range restricted according to
+    % Par.sc_down
+    [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par);
+    
+    % For each frame, take angles corresponding to fit points and perform
+    % the fit
+    disp('Starting fitting')
+    if ~Par.parallel
+        for frame = 1:length(Imstack{1})
+            % Take corresponding angles, repeat them and unwrap
+            th_fit = repmat(Theta(idxa(:,:,frame)),1,Par.n_reps) + ...
+                reshape(360*(0:Par.n_reps-1).*ones(length(Theta(idxa(:,:,frame))),1),1,[]);
+            fitobj = fit(double(th_fit'),repmat(Ia(:,idxa(:,:,frame),frame)',Par.n_reps,1),FitEqn,...
+                'Lower', lb, 'Upper', ub, 'Start', StartVal(frame,:));
+            for VarN = 1:length(FitVars) % Extract fitted values from cfit object
+                Fits(VarN, frame) = fitobj.(FitVars{VarN});
+            end
+            ConfInt = confint(fitobj);
+            Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
+            prog = ceil(100 * frame / length(Imstack{1}));
+            fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
+        end
+    else
+        
+        n_reps = Par.n_reps;
+        n_frames = length(Imstack{1});
+        
+        Ias = cell(n_frames,1);
+        Thetas = cell(n_frames,1);
+        for frame = 1:n_frames
+            Thetas{frame} = Theta(idxa(:,:,frame));
+            Ias{frame} = Ia(:,idxa(:,:,frame))';
+        end
+        
+        parfor frame = 1:length(Imstack{1})
+            % Take corresponding angles, repeat them and unwrap
+            th_fit = repmat(Thetas{frame},1,n_reps) + ...
+                reshape(360*(0:n_reps-1).*ones(length(Thetas{frame}),1),1,[]);
+            fitobj = fit(double(th_fit'),repmat(Ias{frame},n_reps,1),FitEqn,...
+                'Lower', lb, 'Upper', ub, 'Start', StartVal(frame,:));
+            
+            Fits(:,frame) = coeffvalues(fitobj);
+            ConfInt = confint(fitobj);
+            Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
+        end
+    end
+    fprintf('%s\r',repmat(' ',1,104))
+    fprintf('Fitted data at %gs\n',toc)
 end
-% Assume this deviation is the noise on a circle
-noise = mean(devs);
-%%
-% Create some fictitious data using the radial equation and noise
-% comparable to the noise found above, for a range of D values
-tic
-fprintf('\n')
-for frame = 1:n_sims
-    D = Dvals(frame);
-    sim_data(:,frame) = fiteqn(R,R*(1-D)./(1+D),orientn(frame),...
-        linspace(1,360,n_theta)) + normrnd(0,noise,1,n_theta);
-    th_fit = repmat(theta,1,n_reps) + ...
-        reshape((0:n_reps-1).*ones(n_theta,1),1,[]);
-    fitobj = fit(double(th_fit'),repmat(sim_data(:,frame),n_reps,1),fiteqn,...
-        'Lower', [0 0 -pi/2], 'Upper', [inf inf pi/2], 'Start', [10, 10, 3]);
-    sim_fits(:,frame) = [fitobj.a, fitobj.b, fitobj.c];
-    prog = ceil(100 * frame / n_sims);
-    fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
+
+function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
+switch Par.edge_method
+    case 'simple'
+        [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
+        Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
+        idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
+    case 'gradient'
+        Unwrapped = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
+        Gy = zeros(size(Unwrapped));
+        Filt = zeros(size(Unwrapped));
+        tic
+        for frame = 1:size(Unwrapped,3)
+            Filt(:,:,frame) = imgaussfilt(Unwrapped(:,:,frame),5,'FilterSize',[31,1]);
+            [~, Gy(:,:,frame )] = imgradientxy(Unwrapped(:,:,frame));
+        end
+        toc
+        
+        
 end
-% Fix the equivalent fitting equations problem - if b>a
-sim_fits(3,:) = sim_fits(3,:) + (sim_fits(2,:) > sim_fits(1,:)) * pi/2;
-sim_fits(3,:) = mod(sim_fits(3,:)+pi/2, pi) - pi/2;
-sim_fits(1:2,:) = [max(sim_fits(1:2,:)); min(sim_fits(1:2,:))];
-fprintf('%s\n',repmat(' ',1,104))
-fprintf('Simulated data in %gs\n',toc)
-%% Show results of simulations
-sim_Dval = abs((sim_fits(1,:) - sim_fits(2,:)) ./ (sim_fits(1,:) + sim_fits(2,:)));
-figure(113)
-set(gcf,'WindowStyle','docked')
-subplot(3,1,1)
-hold off
-plot(Dvals,sim_Dval,'.r')
-hold on
-plot(Dvals,Dvals,'k')
-xlabel('D value'), ylabel('D value');
-legend('fitted','ground truth','Location','best')
-title('Fitted deformation compared to simulation truth')
-subplot(3,1,2)
-plot(Dvals,abs(sim_Dval./Dvals - 1),'.')
-title('Relative error')
-xlabel('D value'),ylabel('Relative error')
-ylim([0 0.5])
-subplot(3,1,3)
-plot( sim_fits(3,:) - orientn,'.')
-% subplot(3,2,5)
-% plot(Dvals, sim_fits(3,:))
-% title('Fitted orientation')
-% subplot(3,2,6)
-% plot(Dvals, orientn)
-xlabel('D value'), ylabel('Orientation')
-set(gca,'YTick',[-pi, -pi/2, 0, pi/2, pi],'YTickLabel',{'-\pi','-\pi/2','0','\pi/2','\pi'})
-title('Error on orientation')
-%% 
-figure(64)
-frs = randi(n_sims, 1, 25);
-for fr = 1:25
-    subplot(5,5,fr)
-%     frs = 780;
-%     fr = 1;
-    plot(sim_data(:,frs(fr))), hold on
-    plot(fiteqn(sim_fits(1,frs(fr)), sim_fits(2,frs(fr)), sim_fits(3,frs(fr)),1:360))
-    hold off
-    title(num2str(frs(fr)))
 end
