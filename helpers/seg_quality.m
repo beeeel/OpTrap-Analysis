@@ -36,6 +36,7 @@ p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
 run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
+UnwrapOpts = {'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'UseGradient',true}; % Options for unwrap
 
 % Font sizes for axes and titles
 FontSizes.XFontSize = 12;
@@ -43,8 +44,8 @@ FontSizes.YFontSize = 12;
 FontSizes.TFontSize = 12;
 
 if isempty(whos('offset')); run_unwrap = 1; end
-if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],'sc_up',1.8,'ifNaN','mean','sc_down',0.35); 
-elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),'sc_up',1.8,'ifNaN','mean','sc_down',0.35); end %#ok<UNRCH>
+if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
+elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:}); end %#ok<UNRCH>
 
 if n_plots == 4; sbplt = [4 2 4];
 elseif n_plots == 6; sbplt = [6 2 6]; end
