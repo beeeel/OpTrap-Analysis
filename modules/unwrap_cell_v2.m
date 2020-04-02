@@ -55,66 +55,10 @@ fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
     0, 'mean',false, 'simple', false};
 
-
-Par = cell2struct(defaults, fields,2);
-def_argin = 3;
-
-% Parse inputs and create struct with parameters given
-if ~isempty(varargin)
-    if mod(nargin,2) == 0 % Imstack counts towards nargin
-        error('Please supply arguments in name-value pairs');
-    end
-    stack = dbstack;
-    % For each field, display it depending on its size and contents
-    fprintf('Input arguments for %s:\n',stack(1).name)
-    for field = 1:(nargin - def_argin)/2
-        if size(varargin{2 * field}, 2) < 4 && ...
-                size(varargin{2 * field},1) == 1
-            if isnumeric(varargin{2 * field})
-                disp([varargin{2 * field - 1}, ' = ', ...
-                    num2str(varargin{2 * field})]);
-            elseif iscell(varargin{2 * field})
-                fprintf([varargin{2 * field - 1}, ': '])
-                for idx = 1:length(varargin{2 * field})/2
-                    if isnumeric(varargin{2*field}{2*idx})
-                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
-                            num2str(varargin{2*field}{2*idx})]);
-                    else
-                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
-                            varargin{2 * field}{2 * idx}])
-                    end
-                end
-            end
-        else
-            disp([varargin{2 * field - 1}, ' = size[', ...
-                num2str([size(varargin{2 * field},1), size(varargin{2 * field},2)])...
-                , ']']);
-        end
-        % And put it into the par struct
-        Par.(varargin{2*field - 1}) = varargin{2*field};
-    end
-end
+Par = ParseInputs(fields, defaults, varargin{:});
 
 % Fix any NaNs from find_cell failing
-switch Par.ifNaN
-    case 'last' % Take the last good value
-        for frame = 1:length(Radius)
-            if ~isfinite(Radius(frame)) && frame > 1
-                Radius(frame) = Radius(frame - 1);
-                Centres(:, frame) = Centres(:, frame - 1);
-            end
-        end
-    case 'mean'
-        % Take the mean value of those found
-        Centres(:,~isfinite(Radius)) = repmat(mean(Centres(:,isfinite(Radius)),2),1,sum(~isfinite(Radius)));
-        Radius(~isfinite(Radius)) = mean(Radius(isfinite(Radius)));
-    case 'centre'
-        % Assume the cell is centred and fills the FoV
-        Centres(:,~isfinite(Radius)) = repmat([ImH/2 ImW/2],1,sum(~isfinite(Radius)));
-        Radius(~isfinite(Radius)) = (ImW < ImH) * ImW/2 + (ImW > ImH) * ImH/2;
-    otherwise
-        error('ifNaN must have value ''mean'' or ''last'' or ''centre''')
-end
+[Centres, Radius] = FixNaNs(Centres, Radius, ImH, ImW);
 
 tic
 
@@ -122,6 +66,7 @@ if Par.UseGradient
     Imstack = CalcGrads(Imstack);
 end
 
+% Get the circle equation
 [CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
 
 % Debugging memory usage
@@ -132,6 +77,7 @@ clear Var;
 % Perform unwrapping and fitting for off-centreness
 [Offset, ~, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
 
+% Get the ellipse equation
 [FitEqn, lb, ub, StartVal] = GetEqn('ellipse', Imstack, Par, Radius);
 
 % Perform unwrapping and fitting with updated centre locations
@@ -149,8 +95,10 @@ switch nargout
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Functions start here
 function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
-
+%% Fairly self-explanatory tbh. Unwraps data using interp3, finds edges, and fits to fit equation
     % Find the fitting variables to determine size of fits array
     FitVars = coeffnames(fittype(FitEqn));
 
@@ -235,27 +183,28 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
 end
 
 function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
+%% Find the cell edges in unwrapped data - either simple max method or broken gradient method
 switch Par.edge_method
     case 'simple'
         [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
         Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
         idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
     case 'gradient'
+        error('Unfinished edge_method')
         Unwrapped = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
         Gy = zeros(size(Unwrapped));
         Filt = zeros(size(Unwrapped));
-        tic
         for frame = 1:size(Unwrapped,3)
             Filt(:,:,frame) = imgaussfilt(Unwrapped(:,:,frame),5,'FilterSize',[31,1]);
             [~, Gy(:,:,frame )] = imgradientxy(Unwrapped(:,:,frame));
         end
-        toc
-        
-        
+    otherwise
+        error('Unrecognised edge_method')
 end
 end
 
 function Imstack = CalcGrads(Imstack)
+%% Calculate gradients with sobel and return in a cell array like Imstack
 Kernel = fspecial('sobel');
 Ims = single(cat(3,Imstack{1}{:,1}));
 Gy = imfilter(Ims, -Kernel);
@@ -267,6 +216,7 @@ end
 end
 
 function [FitEqn, lb, ub, StartVal] = GetEqn(Func, Imstack, Par, Radius)
+%% Get an equation and bounds for fitting
 switch Func
     case 'circle'
         % Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
@@ -295,5 +245,71 @@ switch Func
         else
             error('Centering argument must have value 0 or 1')
         end
+    otherwise
+        error('miscall to GetEqn - you need to specify which equation you want')
+end
+end
+
+function [Centres, Radius] = FixNaNs(Centres, Radius, ImH, ImW)
+%% Fix NaN values in centres and radius arrays
+switch Par.ifNaN
+    case 'last' % Take the last good value
+        for frame = 1:length(Radius)
+            if ~isfinite(Radius(frame)) && frame > 1
+                Radius(frame) = Radius(frame - 1);
+                Centres(:, frame) = Centres(:, frame - 1);
+            end
+        end
+    case 'mean'
+        % Take the mean value of those found
+        Centres(:,~isfinite(Radius)) = repmat(mean(Centres(:,isfinite(Radius)),2),1,sum(~isfinite(Radius)));
+        Radius(~isfinite(Radius)) = mean(Radius(isfinite(Radius)));
+    case 'centre'
+        % Assume the cell is centred and fills the FoV
+        Centres(:,~isfinite(Radius)) = repmat([ImH/2 ImW/2],1,sum(~isfinite(Radius)));
+        Radius(~isfinite(Radius)) = (ImW < ImH) * ImW/2 + (ImW > ImH) * ImH/2;
+    otherwise
+        error('ifNaN must have value ''mean'' or ''last'' or ''centre''')
+end
+end
+
+function Par = ParseInputs(fields, defaults, varargin)
+Par = cell2struct(defaults, fields,2);
+def_argin = 3;
+
+% Parse inputs and create struct with parameters given
+if ~isempty(varargin)
+    if mod(nargin,2) == 0 % Imstack counts towards nargin
+        error('Please supply arguments in name-value pairs');
+    end
+    stack = dbstack;
+    % For each field, display it depending on its size and contents
+    fprintf('Input arguments for %s:\n',stack(1).name)
+    for field = 1:(nargin - def_argin)/2
+        if size(varargin{2 * field}, 2) < 4 && ...
+                size(varargin{2 * field},1) == 1
+            if isnumeric(varargin{2 * field})
+                disp([varargin{2 * field - 1}, ' = ', ...
+                    num2str(varargin{2 * field})]);
+            elseif iscell(varargin{2 * field})
+                fprintf([varargin{2 * field - 1}, ': '])
+                for idx = 1:length(varargin{2 * field})/2
+                    if isnumeric(varargin{2*field}{2*idx})
+                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
+                            num2str(varargin{2*field}{2*idx})]);
+                    else
+                        disp([varargin{2 * field}{2 * idx - 1}, ' = ', ...
+                            varargin{2 * field}{2 * idx}])
+                    end
+                end
+            end
+        else
+            disp([varargin{2 * field - 1}, ' = size[', ...
+                num2str([size(varargin{2 * field},1), size(varargin{2 * field},2)])...
+                , ']']);
+        end
+        % And put it into the par struct
+        Par.(varargin{2*field - 1}) = varargin{2*field};
+    end
 end
 end
