@@ -51,9 +51,9 @@ function [Fits, varargout] = unwrap_cell_v2(Imstack, Centres, Radius, varargin)
 % only one frame, or a single frame's worth of centres/radii.
 
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN','parallel','edge_method'};
+    'centering', 'ifNaN','parallel','edge_method','UseGradient'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, 'simple'};
+    0, 'mean',false, 'simple', false};
 
 
 Par = cell2struct(defaults, fields,2);
@@ -118,12 +118,11 @@ end
 
 tic
 
-% Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
-% convert to polar (r = x.^2 + y.^2)
-CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
-lb = [0, -size(Imstack{1}{1,1})/2];
-ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
-StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
+if Par.UseGradient
+    Imstack = CalcGrads(Imstack);
+end
+
+[CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
 
 % Debugging memory usage
 Var = whos;
@@ -273,3 +272,22 @@ switch Par.edge_method
         
 end
 end
+
+function Imstack = CalcGrads(Imstack)
+Kernel = fspecial('sobel');
+Ims = single(cat(3,Imstack{1}{:,1}));
+Gy = imfilter(Ims, -Kernel);
+Gx = imfilter(Ims, -Kernel');
+Gmag = Gx.^2 + Gy.^2;
+for fr = 1:length(Imstack{1})
+    Imstack{1}{fr,1} = Gmag(:,:,fr);
+end
+end
+
+[CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
+% Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
+% convert to polar (r = x.^2 + y.^2)
+CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
+lb = [0, -size(Imstack{1}{1,1})/2];
+ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
+StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];

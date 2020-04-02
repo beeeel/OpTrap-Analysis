@@ -67,7 +67,10 @@ Kernel = fspecial('sobel');
 Ims = single(cat(3,Imstack{1}{:,1}));
 Gy = imfilter(Ims, -Kernel);
 Gx = imfilter(Ims, -Kernel');
-Gmax = Gx.^2 + Gy.^2;
+Gmag = Gx.^2 + Gy.^2;
+for fr = 1:length(Imstack{1})
+    GradStack{1}{fr,1} = Gmag(:,:,fr);
+end
 toc
 %%
 [Gfits, ~, GUnwrapped, ~] = UnwrapAndFit(GradStack, fiteqn, radii, centres, lb, ub, StartVal, Par);
