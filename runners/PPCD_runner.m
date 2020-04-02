@@ -1,20 +1,19 @@
 %% Collection of settings that work for various datasets
 function PPCD_runner(varargin)
 
-
-p = inputParser;
-
+Par = [];
 % Which datasets
-CellDefault = {'HL60','LS174T'};
-DSetsDefault = {{'normoxia','drugs'}, {'hypoxia'}} ;
+CellDefault = {'HL60'};
+DSetsDefault = {{'normoxia','drugs'}} ;
 NumsDefault = 1:20;
 
 % What settings
-FindVerDefault = 2;
+FindVerDefault = 0;
 FindDefault = {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 %FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
+SegVerDefault = 0;
 SegDefault = {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
-UnwrapDefault = {'centering', 1};
+UnwrapDefault = {'UseGradient',1};
 
 % What to save
 SummFigDefault = true;
@@ -28,73 +27,37 @@ FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
 
 ParseInputs();
 
-for idx = 1:length(p.Results.CellType)
-    FolderName = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/' p.Results.CellType{idx} '/'];
+for idx = 1:length(Par.CellType)
+    FolderName = ['/home/ppxwh2/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
     disp(FolderName)
-    for Didx = 1:length(p.Results.DSets{idx})
-        DSet = p.Results.DSets{idx}{Didx};
+    for Didx = 1:length(Par.DSets{idx})
+        DSet = Par.DSets{idx}{Didx};
         disp(DSet)
         %%{
-        for Num = p.Results.Nums
+        for Num = Par.Nums
             RunNo = num2str(Num);
-            if strcmp(p.Results.CellType{idx}, 'HL60')
-                if strcmp(DSet,'normoxia')
-                    SetName = 'HL60_normoxia';
-                    if str2double(RunNo) <= 10
-                        FileName = ['100717_' RunNo '_HL60_1.avi'];
-                    else
-                        FileName = ['HL60_' RunNo '_0.020mms-1_1.avi'];
-                    end
-                elseif strcmp(DSet,'drugs')
-                    SetName = 'HL60_with_drugs';
-                    FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
-                end
-                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
-            elseif strcmp(p.Results.CellType{idx},'LS174T')
-                SetName = [p.Results.CellType{idx} '_' DSet];
-                FileName = ['200717_' RunNo '_' p.Results.CellType{idx} '_' DSet '_1.avi'];
-                if strcmp(DSet,'hypoxia')
-                    FileName(2) = '1';
-                end
-                Imstack = avi_to_imstack([FolderName FileName]);
-            elseif strcmp(p.Results.CellType{idx},'HeLa')
-            elseif strcmp(p.Results.CellType{idx}, 'MV411')
-                if strcmp(DSet,'normoxia')
-                    SetName = 'MV411_normoxia';
-                    if str2double(RunNo) <= 10
-                        FileName = ['100717_' RunNo '_ MV411_1.avi'];
-                    else
-                        FileName = ['MV411_' RunNo '_0.020mms-1_1.avi'];
-                    end
-                elseif strcmp(DSet,'drugs')
-                    SetName = 'MV411_with_drugs';
-                    FileName = ['180717_' RunNo '_MV411_0.020mms-1_1.avi'];
-                end
-                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
-                
-            end
+            Imstack = N_LoadImstack();
             %%
+            [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',Par.FindVer,...
+                'find_cell',Par.FindOpts, 'seg_cell_v',Par.SegVer,'segment_cell', Par.SegOpts, ...
+                'unwrap_cell_v',2,'unwrap_cell', Par.UnwrapOpts);
             
-            [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',p.Results.FindVer,...
-                'find_cell',p.Results.FindOpts, 'seg_cell_v',5,'segment_cell', p.Results.SegOpts, ...
-                'unwrap_cell_v',2,'unwrap_cell', p.Results.UnwrapOpts);
             
-            
-            if p.Results.SummFig == true
+            if Par.SummFig == true
                 MakeSummFig(info);
             end
             
-            if p.Results.ToSave
-                if ~p.Results.SaveAll
+            if Par.ToSave
+                if ~Par.SaveAll
                     FieldNames = fieldnames(info);
                     for fld = FieldNames'
-                        if sum(strcmp(fld{:},p.Results.KeepFields)) == 0
+                        if sum(strcmp(fld{:},Par.KeepFields)) == 0
                             info = rmfield(info, fld{:});
                         end
                     end
-                    save([p.Results.InfosDir 'info_reduced_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_reduced_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
                 else
-                    save([p.Results.InfosDir 'info_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_seg_' SetName '_' FileName(1:end-4) '.mat'], 'info', 'meta');
                 end
             end
         end
@@ -103,11 +66,14 @@ for idx = 1:length(p.Results.CellType)
 end
 
     function ParseInputs()
+        p = inputParser();
         FName = 'PPCD_runner input validation';
         addParameter(p,'FindVer',FindVerDefault,@(x)validateattributes(x,...
             {'numeric'},{'nonempty','nonnegative','<',3},FName,'FindVer'))
         addParameter(p,'FindOpts',FindDefault,@(x)validateattributes(x,...
             {'cell'},{'nonempty'},FName,'FindOpts'))
+        addParameter(p,'SegVer',SegVerDefault,@(x)validateattributes(x,...
+            {'numeric'},{'nonempty','nonnegative','<',3},FName,'SegVer'))
         addParameter(p,'SegOpts',SegDefault,@(x)validateattributes(x,...
             {'cell'},{p,'nonempty'},FName,'SegOpts'))
         addParameter(p,'UnwrapOpts',UnwrapDefault,@(x)validateattributes(x,...
@@ -128,7 +94,7 @@ end
             {'numeric'},{'nonempty','row','nonnegative'},FName,'Nums'))
         
         parse(p,varargin{:});
-        
+        Par = p.Results;
         function ValidateDSets(x)
             validateattributes(x,{'cell'},{'nonempty','row'},FName,'DSets')
             for y = x
@@ -138,6 +104,45 @@ end
                 end
             end
         end
+    end
+%%
+    function Imstack = N_LoadImstack()
+            if strcmp(Par.CellType{idx}, 'HL60')
+                if strcmp(DSet,'normoxia')
+                    SetName = 'HL60_normoxia';
+                    if str2double(RunNo) <= 10
+                        FileName = ['100717_' RunNo '_HL60_1.avi'];
+                    else
+                        FileName = ['HL60_' RunNo '_0.020mms-1_1.avi'];
+                    end
+                elseif strcmp(DSet,'drugs')
+                    SetName = 'HL60_with_drugs';
+                    FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
+                end
+                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
+            elseif strcmp(Par.CellType{idx},'LS174T')
+                SetName = [Par.CellType{idx} '_' DSet];
+                FileName = ['200717_' RunNo '_' Par.CellType{idx} '_' DSet '_1.avi'];
+                if strcmp(DSet,'hypoxia')
+                    FileName(2) = '1';
+                end
+                Imstack = avi_to_imstack([FolderName FileName]);
+            elseif strcmp(Par.CellType{idx},'HeLa')
+            elseif strcmp(Par.CellType{idx}, 'MV411')
+                if strcmp(DSet,'normoxia')
+                    SetName = 'MV411_normoxia';
+                    if str2double(RunNo) <= 10
+                        FileName = ['100717_' RunNo '_ MV411_1.avi'];
+                    else
+                        FileName = ['MV411_' RunNo '_0.020mms-1_1.avi'];
+                    end
+                elseif strcmp(DSet,'drugs')
+                    SetName = 'MV411_with_drugs';
+                    FileName = ['180717_' RunNo '_MV411_0.020mms-1_1.avi'];
+                end
+                Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
+                
+            end
     end
 %%
     function MakeSummFig(info)
@@ -158,7 +163,7 @@ end
         plot([info.Area])
         title('Area')
         subplot(NX, NY, 4)
-        if p.Results.FindVer
+        if Par.FindVer
             plot([info.radius])
             title('Radius (find\_cell)')
         else
@@ -177,7 +182,7 @@ end
                 title('Centres (find\_cell)')
             end
         end 
-        hgsave([p.Results.FigSaveDir, strjoin({SetName,RunNo,'summaryplot'},'_')])
+        hgsave([Par.FigSaveDir, strjoin({SetName,RunNo,'summaryplot'},'_')])
         close
 
 end
