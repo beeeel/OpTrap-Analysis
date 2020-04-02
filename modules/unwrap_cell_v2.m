@@ -132,25 +132,7 @@ clear Var;
 % Perform unwrapping and fitting for off-centreness
 [Offset, ~, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
 
-% From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
-% polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
-% where f is the frequency - once per 2pi (doubled by squaring), theta is
-% the angle (x below is in degrees), and phi is the phase offset
-% (orientation of ellipse). For an off-centre elipse, x = a cos(t) + dx, y
-% = a sin(t) + dy.
-if ~Par.centering
-    FitEqn = @(a, b, phi, x) sqrt((a .* cos(0.0175.*x + phi)).^2 + (b .* sin(0.0175.*x + phi)).^2 );
-    lb = [0 0 0];
-    ub = [inf inf pi];
-    StartVal = [repmat(Radius',1,2) repmat(1.5,size(Radius,2),1)]; % Use radius from find_cell as a start point
-elseif Par.centering
-    FitEqn = @(a, b, phi, dx, dy, x) sqrt((a .* cos(0.0175.*x + phi) + dx).^2 + (b .* sin(0.0175.*x + phi) + dy).^2 );
-    lb = [0 0 0 -size(Imstack{1}{1,1})/2];
-    ub = [inf inf pi size(Imstack{1}{1,1})/2];
-    StartVal = [repmat(Radius',1,2) repmat([1.5 0 0],size(Radius,2),1)];
-else
-    error('Centering argument must have value 0 or 1')
-end
+[FitEqn, lb, ub, StartVal] = GetEqn('ellipse', Imstack, Par, Radius);
 
 % Perform unwrapping and fitting with updated centre locations
 [Fits, Ia, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres + Offset(2:3,:), lb, ub, StartVal, Par);
@@ -284,10 +266,34 @@ for fr = 1:length(Imstack{1})
 end
 end
 
-[CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
-% Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
-% convert to polar (r = x.^2 + y.^2)
-CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
-lb = [0, -size(Imstack{1}{1,1})/2];
-ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
-StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
+function [FitEqn, lb, ub, StartVal] = GetEqn(Func, Imstack, Par, Radius)
+switch Func
+    case 'circle'
+        % Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
+        % convert to polar (r = x.^2 + y.^2)
+        FitEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
+        lb = [0, -size(Imstack{1}{1,1})/2];
+        ub = [Par.sc_up * max(Radius), size(Imstack{1}{1,1})/2];
+        StartVal = [Radius', repmat([0, 0],size(Radius,2), 1)];
+    case 'ellipse'
+        % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
+        % polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
+        % where f is the frequency - once per 2pi (doubled by squaring), theta is
+        % the angle (x below is in degrees), and phi is the phase offset
+        % (orientation of ellipse). For an off-centre elipse, x = a cos(t) + dx, y
+        % = a sin(t) + dy.
+        if ~Par.centering
+            FitEqn = @(a, b, phi, x) sqrt((a .* cos(0.0175.*x + phi)).^2 + (b .* sin(0.0175.*x + phi)).^2 );
+            lb = [0 0 0];
+            ub = [inf inf pi];
+            StartVal = [repmat(Radius',1,2) repmat(1.5,size(Radius,2),1)]; % Use radius from find_cell as a start point
+        elseif Par.centering
+            FitEqn = @(a, b, phi, dx, dy, x) sqrt((a .* cos(0.0175.*x + phi) + dx).^2 + (b .* sin(0.0175.*x + phi) + dy).^2 );
+            lb = [0 0 0 -size(Imstack{1}{1,1})/2];
+            ub = [inf inf pi size(Imstack{1}{1,1})/2];
+            StartVal = [repmat(Radius',1,2) repmat([1.5 0 0],size(Radius,2),1)];
+        else
+            error('Centering argument must have value 0 or 1')
+        end
+end
+end
