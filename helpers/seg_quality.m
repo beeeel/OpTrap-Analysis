@@ -237,6 +237,7 @@ for fr  =1:length(Imstack{1})
     info(fr).uMajorAxisLength = fits(1,fr);
     info(fr).uMinorAxisLength = fits(2,fr);
     info(fr).uOrientation = fits(3,fr);
+    info(fr).uTaylorParameter = (fits(1,fr)-fits(2,fr))/(fits(1,fr)+fits(2,fr));
 end
 figure(99) % I got 99 problems and a figure ain't one
 imagesc(unwrapped(:,:,frs(1)))
