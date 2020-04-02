@@ -58,13 +58,12 @@ defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
 Par = ParseInputs(fields, defaults, varargin{:});
 
 % Fix any NaNs from find_cell failing
-[Centres, Radius] = FixNaNs(Centres, Radius, ImH, ImW);
+[Centres, Radius] = FixNaNs(Centres, Radius, Imstack, Par);
 
 tic
 
-if Par.UseGradient
-    Imstack = CalcGrads(Imstack);
-end
+% If using gradient, replace Imstack with gradient values
+if Par.UseGradient; Imstack = CalcGrads(Imstack); end
 
 % Get the circle equation
 [CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
@@ -213,6 +212,7 @@ Gmag = Gx.^2 + Gy.^2;
 for fr = 1:length(Imstack{1})
     Imstack{1}{fr,1} = Gmag(:,:,fr);
 end
+disp('Calculated gradients')
 end
 
 function [FitEqn, lb, ub, StartVal] = GetEqn(Func, Imstack, Par, Radius)
@@ -250,7 +250,7 @@ switch Func
 end
 end
 
-function [Centres, Radius] = FixNaNs(Centres, Radius, ImH, ImW)
+function [Centres, Radius] = FixNaNs(Centres, Radius, Imstack, Par)
 %% Fix NaN values in centres and radius arrays
 switch Par.ifNaN
     case 'last' % Take the last good value
@@ -265,7 +265,8 @@ switch Par.ifNaN
         Centres(:,~isfinite(Radius)) = repmat(mean(Centres(:,isfinite(Radius)),2),1,sum(~isfinite(Radius)));
         Radius(~isfinite(Radius)) = mean(Radius(isfinite(Radius)));
     case 'centre'
-        % Assume the cell is centred and fills the FoV
+        % Assume the cell is centred and fills  the FoV
+        [ImH, ImW] = size(Imstack{1}{1,1});
         Centres(:,~isfinite(Radius)) = repmat([ImH/2 ImW/2],1,sum(~isfinite(Radius)));
         Radius(~isfinite(Radius)) = (ImW < ImH) * ImW/2 + (ImW > ImH) * ImH/2;
     otherwise
@@ -275,16 +276,16 @@ end
 
 function Par = ParseInputs(fields, defaults, varargin)
 Par = cell2struct(defaults, fields,2);
-def_argin = 3;
+def_argin = 2;
 
 % Parse inputs and create struct with parameters given
 if ~isempty(varargin)
-    if mod(nargin,2) == 0 % Imstack counts towards nargin
+    if mod(nargin,2) == 1 % Imstack counts towards nargin
         error('Please supply arguments in name-value pairs');
     end
     stack = dbstack;
     % For each field, display it depending on its size and contents
-    fprintf('Input arguments for %s:\n',stack(1).name)
+    fprintf('Input arguments for %s:\n',stack(2).name)
     for field = 1:(nargin - def_argin)/2
         if size(varargin{2 * field}, 2) < 4 && ...
                 size(varargin{2 * field},1) == 1

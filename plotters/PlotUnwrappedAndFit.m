@@ -7,7 +7,7 @@ plot(0.07 * Ia(:,:,frame),'r.')
 plot(0.07 * FitEqn(info(frame).uMajorAxisLength, info(frame).uMinorAxisLength, ...
     info(frame).uOrientation, 1:360),'k:','LineWidth',3)
 hold off
-title('Unwrapped cell with fitting data and Centroid fitted data','FontSize',FSs.TFontSize)
+title({'Unwrapped cell with' 'fitting data and Centroid fitted data'},'FontSize',FSs.TFontSize)
 xlabel('CW angle from +x (degrees)','FontSize',FSs.XFontSize)
 ylabel('Radius (\mum)','FontSize',FSs.YFontSize)
 legend('Column max','Fitted ellipse')

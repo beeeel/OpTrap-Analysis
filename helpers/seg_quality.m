@@ -30,7 +30,7 @@ show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'non
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =140:200;                 % Frames to display
+frs =140;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -72,7 +72,7 @@ if makevid == 2; v = VideoWriter(strcat(fname,'.avi')); v.FrameRate = 4; open(v)
 for frame = frs
     if length(whos('unwrapped','Ia','fiteqn')) == 3
         subplot(2,2,2)
-        PlotUnwrappedAndFit(unwrapped, Ia, info, FitEqn, FSs,frame)
+        PlotUnwrappedAndFit(unwrapped, Ia, info, FitEqn, FontSizes,frame)
         subplot(2,2,1)
     else
         subplot(2,1,1)
