@@ -12,58 +12,65 @@ Num = '11';
 %% Unpack stuff from info
 % These were made by find_cell_v2
 centres = [info.mCentres];
-radii = min([info.mCentres] - min(size(Imstack{1}{1,1})));
+radii = min(abs([info.mCentres] - min(size(Imstack{1}{1,1}))));
 %% Unwrap and fit to radial equation for ellipse
 % Parameters
-sc_up = 1.0;
-n_theta = 360;
-n_reps = 10;
-tol = 0.15;
 
-% Preallocate
-r = (1:round(sc_up * max(radii)))';
-fits = zeros(3,length(Imstack{1}));
-theta = linspace(single(1),single(360),n_theta);
+fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
+    'centering', 'ifNaN','parallel','edge_method'};
+defaults = {1, 360, 5, 0.15, 'linear', 0.5,...
+    0, 'mean',false, 'gradient'};
+Par = cell2struct(defaults, fields,2);
+
+% Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
+% convert to polar (r = x.^2 + y.^2)
+CircleEqn = @(r, dx, dy, x) sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2);
+lb = [0, -size(Imstack{1}{1,1})/2];
+ub = [Par.sc_up * max(radii), size(Imstack{1}{1,1})/2];
+StartVal = [radii', repmat([0, 0],size(radii,2), 1)];
+
+% Perform unwrapping and fitting for off-centreness
+[Offset, ~, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, radii,  centres, lb, ub, StartVal, Par);
+
 % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
 % polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
 % where f is the frequency - twice per 2pi, theta is the angle (x below),
 % and phi is the phase offset (orientation of ellipse)
 fiteqn = @(a, b, c, x) (a.^2) *cos(0.0175*x + c).^2 + (b.^2)*sin(0.0175*x + c).^2 ;
-%fiteqn = @(a, b, c, x) (max(a,b).^2) *cos(0.0175*x + c).^2 + (min(a,b).^2)*sin(0.0175*x + c).^2 ; % This makes worse fits
+lb = [0 0 0];
+ub = [inf inf pi];
+StartVal = [repmat(radii',1,2) repmat(1.5,size(radii,2),1)]; % Use radius from find_cell as a start point
 
 tic
 % For memory efficiency, everything is in a single call to interp3, which
 % is then cast to uint16. The first argument is the whole imagestack, the
 % remaining are x, y, z query points, all arguments are cast to single for
 % memory efficiency
-unwrapped = uint16(interp3(...
-    single(cat(3,Imstack{1}{:,1})),...
-    single(reshape(centres(1,:),1,1,length(centres)) + r.*cos(theta*pi/180)),...
-    single(reshape(centres(2,:),1,1,length(centres)) + r.*sin(theta*pi/180)),...
-    single(repmat(reshape(1:length(Imstack{1}),1,1,length(Imstack{1})),length(r),n_theta))));
-fprintf('Finished unwrapping in %gs\n',toc)
-% Find the maxes and apply filtering based on deviation from median (will
-% need large tolerance for large deformation)
-[~, Ia] = max(unwrapped);
-idxa = Ia > (1-tol)*median(Ia,2) & Ia < (1+tol)*median(Ia,2);
-% For each frame, take angle corresponding to fit points and perform the
-% fit
-for frame = 1:length(Imstack{1})
-    % Take corresponding angles, repeat them and unwrap
-    th_fit = repmat(theta(idxa(:,:,frame)),1,n_reps) + ...
-        reshape(360*(0:n_reps-1).*ones(length(theta(idxa(:,:,frame))),1),1,[]);
-    fitobj = fit(double(th_fit'),repmat(Ia(:,idxa(:,:,frame),frame)',n_reps,1),fiteqn,...
-        'Lower', [0 0 0], 'Upper', [inf inf pi], 'Start', [10, 10, 3]);
-    fits(:,frame) = [fitobj.a, fitobj.b, fitobj.c];
-    prog = ceil(100 * frame / length(Imstack{1}));
-    fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
-end
+[fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, fiteqn, radii, centres, lb, ub, StartVal, Par);
 % Fix the equivalent fitting equations problem - if b>a
 fits(3,:) = fits(3,:) + (fits(2,:) > fits(1,:)) * pi/2;
 fits(3,:) = mod(fits(3,:)+pi/2, pi) - pi/2;
 fits(1:2,:) = [max(fits(1:2,:)); min(fits(1:2,:))];
 fprintf('%s\n',repmat(' ',1,104))
 fprintf('Fitted data in %gs\n',toc)
+%% Get gradient image - it's a race!
+tic
+GradStack = Imstack;
+for fr = 1:length(GradStack{1})
+    [Gmag, ~] = imgradient(Imstack{1}{fr,1});
+    GradStack{1}{fr,1} = Gmag;
+end
+toc
+%% The second contender: vectorisation!
+tic
+Kernel = fspecial('sobel');
+Ims = single(cat(3,Imstack{1}{:,1}));
+Gy = imfilter(Ims, -Kernel);
+Gx = imfilter(Ims, -Kernel');
+Gmax = Gx.^2 + Gy.^2;
+toc
+%%
+[Gfits, ~, GUnwrapped, ~] = UnwrapAndFit(GradStack, fiteqn, radii, centres, lb, ub, StartVal, Par);
 
 %% Unwrap functions
 function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
@@ -103,7 +110,7 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
     % = 0.1 To make this more robust, only check for maxes away from the
     % centre (r=0) - do this by indexing a range restricted according to
     % Par.sc_down
-    [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par);
+    [Ia, idxa] = FindMaxes(Unwrapped, Imstack, Radius, Par);
     
     % For each frame, take angles corresponding to fit points and perform
     % the fit
@@ -151,13 +158,13 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
     fprintf('Fitted data at %gs\n',toc)
 end
 
-function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
+function [Ia, idxa] = FindMaxes(Unwrapped, Imstack, Radius, Par)
 switch Par.edge_method
     case 'simple'
         [~, Ia] = max(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:));
         Ia = Ia + floor(Par.sc_up*max(Radius)*Par.sc_down);
         idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
-    case 'gradient'
+    case 'RadialGradient'
         Unwrapped = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
         Gy = zeros(size(Unwrapped));
         Filt = zeros(size(Unwrapped));
@@ -167,7 +174,8 @@ switch Par.edge_method
             [~, Gy(:,:,frame )] = imgradientxy(Unwrapped(:,:,frame));
         end
         toc
-        
+    case 'MaxGradient'
+       
         
 end
 end
