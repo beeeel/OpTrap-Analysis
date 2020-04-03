@@ -3,9 +3,9 @@
 % figure function with proper functionality (overlays, 2-6 plots, choice on
 % what the plots are)
 %% Load data
-CellType = 'LS174T';
+CellType = 'HL60';
 Set = 'normoxia';
-Num = '11';
+Num = '17';
 
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
 
@@ -35,7 +35,7 @@ frs =140;                 % Frames to display
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
-run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
+run_unwrap = 1;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
 UnwrapOpts = {'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'UseGradient',true}; % Options for unwrap
 
 % Font sizes for axes and titles
@@ -249,13 +249,16 @@ plot(FitEqn(info(frs(1)).uMajorAxisLength, info(frs(1)).uMinorAxisLength, ...
 hold off
 
 %% View summary plots
+
 % Open all plots from a given set.
-Dset = 'LS174T_normoxia';
+Dset = 'HL60_with_drugs';
+RePosn = false;
+
 %Posn = [-3523 1100 568 434];
 Posn = [-3289        1075         568         434];
-plots = dir('/home/ppxwh2/Documents/data/OpTrap/processing_plots');
-Offset = 10; % Files are opened in alphabetical order. Use this to shift to later files
-N_max = 10;
+plots = dir('~/Documents/data/OpTrap/processing_plots');
+Offset = 0; % Files are opened in alphabetical order. Use this to shift to later files
+N_max = 20;
 N_plots = 0;
 for item = plots'
     if N_plots < N_max
@@ -267,8 +270,10 @@ for item = plots'
                     drawnow;
                     h = gcf;
                     h.Name = item.name(1:end-4);
-                    Posn = Posn + [25 -25 0 0];
-                    h.Position = Posn;
+                    if RePosn
+                        Posn = Posn + [25 -25 0 0];
+                        h.Position = Posn;
+                    end
                     subplot(3,2,2)
                     ylim([0,0.1])
                     N_plots = N_plots + 1;
