@@ -31,7 +31,7 @@ ProcName = 'Unwrap-Grad';
 ParseInputs();
 
 for idx = 1:length(Par.CellType)
-    FolderName = ['/home/will/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
+    FolderName = ['~/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
     disp(FolderName)
     for Didx = 1:length(Par.DSets{idx})
         DSet = Par.DSets{idx}{Didx};
