@@ -57,7 +57,7 @@ h = figure(13);
 centroids = [info.Centroid];
 theta = 0:0.01:2*pi;
 Xdata = 1:size(info,2);
-if run_unwrap; info = N_UpdateInfoUfits(info, u_fits); end
+if run_unwrap; info = H_UpdateInfoUfits(info, u_fits); end
 if meta.seg_cell_v == 5; fits = [info.ellipse_fits]; end
 if strcmp(pt_mode,'analysis'); crops = [info.crop]; end
 if strcmp(show_mask,'initial')
@@ -338,14 +338,7 @@ ylim([0 FrSize]*0.07), ylabel('\mu m','FontSize',FontSizes.YFontSize)
 title('Centroids of mask [regionprops]','FontSize',FontSizes.TFontSize)
 end
 
-function info = N_UpdateInfoUfits(info, u_fits)
-for fr = 1:length(info)
-    info(fr).uMajorAxisLength = u_fits(1,fr);
-    info (fr).uMinorAxisLength = u_fits(2,fr);
-    info(fr).uOrientation = u_fits(3,fr);
-    info(fr).uTaylorParameter = (u_fits(1,fr) - u_fits(2,fr))./(u_fits(1,fr) + u_fits(2,fr));
-end
-end
+
 
 function N_trackPlot(xdata, ydata, idx, varargin)
     hold off
