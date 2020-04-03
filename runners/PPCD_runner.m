@@ -5,20 +5,20 @@ Par = [];
 % Which datasets
 CellDefault = {'LS174T'};
 DSetsDefault = {{'normoxia','hypoxia'}} ;
-NumsDefault = 1:20;
+NumsDefault = [3,4,18,20];
 
 % What settings
 FindVerDefault = 0;
-FindDefault = {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
+FindDefault = {};%{'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 %FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
 SegVerDefault = 0;
-SegDefault = {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
+SegDefault = {};%{'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
 UnwrapDefault = {'UseGradient',1};
 
 % What to save
 SummFigDefault = true;
 ToSaveDefault = true;
-KeepDefault = {'uTaylorParameter','TaylorParameter','Area','centres','filepath'};
+KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','mCentres','filepath'};
 SaveAllDefault = false;
             
 % Where to save
