@@ -206,8 +206,8 @@ function Imstack = CalcGrads(Imstack)
 %% Calculate gradients with sobel and return in a cell array like Imstack
 Kernel = fspecial('sobel');
 Ims = single(cat(3,Imstack{1}{:,1}));
-Gy = imfilter(Ims, -Kernel);
-Gx = imfilter(Ims, -Kernel');
+Gy = imfilter(Ims, -Kernel,'replicate');
+Gx = imfilter(Ims, -Kernel','replicate');
 Gmag = Gx.^2 + Gy.^2;
 for fr = 1:length(Imstack{1})
     Imstack{1}{fr,1} = Gmag(:,:,fr);

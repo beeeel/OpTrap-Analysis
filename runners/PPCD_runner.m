@@ -3,8 +3,8 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'HL60'};
-DSetsDefault = {{'normoxia','drugs'}} ;
+CellDefault = {'LS174T'};
+DSetsDefault = {{'normoxia','hypoxia'}} ;
 NumsDefault = 1:20;
 
 % What settings
@@ -39,6 +39,7 @@ for idx = 1:length(Par.CellType)
         %%{
         for Num = Par.Nums
             RunNo = num2str(Num);
+            disp(RunNo)
             [Imstack, SetName, FileName] = N_LoadImstack();
             %%
             [info, meta] = PostProcessCellDeform_v2(Imstack,'find_cell_v',Par.FindVer,...
