@@ -5,7 +5,7 @@
 % Load
 CellType = 'HL60';
 Set = 'normoxia';
-Num = '17';
+Num = '18';
 [Imstack, info, meta, Ia, FitEqn] = N_TidyLoader(CellType, Set, Num);
 
 Frs = [1, 900];
@@ -16,8 +16,8 @@ for fr = Frs
     subplot(2,length(Frs), find(Frs==fr))
     imagesc(Imstack{1}{fr,1})
     axis image off
-    PlotEllipseOverlay(2 * info(frame).uMajorAxisLength, 2*info(frame.uMinorAxisLength),...
-        info(frame).uOrientation, centres(:, frame) + offset(2:3,frame))
+    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr.uMinorAxisLength),...
+        info(fr).uOrientation, info(fr).mCentres + info.uOffset)
 end
 
 
@@ -28,7 +28,7 @@ try
 catch
     [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
     UnwrapOpts = {'UseGradient',true};
-    if meta.find_cell_v
+    if ~meta.line_maxima_v
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
     else

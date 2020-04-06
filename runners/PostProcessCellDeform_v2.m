@@ -129,8 +129,8 @@ function [info, meta] = PostProcessCellDeform_v2(Imstack, varargin)
 StartTime = cputime;
 
 % Module control parameters - these are overridden by user-defined inputs
-find_cell_v = 2; % Find_cell accurately crops images after circle finding
-seg_cell_v = 5; % Different versions of segment_cell use different methods to produce a mask
+find_cell_v = 0; % Find_cell accurately crops images after circle finding
+seg_cell_v = 0; % Different versions of segment_cell use different methods to produce a mask
 unwrap_cell_v = 2;
 line_maxima_v = 1;
 
