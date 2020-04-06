@@ -2,13 +2,16 @@
 % Show errors from standard deviation of stationary deformation. 
 
 SubPlots = true;
-SvPng = true;
-SvFig = true;
+SvPng = false;
+SvFig = false;
 
 CellType = 'HL60';
-Set = 'with_drugs';
+Set = 'normoxia';
+Nums = [3, 4, 18, 20];
+% Nums = [4,5,6,8,9,11,13,18,20]; % HL60 drugs nums
+
 Fh = figure(9);
-Nums = [4,5,6,8,9,11,13,18,20];
+clf
 for Num = 1:length(Nums)
     if SubPlots
         subplot(ceil(length(Nums)/2),2,Num)
@@ -23,10 +26,10 @@ if SubPlots
     Axs = ones(length(Fh.Children));
     for Ax = Fh.Children'
         This = find(Fh.Children == Ax);
-        if This ~= 6
+        if This ~= 3
             Ax.Title.String = Ax.Title.String(end);
         end
-        if This ~=3
+        if This ~=2
             Ax.YLabel.String = '';
         end
         if This ~= 1
