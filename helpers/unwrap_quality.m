@@ -6,7 +6,11 @@
 CellType = 'HL60';
 Set = 'normoxia';
 Num = '18';
-[Imstack, info, meta, Ia, FitEqn] = N_TidyLoader(CellType, Set, Num);
+
+args = N_TidyLoader(CellType, Set, Num);
+if length(args)>1
+    [Imstack, info, meta, Ia, FitEqn] = args{:};
+end
 
 Frs = [1, 900];
 
@@ -15,16 +19,23 @@ colormap gray
 for fr = Frs
     subplot(2,length(Frs), find(Frs==fr))
     imagesc(Imstack{1}{fr,1})
-    axis image off
-    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr.uMinorAxisLength),...
-        info(fr).uOrientation, info(fr).mCentres + info.uOffset)
+    axis image off, hold on
+    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
+        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
+    
+    subplot(2, length(Frs), length(Frs) + find(Frs==fr))
+    imagesc(Imstack{1}{fr,1})
+    axis image off, hold on
+    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
+        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
 end
 
 
 %% 
-function [Imstack, info, meta, Ia, FitEqn] = N_TidyLoader(CellType, Set, Num)
+function [varargout] = N_TidyLoader(CellType, Set, Num)
 try
-    compare_info_meta_imstack(info, meta, Imstack)
+    evalin('base','compare_info_meta_imstack(info, meta, Imstack)')
+    varargout = {true};
 catch
     [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
     UnwrapOpts = {'UseGradient',true};
@@ -36,5 +47,6 @@ catch
             Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     end
     info = H_UpdateInfoUfits(info, u_fits);
+    varargout = {Imstack, info, meta, Ia, FitEqn};
 end
 end
