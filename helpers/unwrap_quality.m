@@ -1,7 +1,6 @@
 %% Compare unwrap fits
 % Show fit on cell and fit from different frame on cell
 
-
 % Load
 CellType = 'HL60';
 Set = 'normoxia';
@@ -12,7 +11,7 @@ if length(args)>1
     [Imstack, info, meta, Ia, FitEqn] = args{:};
 end
 
-Frs = [1, 900];
+Frs = [1, 500];
 
 fh = figure(37);
 colormap gray
@@ -22,12 +21,14 @@ for fr = Frs
     axis image off, hold on
     PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
         info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
+    title(['Frame ' num2str(fr) ' with fit'])
     
     subplot(2, length(Frs), length(Frs) + find(Frs==fr))
     imagesc(Imstack{1}{fr,1})
     axis image off, hold on
-    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
-        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
+    PlotEllipseOverlay(2 * info(Frs(Frs~=fr)).uMajorAxisLength, 2*info(Frs(Frs~=fr)).uMinorAxisLength,...
+        info(Frs(Frs~=fr)).uOrientation, info(Frs(Frs~=fr)).mCentres + info(Frs(Frs~=fr)).uOffset(2:3))
+    title(['Frame ' num2str(fr) ' with fit from frame ' num2str(Frs(Frs~=fr))])
 end
 
 
@@ -48,5 +49,6 @@ catch
     end
     info = H_UpdateInfoUfits(info, u_fits);
     varargout = {Imstack, info, meta, Ia, FitEqn};
+    %}
 end
 end
