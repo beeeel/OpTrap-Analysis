@@ -58,9 +58,9 @@ for idx = 1:length(Par.CellType)
                             info = rmfield(info, fld{:});
                         end
                     end
-                    save([Par.InfosDir 'info_reduced_seg_' strjoin({ProcName, SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_reduced_seg_' strjoin({SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
                 else
-                    save([Par.InfosDir 'info_seg_' strjoin({ProcName, SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_seg_' strjoin({SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
                 end
             end
         end
@@ -118,7 +118,7 @@ end
                     else
                         FileName = ['HL60_' RunNo '_0.020mms-1_1.avi'];
                     end
-                elseif strcmp(DSet,'drugs')
+                elseif strcmp(DSet,'with_drugs')
                     SetName = 'HL60_with_drugs';
                     FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
                 end
