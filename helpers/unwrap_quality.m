@@ -42,7 +42,9 @@ for fr = Frs
 end
 
 %% Same but with nice title
-
+FitErrs = [info.uFitErrs];
+DMax = ([info.uMajorAxisLength] + FitErrs(1,:) - [info.uMinorAxisLength] - FitErrs(2,:))./...
+    ([info.uMajorAxisLength] + FitErrs(1,:) + [info.uMinorAxisLength] + FitErrs(2,:));
 
 Titles = {['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(2))]; 
     ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(2))]; 
@@ -69,10 +71,9 @@ for n = 0:3
     
     PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
         info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
-    
+%     PlotEllipseOverlay();
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
     axis image off, hold on
-    xlabel('
 end 
 
 
