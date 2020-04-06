@@ -9,24 +9,21 @@ NumsDefault = [3,4,18,20];
 
 % What settings
 FindVerDefault = 0;
-FindDefault = {};%{'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
+FindDefault = {};% {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 %FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
 SegVerDefault = 0;
-SegDefault = {};%{'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
+SegDefault = {};% {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
 UnwrapDefault = {'UseGradient',1};
 
 % What to save
 SummFigDefault = true;
 ToSaveDefault = true;
-KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','mCentres','filepath'};
+KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','uOffset','mCentres','filepath'};
 SaveAllDefault = false;
             
 % Where to save
 InfosDirDefault = '~/Documents/data/OpTrap/infos/';
 FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
-
-% Saved names are of form info_seg_ProcName_SetName_Filename.mat
-ProcName = 'Unwrap-Grad';
 
 ParseInputs();
 
