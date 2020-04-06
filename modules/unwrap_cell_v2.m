@@ -51,16 +51,14 @@ function [Fits, varargout] = unwrap_cell_v2(Imstack, Centres, Radius, varargin)
 % only one frame, or a single frame's worth of centres/radii.
 
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN','parallel','edge_method','UseGradient'};
+    'centering', 'ifNaN','parallel','edge_method','UseGradient','weighted'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, 'simple', false};
+    0, 'mean',false, 'simple', false, true};
 
 Par = ParseInputs(fields, defaults, varargin{:});
 
 % Fix any NaNs from find_cell failing
 [Centres, Radius] = FixNaNs(Centres, Radius, Imstack, Par);
-
-tic
 
 % If using gradient, replace Imstack with gradient values
 if Par.UseGradient; Imstack = CalcGrads(Imstack); end
@@ -100,7 +98,8 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
 %% Fairly self-explanatory tbh. Unwraps data using interp3, finds edges, and fits to fit equation
     % Find the fitting variables to determine size of fits array
     FitVars = coeffnames(fittype(FitEqn));
-
+    N_Frs = length(Imstack{1});
+    
     % Preallocate
     Theta = linspace(1,360,Par.n_theta);
     Rs = (1:round(Par.sc_up * max(Radius)))';
@@ -109,11 +108,10 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
 
     % Debugging memory usage
     Sz = size(Imstack{1}{1,1});
-    Frs = length(Imstack{1});
     Sgl = single(1);
     Sgl = whos('Sgl');
     SglMem = Sgl.bytes;
-    MemNeeded = (Sz(1) * Sz(2) * Frs + 4 * ( Par.n_theta * length(Rs) * Frs)) * SglMem ./ 1e9;
+    MemNeeded = (Sz(1) * Sz(2) * N_Frs + 4 * ( Par.n_theta * length(Rs) * N_Frs)) * SglMem ./ 1e9;
     fprintf('About to request %g GB of memory. Gulp!\n',MemNeeded)
     
     % For speed, everything is in one call to interp3, returning single
@@ -122,9 +120,9 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
     % cast to single for memory efficiency
     Unwrapped = uint16(interp3(...
         single(cat(3,Imstack{1}{:,1})),...                                                              % V
-        single(reshape(Centres(1,:),1,1,length(Centres)) + Rs.*cos(Theta*pi/180)),...                    % Xq
-        single(reshape(Centres(2,:),1,1,length(Centres)) + Rs.*sin(Theta*pi/180)),...                    % Yq
-        single(repmat(reshape(1:length(Imstack{1}),1,1,length(Imstack{1})),length(Rs),Par.n_theta)),...  % Zq
+        single(reshape(Centres(1,:),1,1,N_Frs) + Rs.*cos(Theta*pi/180)),...                    % Xq
+        single(reshape(Centres(2,:),1,1,N_Frs) + Rs.*sin(Theta*pi/180)),...                    % Yq
+        single(repmat(reshape(1:N_Frs,1,1,N_Frs),length(Rs),Par.n_theta)),...  % Zq
         Par.inter_method));                                                                             % METHOD
     fprintf('Finished unwrapping at %gs\n',toc)
     
@@ -135,11 +133,37 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
     % Par.sc_down
     [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par);
     
-    % For each frame, take angles corresponding to fit points and perform
-    % the fit
-    disp('Starting fitting')
-    if ~Par.parallel
-        for frame = 1:length(Imstack{1})
+    [Fits, Errs] = N_DoUnwrappedFits(Theta, idxa, Ia, FitEqn, lb, ub, StartVal, Fits, Errs, N_Frs, Par);
+     
+    fprintf('%s\r',repmat(' ',1,104))
+    fprintf('Fitted data at %gs\n',toc)
+end
+
+function [Fits, Errs] = N_DoUnwrappedFits(Theta, idxa, Ia, FitEqn, lb, ub, StartVal, Fits, Errs, N_Frs, Par)
+%% Performs fits - parallel or non, or weighted
+% For each frame, take angles corresponding to fit points and perform
+% the fit
+disp('Starting fitting')
+FitVars = coeffnames(fittype(FitEqn));
+if ~Par.parallel
+    if Par.weighted
+        if length(FitVars) == 3
+            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),x);
+        else
+            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),val(4),val(5),x);
+        end
+        
+        for frame = 1:N_Frs
+            th_fit = repmat(Theta,1,Par.n_reps) + reshape(360*(0:Par.n_reps-1).*ones(Par.n_theta,1),1,[]);
+            FitMdl = fitnlm(double(th_fit'),repmat(Ia(:,:,frame)',Par.n_reps,1),...
+                WFitEqn,StartVal(frame,:),'Weights',repmat(Ia(:,:,frame)',Par.n_reps,1), ...
+                'Exclude',repmat(~idxa(:,:,frame)',Par.n_reps,1));
+            Fits(:, frame) = FitMdl.Coefficients(:,1).Estimate;
+            Errs(:, frame) = FitMdl.Coefficients(:,2).SE;
+            ProgressBar(frame./N_Frs)
+        end
+    else
+        for frame = 1:N_Frs
             % Take corresponding angles, repeat them and unwrap
             th_fit = repmat(Theta(idxa(:,:,frame)),1,Par.n_reps) + ...
                 reshape(360*(0:Par.n_reps-1).*ones(length(Theta(idxa(:,:,frame))),1),1,[]);
@@ -150,35 +174,33 @@ function [Fits, Ia, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Cen
             end
             ConfInt = confint(fitobj);
             Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-            prog = ceil(100 * frame / length(Imstack{1}));
+            prog = ceil(100 * frame / N_Frs);
             fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
         end
-    else
-        
-        n_reps = Par.n_reps;
-        n_frames = length(Imstack{1});
-        
-        Ias = cell(n_frames,1);
-        Thetas = cell(n_frames,1);
-        for frame = 1:n_frames
-            Thetas{frame} = Theta(idxa(:,:,frame));
-            Ias{frame} = Ia(:,idxa(:,:,frame))';
-        end
-        
-        parfor frame = 1:length(Imstack{1})
-            % Take corresponding angles, repeat them and unwrap
-            th_fit = repmat(Thetas{frame},1,n_reps) + ...
-                reshape(360*(0:n_reps-1).*ones(length(Thetas{frame}),1),1,[]);
-            fitobj = fit(double(th_fit'),repmat(Ias{frame},n_reps,1),FitEqn,...
-                'Lower', lb, 'Upper', ub, 'Start', StartVal(frame,:));
-            
-            Fits(:,frame) = coeffvalues(fitobj);
-            ConfInt = confint(fitobj);
-            Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-        end
     end
-    fprintf('%s\r',repmat(' ',1,104))
-    fprintf('Fitted data at %gs\n',toc)
+else
+    
+    n_reps = Par.n_reps;
+    
+    Ias = cell(N_Frs,1);
+    Thetas = cell(N_Frs,1);
+    for frame = 1:N_Frs
+        Thetas{frame} = Theta(idxa(:,:,frame));
+        Ias{frame} = Ia(:,idxa(:,:,frame))';
+    end
+    
+    parfor frame = 1:N_Frs
+        % Take corresponding angles, repeat them and unwrap
+        th_fit = repmat(Thetas{frame},1,n_reps) + ...
+            reshape(360*(0:n_reps-1).*ones(length(Thetas{frame}),1),1,[]);
+        fitobj = fit(double(th_fit'),repmat(Ias{frame},n_reps,1),FitEqn,...
+            'Lower', lb, 'Upper', ub, 'Start', StartVal(frame,:));
+        
+        Fits(:,frame) = coeffvalues(fitobj);
+        ConfInt = confint(fitobj);
+        Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
+    end
+end
 end
 
 function [Ia, idxa] = FindMaxes(Unwrapped, Radius, Par)
