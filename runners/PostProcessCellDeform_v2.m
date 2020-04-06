@@ -273,7 +273,7 @@ FindFields = {'centres', 'radius', 'find_fails', 'crop'};
 FindValues = {[0;0], 0, uint8(0), [1;sz_frame(2);1;sz_frame(1)]};
 
 UnwrapFields = {'uMajorAxisLength','uMinorAxisLength',...
-    'uOrientation','uTaylorParameter','uFlatness','uOffset'};
+    'uOrientation','uTaylorParameter','uFlatness','uOffset','uFitErrs'};
 UnwrapValues = {0, 0, ...
     0, 0, 0, zeros(3,1)};
 InfoFields = [FindFields, UnwrapFields, SegFields, 'filepath', 'mCentres'];
@@ -407,7 +407,7 @@ if unwrap_cell_v ~= 0
         case 1
             UnwrapFits = unwrap_cell_v1(Imstack, Centres, Radii, unwrap_cell_args{:});
         case 2
-            [UnwrapFits, ~, ~, ~, UnwrapOffset] = unwrap_cell_v2(Imstack, Centres, Radii, unwrap_cell_args{:});
+            [UnwrapFits, ~, ~, ~, UnwrapOffset, FitErrs] = unwrap_cell_v2(Imstack, Centres, Radii, unwrap_cell_args{:});
         otherwise
             error('huh')
     end
@@ -423,6 +423,7 @@ if unwrap_cell_v ~= 0
         info(frame).uMinorAxisLength = UnwrapFits(2,frame);
         info(frame).uOrientation = UnwrapFits(3,frame);
         info(frame).uOffset = UnwrapOffset(:,frame);
+        info(frame).uFitErrs = FitErrs(:,frame);
         
         % Taylor's deformation parameter : (LongestAxisLength-ShortestAxisLength)/(LongestAxisLength+ShortestAxisLength)
         info(frame).uTaylorParameter = ( UnwrapFits(1,frame) - ...
