@@ -13,12 +13,12 @@ FindDefault = {};% {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 %FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
 SegVerDefault = 0;
 SegDefault = {};% {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
-UnwrapDefault = {'UseGradient',1};
+UnwrapDefault = {'UseGradient',0};
 
 % What to save
 SummFigDefault = true;
 ToSaveDefault = true;
-KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','uOffset','uFitErrs','mCentres','filepath'};
+KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','uOrientation','uOffset','uFitErrs','mCentres','filepath'};
 SaveAllDefault = false;
             
 % Where to save
