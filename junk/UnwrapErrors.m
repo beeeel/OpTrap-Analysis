@@ -1,5 +1,6 @@
 %% Show unwrapped result with errorbars
 % Show errors from standard deviation of stationary deformation. 
+global Imstack info meta
 SubPlots = true;
 SvPng = true;
 SvFig = true;

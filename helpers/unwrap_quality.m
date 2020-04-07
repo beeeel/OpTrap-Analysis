@@ -18,7 +18,6 @@ FSizes.YL1 = 14; % XLabels
 FSizes.YL2 = 10;
 
 global Imstack info meta
-
 [args] = N_TidyLoader(CellType, Set, Num);
 if length(args)>1
     [Ia, FitEqn] = args{:};
