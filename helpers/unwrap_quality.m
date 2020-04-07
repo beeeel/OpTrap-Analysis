@@ -7,7 +7,7 @@ Set = 'normoxia';
 Num = '18';
 
 % Display options
-Frs = [1, 500]; % Which frames
+Frs = [1, 536]; % Which frames
 
 % Fontsizes
 FSizes.Ttl1 = 16; % Titles
@@ -17,7 +17,7 @@ FSizes.XL2 = 10;
 FSizes.YL1 = 14; % XLabels
 FSizes.YL2 = 10;
 
-args = N_TidyLoader(CellType, Set, Num);
+[args] = N_TidyLoader(CellType, Set, Num);
 if length(args)>1
     [Imstack, info, meta, Ia, FitEqn] = args{:};
 end
@@ -42,9 +42,12 @@ for fr = Frs
 end
 
 %% Same but with nice title
-FitErrs = [info.uFitErrs];
-DMax = ([info.uMajorAxisLength] + FitErrs(1,:) - [info.uMinorAxisLength] - FitErrs(2,:))./...
-    ([info.uMajorAxisLength] + FitErrs(1,:) + [info.uMinorAxisLength] + FitErrs(2,:));
+Ds = [info.uTaylorParameter];
+DErrs = repmat(std(Ds(1:100)),1,length(info));
+as = [info.uMajorAxisLength];
+bs = [info.uMinorAxisLength];
+
+aErrs = as.^2 .* (DErrs./Ds).^2 .* (1 - Ds) ./ (as + bs).^2;
 
 Titles = {['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(2))]; 
     ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(2))]; 
@@ -56,6 +59,7 @@ N = 11;
 
 fh = figure(38);
 clf
+colormap gray
 subplot(M,N,1:N)
 ax = gca;
 ax.Color = ax.Parent.Color;
@@ -68,20 +72,20 @@ for n = 0:3
     V = floor(n/2) * N*(M-1)/2 + mod(n,2) * (N+1)/2 + (1:(N-1)/2) + (2*N:N:N*(-3+M)/2)';
     subplot(M,N,reshape(V,1,[]))
     imagesc(Imstack{1}{Frames(n+1),1})
-    
+    axis image off, hold on
     PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
         info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
-%     PlotEllipseOverlay();
+    PlotEllipseOverlay(2 * (info(fr).uMajorAxisLength + aErrs(fr)), ...
+        2 * info(fr).uMinorAxisLength,...
+        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3),'r:')
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
-    axis image off, hold on
 end 
 
-
 %%
-function [varargout] = N_TidyLoader(CellType, Set, Num)
+function [Out] = N_TidyLoader(CellType, Set, Num)
 try
     evalin('base','compare_info_meta_imstack(info, meta, Imstack)')
-    varargout = {true};
+    Out = {false};
 catch
     [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
     UnwrapOpts = {'UseGradient',true};
@@ -93,7 +97,7 @@ catch
             Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     end
     info = H_UpdateInfoUfits(info, u_fits);
-    varargout = {Imstack, info, meta, Ia, FitEqn};
+    Out = {Imstack, info, meta, Ia, FitEqn};
     %}
 end
 end
