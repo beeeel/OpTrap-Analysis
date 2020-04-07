@@ -17,9 +17,10 @@ FSizes.XL2 = 10;
 FSizes.YL1 = 14; % XLabels
 FSizes.YL2 = 10;
 
+global Imstack info meta
 [args] = N_TidyLoader(CellType, Set, Num);
 if length(args)>1
-    [Imstack, info, meta, Ia, FitEqn] = args{:};
+    [Ia, FitEqn] = args{:};
 end
 
 %% Show overlaid images and fits
@@ -83,8 +84,9 @@ end
 
 %%
 function [Out] = N_TidyLoader(CellType, Set, Num)
+global Imstack info meta
 try
-    evalin('base','compare_info_meta_imstack(info, meta, Imstack)')
+    compare_info_meta_imstack(info, meta, Imstack)
     Out = {false};
 catch
     [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
@@ -97,7 +99,7 @@ catch
             Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     end
     info = H_UpdateInfoUfits(info, u_fits);
-    Out = {Imstack, info, meta, Ia, FitEqn};
+    Out = {Ia, FitEqn};
     %}
 end
 end

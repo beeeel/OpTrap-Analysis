@@ -1,7 +1,9 @@
-function [Imstack, info, meta] = PlotUnwrapErrors(CellType, Set, Num, varargin)
+function PlotUnwrapErrors(CellType, Set, Num, varargin)
 %% [Imstack, info, meta] = plot_unwrap_errors(CellType, Set, Num, varargin)
 %% Plot deformation for one dataset with errors from std of relaxed deformation
 % This needs a proper input parser soon
+
+global Imstack info meta
 
 if nargin > 3
     [SvFig, SvPng] = varargin{:};
@@ -10,7 +12,7 @@ else
     SvPng = false;
 end
 
-[Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
+LoadImstackInfoMeta(CellType,Set,Num);
 
 % Check correct info, meta and Imstack are loaded
 
