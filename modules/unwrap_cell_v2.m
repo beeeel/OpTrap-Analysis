@@ -55,6 +55,8 @@ fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
     0, 'mean',false, 'simple', false, true};
 
+tic
+
 Par = ParseInputs(fields, defaults, varargin{:});
 
 % Fix any NaNs from find_cell failing
