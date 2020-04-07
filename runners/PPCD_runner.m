@@ -5,7 +5,7 @@ Par = [];
 % Which datasets
 CellDefault = {'HL60'};
 DSetsDefault = {{'normoxia','with_drugs'}} ;
-NumsDefault = [3,4,18,20];
+NumsDefault = [1:20];
 
 % What settings
 FindVerDefault = 0;
