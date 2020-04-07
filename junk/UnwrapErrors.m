@@ -1,40 +1,43 @@
 %% Show unwrapped result with errorbars
 % Show errors from standard deviation of stationary deformation. 
-
 SubPlots = true;
-SvPng = false;
-SvFig = false;
+SvPng = true;
+SvFig = true;
 
 CellType = 'HL60';
-Set = 'normoxia';
-Nums = [3, 4, 18, 20];
+Set = 'with_drugs';
+Nums = [1:20];
 % Nums = [4,5,6,8,9,11,13,18,20]; % HL60 drugs nums
 
 Fh = figure(9);
 clf
 for Num = 1:length(Nums)
     if SubPlots
-        subplot(ceil(length(Nums)/2),2,Num)
+        subplot(ceil(length(Nums)/4),4,Num)
     end
     cla
-    [~, ~, ~] = PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
+    PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
     SaveFigAndPng(CellType, Set, SvPng, SvFig, Num, 0)
 end
 
+TNum = 19;
+% XLNum = 12;
+YLNum = 12;
 if SubPlots
     %% Fixup if subplot
     Axs = ones(length(Fh.Children));
     for Ax = Fh.Children'
         This = find(Fh.Children == Ax);
-        if This ~= 3
+        if This ~= TNum
             Ax.Title.String = Ax.Title.String(end);
         end
-        if This ~=2
+        if This ~=YLNum
             Ax.YLabel.String = '';
         end
-        if This ~= 1
-            Ax.XLabel.FontSize = 8;
-        end
+        Ax.XLabel.FontSize = 14;
+%         if This ~= 1
+%             Ax.XLabel.FontSize = 8;
+%         end
     end
     SaveFigAndPng(CellType, Set, SvPng,SvFig, 0, false)
 end

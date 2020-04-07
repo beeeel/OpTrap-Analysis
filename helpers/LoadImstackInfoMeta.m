@@ -1,13 +1,10 @@
-function [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num, varargin)
+function LoadImstackInfoMeta(CellType, Set, Num, varargin)
 %% [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num)
 % Load an Imstack, and according meta and info structs
 
 validateattributes(Num,{'string','char'},{'nonempty','scalartext'},'Num')
 
-if nargin == 3
-    
-    
-end
+global Imstack info meta
 
 [~, HName] = system('hostname');
 HName = strsplit(HName);
