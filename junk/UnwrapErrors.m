@@ -1,13 +1,13 @@
 %% Show unwrapped result with errorbars
 % Show errors from standard deviation of stationary deformation. 
-
+global Imstack info meta
 SubPlots = true;
 SvPng = false;
 SvFig = false;
 
 CellType = 'HL60';
 Set = 'normoxia';
-Nums = [3, 4, 18, 20];
+Nums = [1:8];
 % Nums = [4,5,6,8,9,11,13,18,20]; % HL60 drugs nums
 
 Fh = figure(9);
@@ -17,7 +17,7 @@ for Num = 1:length(Nums)
         subplot(ceil(length(Nums)/2),2,Num)
     end
     cla
-    [~, ~, ~] = PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
+    PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
     SaveFigAndPng(CellType, Set, SvPng, SvFig, Num, 0)
 end
 
@@ -32,9 +32,10 @@ if SubPlots
         if This ~=2
             Ax.YLabel.String = '';
         end
-        if This ~= 1
-            Ax.XLabel.FontSize = 8;
-        end
+        Ax.XLabel.FontSize = 14;
+%         if This ~= 1
+%             Ax.XLabel.FontSize = 8;
+%         end
     end
     SaveFigAndPng(CellType, Set, SvPng,SvFig, 0, false)
 end
