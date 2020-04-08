@@ -17,9 +17,13 @@ for Num = 1:length(Nums)
     end
     cla
     PlotUnwrapErrors(CellType, Set, num2str(Nums(Num)),false,false);
+<<<<<<< HEAD
     if ~SubPlots
         SaveFigAndPng(CellType, Set, SvPng, SvFig, Num, 0)
     end
+=======
+    SaveFigAndPng(CellType, Set, SvPng, SvFig, Num, 0)
+>>>>>>> ba964ed07ee06ff535235254a9781f313043c8a5
 end
 
 TNum = 19;
