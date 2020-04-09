@@ -2,9 +2,11 @@ function [Fits, varargout] = unwrap_cell_v2(Imstack, Centres, Radius, varargin)
 %UNWRAP_CELL_V2 - perform radial unwrapping of the cell using
 %interpolation, handle off-centre by fitting twice.
 % 
-%unwrap_cell_v2(Imstack, centres, radii, varargin) - if Imstack has
-%N frames, centres and radii must be 2xN and 1xN and contain
+%[Fits, varargout] = unwrap_cell_v2(Imstack, centres, radii, varargin) - if
+%Imstack has N frames, centres and radii must be 2xN and 1xN and contain
 %[X_centre, Y_centre] and radius in each column, respectively.
+%
+% Varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs}
 %
 % Differs from V1 in that it first fits for an off-centre circle, then for
 % a centred ellipse.
