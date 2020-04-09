@@ -20,7 +20,7 @@ FSizes.YL2 = 10;
 global Imstack info meta
 [args] = N_TidyLoader(CellType, Set, Num);
 if length(args)>1
-    [Ia, FitEqn] = args{:};
+    [Unwrapped, Ia, FitEqn] = args{:};
 end
 
 %% Show overlaid images and fits
@@ -89,17 +89,17 @@ try
     compare_info_meta_imstack(info, meta, Imstack)
     Out = {false};
 catch
-    [Imstack, info, meta] = LoadImstackInfoMeta(CellType, Set, Num);
+    LoadImstackInfoMeta(CellType, Set, Num);
     UnwrapOpts = {'UseGradient',true};
     if ~meta.line_maxima_v
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
     else
-        [u_fits, ~, Ia, FitEqn, ~, ~] = unwrap_cell_v2(...
+        [u_fits, Unwrapped, Ia, FitEqn, ~, ~] = unwrap_cell_v2(...
             Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     end
     info = H_UpdateInfoUfits(info, u_fits);
-    Out = {Ia, FitEqn};
+    Out = {Unwrapped, Ia, FitEqn};
     %}
 end
 end
