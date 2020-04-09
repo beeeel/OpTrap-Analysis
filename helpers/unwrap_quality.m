@@ -7,7 +7,7 @@ Set = 'with_drugs';
 Num = '19';
 
 % Display options
-Frs = [1, 1000]; % Which frames
+Frs = [1, 900]; % Which frames
 
 % Fontsizes
 FSizes.Ttl1 = 20; % Titles
