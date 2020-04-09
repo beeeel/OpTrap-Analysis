@@ -2,12 +2,12 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'HL60';
+CellType = 'LS174T';
 Set = 'normoxia';
-Num = '18';
+Num = '11';
 
 % Display options
-Frs = [1, 536]; % Which frames
+Frs = [1, 736]; % Which frames
 
 % Fontsizes
 FSizes.Ttl1 = 16; % Titles
@@ -48,12 +48,13 @@ DErrs = repmat(std(Ds(1:100)),1,length(info));
 as = [info.uMajorAxisLength];
 bs = [info.uMinorAxisLength];
 
-aErrs = as.^2 .* (DErrs./Ds).^2 .* (1 - Ds) ./ (as + bs).^2;
+aErrs = sqrt(2) * (as.^2 .* (DErrs./Ds).^2 .* (1 - Ds) ./ (as + bs).^2);
+bErrs = sqrt(2) * (bs.^2 .* (DErrs./Ds).^2 .* (1 - Ds) ./ (as + bs).^2);
 
-Titles = {['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(2))]; 
-    ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(2))]; 
-    ['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(1))]; 
-    ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(1))]};
+Titles = {['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(1))]; 
+    ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(1))]; 
+    ['Frame ' num2str(Frs(1)) ' with fit from frame ' num2str(Frs(2))]; 
+    ['Frame ' num2str(Frs(2)) ' with fit from frame ' num2str(Frs(2))]};
 Frames = [Frs; Frs];
 M = 11;
 N = 11;
@@ -66,19 +67,24 @@ ax = gca;
 ax.Color = ax.Parent.Color;
 ax.XColor = ax.Parent.Color;
 ax.YColor = ax.Parent.Color;
-title([CellType ' ' Set ' example fits with CI'],'FontSize',FSizes.Ttl1)
+title({[CellType ' ' Set ' ' Num ' example fits with CI'], 'Showing fitted axis + confidence interval with errors from variance of '},'FontSize',FSizes.Ttl1)
 
 for n = 0:3
+    fr1 = Frs(mod(n,2)+1); 
+    fr2 = Frs(ceil((n+1)/2));
     % The workhorse of the loop - the list of subplots covered
     V = floor(n/2) * N*(M-1)/2 + mod(n,2) * (N+1)/2 + (1:(N-1)/2) + (2*N:N:N*(-3+M)/2)';
     subplot(M,N,reshape(V,1,[]))
-    imagesc(Imstack{1}{Frames(n+1),1})
+    imagesc(Imstack{1}{fr1,1})
     axis image off, hold on
-    PlotEllipseOverlay(2 * info(fr).uMajorAxisLength, 2*info(fr).uMinorAxisLength,...
-        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3))
-    PlotEllipseOverlay(2 * (info(fr).uMajorAxisLength + aErrs(fr)), ...
-        2 * info(fr).uMinorAxisLength,...
-        info(fr).uOrientation, info(fr).mCentres + info(fr).uOffset(2:3),'r:')
+    PlotEllipseOverlay(2 * info(fr1).uMajorAxisLength, 2*info(fr1).uMinorAxisLength,...
+        info(fr1).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3))
+    PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength + aErrs(fr2)), ...
+        2 * (info(fr2).uMinorAxisLength - bErrs(fr2) ),...
+        info(fr2).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3),'r:')
+    PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength - aErrs(fr2)), ...
+        2 * (info(fr2).uMinorAxisLength + bErrs(fr2) ),...
+        info(fr2).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3),'b:')
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
 end 
 
