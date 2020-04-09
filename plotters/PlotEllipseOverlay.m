@@ -4,9 +4,9 @@ function PlotEllipseOverlay(Maj, Min, Orient, Centre,varargin)
 % in radians) and centre co-ordinates (x, y) and plot them on the current
 % axis.
 if ~isempty(varargin)
-    LSpec = varargin{1};
+    LSpec = varargin;
 else
-    LSpec = 'k--';
+    LSpec = {'k--','LineWidth', 2};
 end
 
 theta = 0:0.01:2*pi;
@@ -16,5 +16,5 @@ X = 0.5 * Maj .* cos(theta) .* cos(Orient) ...
 Y = 0.5 * Maj .* cos(theta) .* sin(-Orient) ...
     + 0.5 * Min .* sin(theta) .* cos(Orient)...
     + Centre(2);
-plot(X, Y, LSpec, 'LineWidth', 2)
+plot(X, Y, LSpec{:})
 plot(Centre(1),Centre(2),'kx')
