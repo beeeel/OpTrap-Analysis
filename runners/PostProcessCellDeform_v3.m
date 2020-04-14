@@ -9,6 +9,7 @@ function [info, meta] = PostProcessCellDeform_v3(Imstack, varargin)
 % 
 % Branched from v2 during coronavirus times
 
+%% Preamble
 % Timing startpoint
 StartTime = tic;
 % Used by functions
@@ -20,8 +21,11 @@ N_frames = size(Imstack{1},1);
 % Size of each frame
 sz_frame = size(Imstack{1}{1,1});
 
+%% Main body
 % Does what it says
+
 PPCD_Par = ParseInputs(Imstack, varargin{:});
+
 [info, meta] = PreallocateInfoMeta(PPCD_Par);
 
 RunFindCell();
@@ -36,6 +40,7 @@ meta.TotalRunTime = toc(StartTime);
 %% Parse input arguments
     function PPCD_Par = ParseInputs(Imstack, varargin)
         % Max version numbers of modules
+        ModNames = {'segment_cell','find_cell','unwrap_cell','line_maxima'};
         VMaxFC = 3;
         VMaxSC = 6;
         VMaxUC = 3;
@@ -51,23 +56,19 @@ meta.TotalRunTime = toc(StartTime);
         
         addParameter(P,'segment_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxSC},FName,'segment_cell_v'))
-        addParameter(P,'segment_cell',{},@(x)validateattributes(x,{'cell'},...
-            {'nonempty','column'},FName,'segment_cell'))
+        addParameter(P,'segment_cell',{},@(x) ArgsTest(x,ModNames{1}))
         
         addParameter(P,'find_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxFC},FName,'find_cell_v'))
-        addParameter(P,'find_cell',{},@(x)validateattributes(x,{'cell'},...
-            {'nonempty','column'},FName,'find_cell'))
+        addParameter(P,'find_cell',{},@(x) ArgsTest(x,ModNames{2}))
         
         addParameter(P,'unwrap_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxUC},FName,'unwrap_cell_v'))
-        addParameter(P,'unwrap_cell',{},@(x)validateattributes(x,{'cell'},...
-            {'nonempty','column'},FName,'unwrap_cell'))
+        addParameter(P,'unwrap_cell',{},@(x) ArgsTest(x,ModNames{3}))
         
         addParameter(P,'line_maxima_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxLM},FName,'line_maxima_v'))
-        addParameter(P,'line_maxima',{},@(x)validateattributes(x,{'cell'},...
-            {'nonempty','column'},FName,'line_maxima'))
+        addParameter(P,'line_maxima',{},@(x) ArgsTest(x,ModNames{4}))
         
         parse(P,Imstack,varargin{:})
         PPCD_Par = P.Results;
@@ -79,6 +80,14 @@ meta.TotalRunTime = toc(StartTime);
                 validateattributes(x,{'cell'},{'nonempty'}, FName, 'Imstack')
             end
             validateattributes(x{1},{'cell'},{'nonempty','ncols',2}, FName, 'Imstack')
+        end
+        
+        function ArgsTest(x,ArgsName)
+            if isempty(x)
+                validateattributes(x,{'cell'},{'2d'},FName, ArgsName)
+            else
+                validateattributes(x,{'cell'},{'row'},FName, ArgsName)
+            end
         end
     end
 
