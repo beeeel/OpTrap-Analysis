@@ -153,7 +153,7 @@ end
         figure
         subplot(NX, NY, 1)
         cla, hold on
-        if meta.seg_cell_v
+        if meta.segment_cell_v
             plot([info.MajorAxisLength])
             plot([info.MinorAxisLength])
             title('Regionprops axes')
@@ -165,20 +165,20 @@ end
         legend('Major','Minor')
         subplot(NX, NY, 2)
         cla, hold on
-        if meta.seg_cell_v && meta.unwrap_cell_v
+        if meta.segment_cell_v && meta.unwrap_cell_v
             plot([info.TaylorParameter])
             plot([info.uTaylorParameter])
             legend('Regionprops','Unwrap')
         elseif meta.unwrap_cell_v
             plot([info.uTaylorParameter])
             legend('Unwrap')
-        elseif meta.seg_cell_v
+        elseif meta.segment_cell_v
             plot([info.TaylorParameter])
             legend('Regionprops')
         end
         title('Taylor parameters')
         subplot(NX, NY, 3)
-        if meta.seg_cell_v
+        if meta.segment_cell_v
             plot([info.Area])
         end
         title('Area')
