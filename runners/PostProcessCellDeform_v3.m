@@ -202,11 +202,11 @@ meta.TotalRunTime = toc(StartTime);
             end
             meta.line_maxima_args = LMPar;
             meta.line_maxima_time = toc(StartTime) - before;
-            fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
+            fprintf('%s\nFound cells\n%g s elapsed\n%s\n',...
                 pct, meta.line_maxima_time, pct)
             clear Centres LMPar
         else
-            fprintf('%s\n Skipping line_maxima\n %s\n', pct, pct)
+            fprintf('%s\nSkipping line_maxima\n %s\n', pct, pct)
         end
     end
 
@@ -264,7 +264,7 @@ meta.TotalRunTime = toc(StartTime);
                 pct, meta.unwrap_cell_time, pct)
             clear Centres Radii UnwrapFits UnwrapOffset FitErrs UCPar
         else
-            fprintf('%s\n Skipping unwrap_cell\n %s\n', pct, pct)
+            fprintf('%s\nSkipping unwrap_cell\n %s\n', pct, pct)
         end
     end
 %% Run segment_cell
@@ -320,7 +320,7 @@ meta.TotalRunTime = toc(StartTime);
                 end
             end
             meta.segment_cell_args = SCPar;
-            fprintf('%s\Masked cells\n%g s elapsed\n%s\nMeasuring Cells\n%s\n',...
+            fprintf('%s\nMasked cells\n%g s elapsed\n%s\nMeasuring Cells\n%s\n',...
                 pct, toc(StartTime)-before, pct, pct)
             %% Get region properties
             for frame = 1 : N_frames
