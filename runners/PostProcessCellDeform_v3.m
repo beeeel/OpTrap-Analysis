@@ -56,19 +56,19 @@ meta.TotalRunTime = toc(StartTime);
         
         addParameter(P,'segment_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxSC},FName,'segment_cell_v'))
-        addParameter(P,'segment_cell',{},@(x) ArgsTest(x,ModNames{1}))
+        addParameter(P,'segment_cell_args',{},@(x) ArgsTest(x,ModNames{1}))
         
         addParameter(P,'find_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxFC},FName,'find_cell_v'))
-        addParameter(P,'find_cell',{},@(x) ArgsTest(x,ModNames{2}))
+        addParameter(P,'find_cell_args',{},@(x) ArgsTest(x,ModNames{2}))
         
         addParameter(P,'unwrap_cell_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxUC},FName,'unwrap_cell_v'))
-        addParameter(P,'unwrap_cell',{},@(x) ArgsTest(x,ModNames{3}))
+        addParameter(P,'unwrap_cell_args',{},@(x) ArgsTest(x,ModNames{3}))
         
         addParameter(P,'line_maxima_v',0, @(x)validateattributes(x,{'numeric'},...
             {'nonnegative','integer','<=',VMaxLM},FName,'line_maxima_v'))
-        addParameter(P,'line_maxima',{},@(x) ArgsTest(x,ModNames{4}))
+        addParameter(P,'line_maxima_args',{},@(x) ArgsTest(x,ModNames{4}))
         
         parse(P,Imstack,varargin{:})
         PPCD_Par = P.Results;
@@ -117,11 +117,11 @@ meta.TotalRunTime = toc(StartTime);
         
         MetaFields = {'filepath', 'N_Frames','Frame_size', 'TotalRunTime', ...
             'Find_cell_time', 'Unwrap_cell_time', 'Segment_cell_time', 'Line_maxima_time',...
-            'Find_cell_args', 'find_cell_v', 'Segment_cell_args', 'seg_cell_v', ...
+            'Find_cell_args', 'find_cell_v', 'Segment_cell_args', 'segment_cell_v', ...
             'Unwrap_cell_args', 'unwrap_cell_v', 'Line_maxima_args', 'line_maxima_v'};
         MetaValues = {FilePath{1}, N_frames, sz_frame,0, ...
             0, 0, 0, 0,...
-            Par.find_cell_args, Par.find_cell_v, Par.seg_cell_args, Par.seg_cell_v, ...
+            Par.find_cell_args, Par.find_cell_v, Par.segment_cell_args, Par.segment_cell_v, ...
             Par.unwrap_cell_args, Par.unwrap_cell_v, Par.line_maxima_args, Par.line_maxima_v};
         
         % Create one struct for info and one for metadata
@@ -129,7 +129,7 @@ meta.TotalRunTime = toc(StartTime);
         meta = cell2struct(MetaValues, MetaFields, 2);
         
         % Tidy it to remove excess fields
-        if Par.seg_cell_v == 0
+        if Par.segment_cell_v == 0
             info = rmfield(info,SegFields );
             meta = rmfield(meta, {'Segment_cell_time','Segment_cell_args'});
         end
@@ -218,7 +218,9 @@ meta.TotalRunTime = toc(StartTime);
             before = toc(StartTime);
             
             % Take cell location dependent on how it was found
-            if PPCD_Par.line_maxima_v == 0
+            if PPCD_Par.find_cell_v == 0 && PPCD_Par.line_maxima_v == 0
+                error('You need to set a version for find_cell or line_maxima in order to run unwrap_cell')
+            elseif PPCD_Par.line_maxima_v == 0
                 Centres = [info.centres];
                 Radii = [info.radius];
             else
@@ -267,14 +269,14 @@ meta.TotalRunTime = toc(StartTime);
     end
 %% Run segment_cell
     function RunSegmentCell()
-        if PPCD_Par.seg_cell_v ~= 0
+        if PPCD_Par.segment_cell_v ~= 0
             fprintf('%s\nMasking cells\nUsing segment_cell version %i\n%s\n',...
                 pct, PPCD_Par.segment_cell_v, pct)
             before = toc(StartTime);
             %% Run segment_cell
             % Segment cell to get masks array - segment_cell_v2 and newer iterate over
             % image stack.
-            switch PPCD_Par.seg_cell_v
+            switch PPCD_Par.segment_cell_v
                 case 1
                     % V1: Use edge detection, dilation and erosion
                     % I've not had success using this
@@ -286,26 +288,26 @@ meta.TotalRunTime = toc(StartTime);
                     % V2: Use Canny edge detection, followed by thresholding and filtering
                     % This only works for very nice looking cells
                     masks = segment_cell_v2(Imstack, 'crop', [info.crop],  ...
-                        'fails', [info.find_fails], PPCD_Par.seg_cell_args{:});
+                        'fails', [info.find_fails], PPCD_Par.segment_cell_args{:});
                 case 3
                     % V3: Use Laplacian filtering for edge enhancement, thresholding and
                     % dilation.
                     % This is more robust than v2.
-                    masks = segment_cell_v3(Imstack, 'crop', [info.crop], PPCD_Par.seg_cell_args{:});
+                    masks = segment_cell_v3(Imstack, 'crop', [info.crop], PPCD_Par.segment_cell_args{:});
                 case 4
                     masks = segment_cell_v4(Imstack);
                 case 5
                     if PPCD_Par.find_cell_v ~=0
                         [masks, fits, SegFails] = segment_cell_v5(Imstack, 'crop', [info.crop], ...
                             'radius', [info.radius], 'fails', [info.find_fails],...
-                            'centres', [info.centres], PPCD_Par.seg_cell_args{:});
+                            'centres', [info.centres], PPCD_Par.segment_cell_args{:});
                     else
-                        [masks, fits, SegFails, SCPar] = segment_cell_v5(Imstack, PPCD_Par.seg_cell_args{:});
+                        [masks, fits, SegFails, SCPar] = segment_cell_v5(Imstack, PPCD_Par.segment_cell_args{:});
                     end
                 case 6
-                    [masks, fits, SegFails] = segment_cell_v6(Imstack, PPCD_Par.seg_cell_args{:});
+                    [masks, fits, SegFails] = segment_cell_v6(Imstack, PPCD_Par.segment_cell_args{:});
                 otherwise
-                    error('Unknown segment_cell version %d', seg_cell_v);
+                    error('Unknown segment_cell version %d', segment_cell_v);
             end
             
             
@@ -313,7 +315,7 @@ meta.TotalRunTime = toc(StartTime);
             for frame = 1:N_frames
                 info(frame).mask = masks(:,:,frame);
                 info(frame).seg_fails = SegFails(frame);
-                if PPCD_Par.seg_cell_v == 5
+                if PPCD_Par.segment_cell_v == 5
                     info(frame).ellipse_fits = fits(frame, :)';
                 end
             end
