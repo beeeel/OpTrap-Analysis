@@ -1,4 +1,4 @@
-function Centres = LineMaxima_v1(Imstack,varargin)
+function [Centres, P] = LineMaxima_v1(Imstack,varargin)
 %% centres = LineMaxima_v1(Imstack, varargin)
 % Find the centre of the cell in each image of an Imstack by considering
 % distance between the row/column maxima in each frame, after applying
@@ -20,7 +20,7 @@ ColLasts = zeros(NCols,1);
 NERows = zeros(1,NRows);
 NECols = zeros(1,NCols);
 
-if strcmpi(P.Results.Filt,'flat'); Kernel = ones(P.Results.KSize)./P.Results.KSize.^2; end
+if strcmpi(P.Filt,'flat'); Kernel = ones(P.KSize)./P.KSize.^2; end
 FiltIm = zeros(NRows,NCols,'like',Imstack{1}{1,1});
 
 for Frame = 1:NFrames    
@@ -28,8 +28,8 @@ for Frame = 1:NFrames
     % Sharpen image with Laplacian filter - basically a highly tunable
     % way of exaggerating the edges. Time consuming: for an HL60 dataset,
     % 55 s to apply filter to every frame. (55 ms/frame)
-    SharpIm = locallapfilt(FiltIm, P.Results.LapSigma, P.Results.LapAlpha, P.Results.LapBeta);
-    Thresh = prctile(SharpIm, P.Results.PercentThresh, [1,2]);
+    SharpIm = locallapfilt(FiltIm, P.LapSigma, P.LapAlpha, P.LapBeta);
+    Thresh = prctile(SharpIm, P.PercentThresh, [1,2]);
     BWIm = SharpIm >= Thresh;
     
     FindFirstsAndLasts()
@@ -64,7 +64,7 @@ fprintf('Finished finding centre in %g s\n',toc)
         
         
         parse(P,Imstack,varargin{:})
-        
+        P = P.Results;
         function ImstackTest(x)
             try
                 x{1}; %#ok<VUNUS>
@@ -95,13 +95,13 @@ fprintf('Finished finding centre in %g s\n',toc)
         % differently to a Gaussian. I don't know if this is necessary, or
         % if it's better than a Gaussian. You're welcome to try other
         % things
-        switch lower(P.Results.Filt)
+        switch lower(P.Filt)
             case 'flat'
                 % Flatten the frame using kernel above
                 FiltIm = conv2(Imstack{1}{Frame,1}, Kernel, 'same');
             case 'gaussian'
                 % Flatten with gaussian filter
-                FiltIm = imgaussfilt(Imstack{1}{Frame,1},(P.Results.KSize-1)/4);
+                FiltIm = imgaussfilt(Imstack{1}{Frame,1},(P.KSize-1)/4);
             case 'binning'
                 error('Binning not coded yet')
             otherwise

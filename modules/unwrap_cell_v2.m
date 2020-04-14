@@ -93,6 +93,7 @@ switch nargout
     case 4; varargout = {Unwrapped, Ia, FitEqn};
     case 5; varargout = {Unwrapped, Ia, FitEqn, Offset};
     case 6; varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs};
+    case 7; varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs, Par};
 end
 end
 
