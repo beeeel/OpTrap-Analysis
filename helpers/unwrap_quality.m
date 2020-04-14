@@ -26,8 +26,8 @@ end
 %% Show overlaid images and fits with confidence interval
 % Fits are rotated and translated to orientation and centre of cell.
 % Confidence interval from standard deviation of initial deformation.
-SaveFig = true;
-SavePng = true;
+SaveFig = false;
+SavePng = false;
 
 Ds = [info.uTaylorParameter];
 DErrs = repmat(std(Ds(1:100)),1,length(info));
@@ -76,7 +76,7 @@ for n = 0:3
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
 end
 
-SaveFigPng(['fits_CI_std_D_' strjoin({CellType,Set,Num},'_')],'EQ',true,true)
+SaveFigPng(['fits_CI_std_D_' strjoin({CellType,Set,Num},'_')],'EQ',SaveFig,SavePng)
 
 %%
 function [Out] = N_TidyLoader(CellType, Set, Num)

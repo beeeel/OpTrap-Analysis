@@ -34,7 +34,7 @@ function [info, meta] = PostProcessCellDeform_v2(Imstack, varargin)
 %    ellipse_fits       - Output of ellipseDetection [x0 y0 a b theta score]: centres, axis lenghts, angle and quality of fit metric
 %    TotalRunTime       - Total time taken for PostProcessCellDeform to run
 %
-% Note: info field "fielpath" will contain the path up to the first space.
+% Note: info field "filepath" will contain the path up to the first space.
 % In order for this to be the full path, directory and filenames must have
 % no spaces.
 
