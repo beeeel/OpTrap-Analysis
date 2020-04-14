@@ -116,9 +116,9 @@ meta.TotalRunTime = toc(StartTime);
         InfoValues = [FindValues, UnwrapValues, SegValues, FilePath{1}, [0;0]];
         
         MetaFields = {'filepath', 'N_Frames','Frame_size', 'TotalRunTime', ...
-            'Find_cell_time', 'Unwrap_cell_time', 'Segment_cell_time', 'Line_maxima_time',...
-            'Find_cell_args', 'find_cell_v', 'Segment_cell_args', 'segment_cell_v', ...
-            'Unwrap_cell_args', 'unwrap_cell_v', 'Line_maxima_args', 'line_maxima_v'};
+            'find_cell_time', 'unwrap_cell_time', 'segment_cell_time', 'line_maxima_time',...
+            'find_cell_args', 'find_cell_v', 'segment_cell_args', 'segment_cell_v', ...
+            'unwrap_cell_args', 'unwrap_cell_v', 'line_maxima_args', 'line_maxima_v'};
         MetaValues = {FilePath{1}, N_frames, sz_frame,0, ...
             0, 0, 0, 0,...
             Par.find_cell_args, Par.find_cell_v, Par.segment_cell_args, Par.segment_cell_v, ...
@@ -131,19 +131,19 @@ meta.TotalRunTime = toc(StartTime);
         % Tidy it to remove excess fields
         if Par.segment_cell_v == 0
             info = rmfield(info,SegFields );
-            meta = rmfield(meta, {'Segment_cell_time','Segment_cell_args'});
+            meta = rmfield(meta, {'segment_cell_time','segment_cell_args'});
         end
         if Par.find_cell_v == 0
             info = rmfield(info, FindFields);
-            meta = rmfield(meta, {'Find_cell_time','Find_cell_args'});
+            meta = rmfield(meta, {'find_cell_time','find_cell_args'});
         end
         if Par.unwrap_cell_v == 0
             info = rmfield(info, UnwrapFields);
-            meta = rmfield(meta, {'Unwrap_cell_time','Unwrap_cell_args'});
+            meta = rmfield(meta, {'unwrap_cell_time','unwrap_cell_args'});
         end
         if Par.line_maxima_v == 0
             info = rmfield(info, 'mCentres');
-            meta = rmfield(meta, {'Line_maxima_time','Line_maxima_args'});
+            meta = rmfield(meta, {'line_maxima_time','line_maxima_args'});
         end
     end
 
@@ -173,12 +173,12 @@ meta.TotalRunTime = toc(StartTime);
                 end
             end
             % Save parameters from find_cell
-            meta.Find_cell_args = FCPar;
+            meta.find_cell_args = FCPar;
             
             clear cell_dat FCPar
-            meta.Find_cell_time = toc(StartTime) - before;
+            meta.find_cell_time = toc(StartTime) - before;
             fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
-                pct, meta.Find_cell_time, pct)
+                pct, meta.find_cell_time, pct)
         else
             fprintf('%s\n Skipping find_cell\n %s\n', pct, pct)
         end
@@ -200,10 +200,10 @@ meta.TotalRunTime = toc(StartTime);
             for frame = 1:N_frames
                 info(frame).mCentres = Centres(:,frame);
             end
-            meta.Line_maxima_args = LMPar;
-            meta.Line_maxima_time = toc(StartTime) - before;
+            meta.line_maxima_args = LMPar;
+            meta.line_maxima_time = toc(StartTime) - before;
             fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
-                pct, meta.Find_cell_time, pct)
+                pct, meta.line_maxima_time, pct)
             clear Centres LMPar
         else
             fprintf('%s\n Skipping line_maxima\n %s\n', pct, pct)
@@ -257,11 +257,11 @@ meta.TotalRunTime = toc(StartTime);
                 info(frame).uFlatness = ( UnwrapFits(1,frame) - ...
                     UnwrapFits(2,frame)) /  UnwrapFits(1,frame);
             end
-            meta.Unwrap_cell_args = UCPar;
-            meta.Unwrap_cell_time = toc(StartTime) - before;
+            meta.unwrap_cell_args = UCPar;
+            meta.unwrap_cell_time = toc(StartTime) - before;
             
             fprintf('%s\nUnwrapped cells\n%g s elapsed\n%s\n',...
-                pct, meta.Unwrap_cell_time, pct)
+                pct, meta.unwrap_cell_time, pct)
             clear Centres Radii UnwrapFits UnwrapOffset FitErrs UCPar
         else
             fprintf('%s\n Skipping unwrap_cell\n %s\n', pct, pct)
@@ -319,7 +319,7 @@ meta.TotalRunTime = toc(StartTime);
                     info(frame).ellipse_fits = fits(frame, :)';
                 end
             end
-            meta.Segment_cell_args = SCPar;
+            meta.segment_cell_args = SCPar;
             fprintf('%s\Masked cells\n%g s elapsed\n%s\nMeasuring Cells\n%s\n',...
                 pct, toc(StartTime)-before, pct, pct)
             %% Get region properties
@@ -397,9 +397,9 @@ meta.TotalRunTime = toc(StartTime);
             end
             fprintf('%s\r',repmat(' ',1,104))
             clear masks Imstack fits SCPar SegFails
-            meta.Segment_cell_time = toc(StartTime) - before;
+            meta.segment_cell_time = toc(StartTime) - before;
             fprintf('%s\nSegmented cells\n%g s elapsed\n%s\n',...
-                pct, meta.Segment_cell_time, pct)
+                pct, meta.segment_cell_time, pct)
         else
             fprintf('%s\nSkipping segment_cell\n%s\n',...
                 pct, pct)
