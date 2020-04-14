@@ -1,4 +1,4 @@
-function [out] = find_cell_v2(Imstack, varargin)
+function [out, par] = find_cell_v2(Imstack, varargin)
 %[ out ] = find_cell( Imstack ) - finds cell in image
 % Use Gaussian filter, Laplacian for edge enhancement, then use Hough 
 %   circles to find circles. Iterates over frames

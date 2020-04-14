@@ -1,4 +1,4 @@
-function [ mask, fits, SegFails ] = segment_cell_v5( Imstack, varargin)
+function [ mask, fits, SegFails, varargout] = segment_cell_v5( Imstack, varargin)
 %Segment a cell from the centre of the image
 % Use computer vision to segment a cell from the image given. If no values
 %  for crop are given, the cell is assumed to be centrally in the image.
@@ -100,6 +100,7 @@ if ~isempty(varargin)
         Par.(varargin{2*field - 1}) = varargin{2*field};
     end
 end
+varargout{1} = Par;
 
 % Preallocate output arrays
 mask = false([ size(Imstack{1}{1,1}), size(Imstack{1},1)]);
