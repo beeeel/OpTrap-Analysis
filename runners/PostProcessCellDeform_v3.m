@@ -13,7 +13,7 @@ function [info, meta] = PostProcessCellDeform_v3(Imstack, varargin)
 % Timing startpoint
 StartTime = tic;
 % Used by functions
-pct = repmat('%',1,25);
+pct = [' ' repmat('%',1,25)];
 % Where the file was
 FilePath = strsplit(Imstack{1}{1,2});
 % Number of frames
@@ -180,7 +180,7 @@ meta.TotalRunTime = toc(StartTime);
             fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
                 pct, meta.find_cell_time, pct)
         else
-            fprintf('%s\n Skipping find_cell\n %s\n', pct, pct)
+            fprintf('%s\nSkipping find_cell\n%s\n', pct, pct)
         end
     end
 
