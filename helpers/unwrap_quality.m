@@ -2,9 +2,9 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'HL60';
-Set = 'with_drugs';
-Num = '19';
+CellType = 'LS174T';
+Set = 'normoxia';
+Num = '11';
 
 % Display options
 Frs = [1, 900]; % Which frames
@@ -64,15 +64,16 @@ for n = 0:3
     subplot(M,N,reshape(V,1,[]))
     imagesc(Imstack{1}{fr1,1})
     axis image off, hold on
+    % The offset seemed to make it fit wrong. This has been "hacked out".
     PlotEllipseOverlay(2 * info(fr2).uMajorAxisLength, ...
         2*info(fr2).uMinorAxisLength,...
-        info(fr1).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3),'k','LineWidth',3)
+        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'k','LineWidth',3)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength + aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength - bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3),'r:','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'r:','LineWidth',2)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength - aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength + bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + info(fr1).uOffset(2:3),'b--','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'b--','LineWidth',2)
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
 end
 
@@ -86,15 +87,15 @@ try
     Out = {false};
 catch
     LoadImstackInfoMeta(CellType, Set, Num);
-    UnwrapOpts = {'UseGradient',true};
+    UnwrapOpts = {'UseGradient',false,'edge_method','DoG_fitting'};
     if ~meta.line_maxima_v
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
     else
         [u_fits, Unwrapped, Ia, FitEqn, ~, ~] = unwrap_cell_v2(...
-            Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
+            Imstack, [info.mCentres] , repmat(110,1,size(Imstack{1},1)),UnwrapOpts{:});
     end
-    info = H_UpdateInfoUfits(info, u_fits);
+    %info = H_UpdateInfoUfits(info, u_fits);
     Out = {Unwrapped, Ia, FitEqn};
     %}
 end
