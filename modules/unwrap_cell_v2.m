@@ -55,7 +55,7 @@ function [Fits, varargout] = unwrap_cell_v2(Imstack, Centres, Radius, varargin)
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
     'centering', 'ifNaN','parallel','edge_method','UseGradient','weighted'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, 'simple', false, true};
+    0, 'mean',false, 'simple', true, false};
 
 tic
 
@@ -184,7 +184,9 @@ if ~Par.parallel
         end
     end
 else
-    
+    if Par.weighted
+        warning('Weighted argument ignored because running parallel. Write some more code!')
+    end
     n_reps = Par.n_reps;
     
     Ias = cell(N_Frs,1);
@@ -217,12 +219,49 @@ switch Par.edge_method
         idxa = Ia > (1-Par.tol)*median(Ia,2) & Ia < (1+Par.tol)*median(Ia,2);
     case 'gradient'
         error('Unfinished edge_method')
-        Unwrapped = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
-        Gy = zeros(size(Unwrapped));
-        Filt = zeros(size(Unwrapped));
+        UnwrapShrunk = Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,:);
+        Gy = zeros(size(UnwrappedShrunk));
+        Filt = zeros(size(UnwrappedShrunk)); % Why do I do this?
+        for frame = 1:size(UnwrappedShrunk,3)
+            Filt(:,:,frame) = imgaussfilt(UnwrappedShrunk(:,:,frame),5,'FilterSize',[31,1]);
+            [~, Gy(:,:,frame )] = imgradientxy(UnwrappedShrunk(:,:,frame)); % Should do the selection indexing here
+        end
+    case 'edge'
+        warning('edge_method ''edge'' not very effective')
+        Edges = zeros(size(Unwrapped));
+        for frame = 1:size(Unwrapped, 3)
+            % Find edges from a radial region and place into temp array
+            tmp = edge(Unwrapped(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,frame),'approxcanny');
+            % Divide into connected regions
+            [L, N] = bwlabel(tmp);
+            % Count number of pixels in each region, select the largest and
+            % place that region into edges array
+            NPixels = squeeze(sum(L == reshape(1:N,1,1,N),[1,2]));
+            [~, I] = max(NPixels);
+            L(L~=I) = 0;
+            % Index to place correctly in radial space
+            Edges(floor(Par.sc_up*max(Radius)*Par.sc_down):end,:,frame) = L;
+        end
+        par = Par;
+        par.edge_method = 'simple';
+        [Ia, idxa] = FindMaxes(Edges, Radius, par);
+    case 'DoG_fitting'
+        Ia = zeros(size(Unwrapped(1,:,:)));
+        idxa = true(size(Ia));
+        
+        DoG = @(mu, sig, amp, x) amp * (x - mu) .* exp(-0.5.*((x-mu)/sig).^2)./(sqrt(2.*pi) .* sig.^3);
+        Start = [max(Radius), 0.1 * max(Radius), 1];
+        LB = [Par.sc_down * Par.sc_up * max(Radius), 0, -inf];
+        UB = [Par.sc_up * max(Radius), max(Radius), inf];
+        Rdata = 1:size(Unwrapped,1);
         for frame = 1:size(Unwrapped,3)
-            Filt(:,:,frame) = imgaussfilt(Unwrapped(:,:,frame),5,'FilterSize',[31,1]);
-            [~, Gy(:,:,frame )] = imgradientxy(Unwrapped(:,:,frame));
+            for theta = 1:size(Unwrapped,2)
+                Idata = double(Unwrapped(:,theta,frame));
+                Idata = Idata - (max(Idata) + min(Idata))/2;
+                fitobj = fit(Rdata', Idata, DoG, ...
+                    'Lower', LB, 'Upper', UB, 'Start', Start);
+                Ia(1,theta,frame) = fitobj.mu;
+            end
         end
     otherwise
         error('Unrecognised edge_method')
@@ -270,7 +309,7 @@ switch Func
             ub = [inf inf pi size(Imstack{1}{1,1})/2];
             StartVal = [repmat(Radius',1,2) repmat([1.5 0 0],size(Radius,2),1)];
         else
-            error('Centering argument must have value 0 or 1')
+            error('Centering argument must bew true or false')
         end
     otherwise
         error('miscall to GetEqn - you need to specify which equation you want')
