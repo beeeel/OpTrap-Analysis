@@ -2,7 +2,7 @@ function [Fits, Unwrapped, varargout] = unwrap_cell_v3(Imstack, Centres, Radius,
 %UNWRAP_CELL_V3 - perform radial unwrapping of the cell using
 %interpolation, curve fitting or fourier analysis.
 % 
-%unwrap_cell_v2(Imstack, centres, radii, varargin) - if Imstack has
+%unwrap_cell_v3(Imstack, centres, radii, varargin) - if Imstack has
 %N frames, centres and radii must be 2xN and 1xN and contain
 %[X_centre, Y_centre] and radius in each column, respectively.
 %
