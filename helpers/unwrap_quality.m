@@ -92,11 +92,13 @@ catch
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
     else
-        [u_fits, Unwrapped, Ia, FitEqn, ~, ~] = unwrap_cell_v2(...
+        %%
+        [u_fits, Unwrapped, FitEqn, ~, ~, ~] = unwrap_cell_v4(...
             Imstack, [info.mCentres] , repmat(110,1,size(Imstack{1},1)),UnwrapOpts{:});
+        %%
     end
     %info = H_UpdateInfoUfits(info, u_fits);
-    Out = {Unwrapped, Ia, FitEqn};
+    Out = {Unwrapped, u_fits, FitEqn};
     %}
 end
 end
