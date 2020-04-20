@@ -43,7 +43,7 @@ meta.TotalRunTime = toc(StartTime);
         ModNames = {'segment_cell','find_cell','unwrap_cell','line_maxima'};
         VMaxFC = 3;
         VMaxSC = 6;
-        VMaxUC = 3;
+        VMaxUC = 4;
         VMaxLM = 1;
         
         FStack = dbstack;
@@ -236,6 +236,8 @@ meta.TotalRunTime = toc(StartTime);
                 case 2
                     [UnwrapFits, ~, ~, ~, UnwrapOffset, FitErrs, UCPar] = ...
                         unwrap_cell_v2(Imstack, Centres, Radii, PPCD_Par.unwrap_cell_args{:});
+                case 4
+                    [UnwrapFits, ~, ~, UnwrapOffset, FitErrs, UCPar] = unwrap_cell_v4(Imstack, Centres, Radii, PPCD_Par.unwrap_cell_args{:});
                 otherwise
                     error('huh')
             end
