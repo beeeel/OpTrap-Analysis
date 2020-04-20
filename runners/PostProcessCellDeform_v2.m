@@ -239,6 +239,10 @@ if size(whos('unwrap_cell_args'),1) == 0
             unwrap_cell_args = {};
         case 2
             unwrap_cell_args = {};
+        case 3
+            unwrap_cell_args = {};
+        case 4
+            unwrap_cell_args = {};
     end
 else
     %unwrap_cell_v = 0;
@@ -408,6 +412,8 @@ if unwrap_cell_v ~= 0
             UnwrapFits = unwrap_cell_v1(Imstack, Centres, Radii, unwrap_cell_args{:});
         case 2
             [UnwrapFits, ~, ~, ~, UnwrapOffset, FitErrs] = unwrap_cell_v2(Imstack, Centres, Radii, unwrap_cell_args{:});
+        case 4
+            [UnwrapFits, ~, ~, UnwrapOffset, FitErrs, UnwrapPar] = unwrap_cell_v4(Imstack, Centres, Radii, unwrap_cell_args{:});
         otherwise
             error('huh')
     end
@@ -434,6 +440,7 @@ if unwrap_cell_v ~= 0
         info(frame).uFlatness = ( UnwrapFits(1,frame) - ...
             UnwrapFits(2,frame)) /  UnwrapFits(1,frame);
     end
+    meta.unwrap_cell_args = UnwrapPar;
     meta.Unwrap_cell_time = toc(StartTime) - before;
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('Unwrapped cells and finished')
