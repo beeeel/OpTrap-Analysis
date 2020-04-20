@@ -12,12 +12,15 @@ else
     SvPng = false;
 end
 
-LoadImstackInfoMeta(CellType,Set,Num);
-
 % Check correct info, meta and Imstack are loaded
-
-if ~isempty(whos('info')) && ~isempty(whos('meta')) && ~isempty(whos('Imstack'))
+try
     compare_info_meta_imstack(info, meta, Imstack)
+    FName = strsplit(meta.filepath,'/');
+    if ~strcmp(FName{end-1},CellType) && ~strcmp(FName{end-2},CellType)
+        error('haha I just want to get to the catch clause')
+    end
+catch 
+    LoadImstackInfoMeta(CellType,Set,Num);
 end
 
 N_frames = size(Imstack{1},1);
@@ -26,7 +29,7 @@ N_frames = size(Imstack{1},1);
 FSize = 16;
 Frs = 1:90;
 
-Tdata = linspace(0,9.99,size(Imstack{1},1));
+Tdata = linspace(0,size(Imstack{1},1)/100,size(Imstack{1},1));
 %% Calculate error from standard deviation of deformation from select frames
 DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
 %figure(Fh)
