@@ -72,7 +72,7 @@ fprintf('Currently hogging %g GB of memory! Whoops!\n',sum([Var.bytes])./1e9)
 clear Var;
 
 % Perform unwrapping and fitting for off-centreness
-[Offset, ~, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
+[Offset, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
 
 % Get the ellipse equation
 [FitEqn, lb, ub, StartVal] = GetEqn('ellipse', Imstack, Par, Radius);
@@ -96,7 +96,7 @@ end
     function [Fits, Unwrapped, Errs] = UnwrapAndFit(Imstack, FitEqn, Radius, Centres, lb, ub, StartVal, Par)
         %% Fairly self-explanatory tbh. Unwraps data using interp3, finds edges, and fits to fit equation
         % Find the fitting variables to determine size of fits array
-        FitVars = coeffnames(fittype(FitEqn));
+        FitVars = coeffnames(fittype(FitEqn,'independent',{'Theta','R'}));
         N_Frs = length(Imstack{1});
         
         % Preallocate
@@ -136,7 +136,8 @@ end
         % For each frame, take angles corresponding to fit points and perform
         % the fit
         disp('Starting fitting')
-        FitVars = coeffnames(fittype(FitEqn));
+        ThisFit = fittype(FitEqn,'independent',{'Theta','R'});
+        FitVars = coeffnames(ThisFit);
         if ~Par.parallel
             if Par.weighted
                 error('Weighted not programmed yet')
@@ -161,7 +162,7 @@ end
                 for frame = 1:N_Frs
                     % Take corresponding angles, repeat them and unwrap
                     [ThOut, rOut, IOut] = prepareSurfaceData(Theta, Rs, Unwrapped(:,:,frame));
-                    fitobj = fit([ThOut, rOut], IOut,FitEqn,'Upper',ub,'Lower',lb,'Start',StartVal);
+                    fitobj = fit([ThOut, rOut], IOut,ThisFit,'Upper',ub,'Lower',lb,'Start',StartVal(frame,:));
                     for VarN = 1:length(FitVars) % Extract fitted values from cfit object
                         Fits(VarN, frame) = fitobj.(FitVars{VarN});
                     end
@@ -206,13 +207,13 @@ end
             case 'circle'
                 % Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
                 % convert to polar (r = x.^2 + y.^2)
-                FitEqn =@(r, sigma, amp, dy, dy, x, y) ...
-                    amp .* (y - sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2)) .* ...
-                    exp(-((y - sqrt((r .* cos(0.0175.*x) + dx).^2 + (r .* sin(0.0175.*x) + dy).^2)).^2)./(2 .* sigma .^2)) ./ ...
+                FitEqn =@(r, sigma, amp, dx, dy, Theta, R) ...
+                    amp .* (R - sqrt((r .* cos(0.0175.*Theta) + dx).^2 + (r .* sin(0.0175.*Theta) + dy).^2)) .* ...
+                    exp(-((R - sqrt((r .* cos(0.0175.*Theta) + dx).^2 + (r .* sin(0.0175.*Theta) + dy).^2)).^2)./(2 .* sigma .^2)) ./ ...
                     (sqrt(2 .* pi) * sigma.^3);
                 lb = [0, 0, 0, -size(Imstack{1}{1,1})/2];
                 ub = [Par.sc_up * max(Radius), inf, inf, size(Imstack{1}{1,1})/2];
-                StartVal = [Radius', 5, 1e4, repmat([0, 0],size(Radius,2), 1)];
+                StartVal = [Radius', repmat([5, 1e4, 0, 0],size(Radius,2), 1)];
             case 'ellipse'
                 % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
                 % polar, r = (a.cos(f * theta + phi))^2 +  (b.sin(f * theta + phi))^2,
@@ -225,17 +226,17 @@ end
                 % gaussian formula to create a surface equation for a centred
                 % ellipse
                 if ~Par.centering
-                    FitEqn = @(a, b, phi, sigma, amp, x, y) ...
-                        amp .* (y - sqrt((a .* cos(0.0175.*x + phi)).^2 + (b .* sin(0.0175.*x + phi)).^2)) .* ...
-                        exp(-((y - sqrt((a .* cos(0.0175.*x + phi)).^2 + (b .* sin(0.0175.*x + phi)).^2)).^2)./(2 .* sigma .^2)) ./ ...
+                    FitEqn = @(a, b, phi, sigma, amp, Theta, R) ...
+                        amp .* (R - sqrt((a .* cos(0.0175.*Theta + phi)).^2 + (b .* sin(0.0175.*Theta + phi)).^2)) .* ...
+                        exp(-((R - sqrt((a .* cos(0.0175.*Theta + phi)).^2 + (b .* sin(0.0175.*Theta + phi)).^2)).^2)./(2 .* sigma .^2)) ./ ...
                         (sqrt(2 .* pi) * sigma.^3);
                     lb = [0, 0, 0, 0, 0];
                     ub = [inf, inf, pi, 100, inf];
                     StartVal = [repmat(Radius',1,2) repmat([1.5, 5, 1e4],size(Radius,2),1)]; % Use radius from find_cell as a start point
                 elseif Par.centering
-                    FitEqn =  @(a, b, phi, sigma, amp, dx, dy, x, y) ...
-                        amp .* (y - sqrt((a .* cos(0.0175.*x + phi) + dx).^2 + (b .* sin(0.0175.*x + phi) + dy).^2)) .* ...
-                        exp(-((y - sqrt((a .* cos(0.0175.*x + phi) + dx).^2 + (b .* sin(0.0175.*x + phi) + dy).^2)).^2)./(2 .* sigma .^2)) ./ ...
+                    FitEqn =  @(a, b, phi, sigma, amp, dx, dy, Theta, R) ...
+                        amp .* (R - sqrt((a .* cos(0.0175.*Theta + phi) + dx).^2 + (b .* sin(0.0175.*Theta + phi) + dy).^2)) .* ...
+                        exp(-((R - sqrt((a .* cos(0.0175.*Theta + phi) + dx).^2 + (b .* sin(0.0175.*Theta + phi) + dy).^2)).^2)./(2 .* sigma .^2)) ./ ...
                         (sqrt(2 .* pi) * sigma.^3);
                     lb = [0, 0, 0, 0, 0, -size(Imstack{1}{1,1})/2];
                     ub = [inf, inf, pi, inf, inf, size(Imstack{1}{1,1})/2];
