@@ -6,6 +6,7 @@
 CellType = 'HL60';
 Set = 'normoxia';
 Num = '17';
+global Imstack info meta;
 
 [Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
 
@@ -45,7 +46,7 @@ FontSizes.TFontSize = 12;
 
 if isempty(whos('offset')); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
-elseif run_unwrap; [u_fits, unwrapped, Ia, FitEqn, offset, FitErrs] = unwrap_cell_v2(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:}); end %#ok<UNRCH>
+elseif run_unwrap; [UnwrapFits, ~, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});end %#ok<UNRCH>
 
 if n_plots == 4; sbplt = [4 2 4];
 elseif n_plots == 6; sbplt = [6 2 6]; end
@@ -111,7 +112,7 @@ for frame = frs
     elseif strcmp(show_fit, 'unwrap')
         % Using unwrap cell fitting
         PlotEllipseOverlay(2*info(frame).uMajorAxisLength, 2*info(frame).uMinorAxisLength,...
-            info(frame).uOrientation, centres(:,frame) + offset(2:3,frame))
+            info(frame).uOrientation, centres(:,frame) + info.uOffset(2:3,frame))
     elseif strcmp(show_fit,'linemax')
         plot(Centres(1,frame),Centres(2,frame),'kx')
     end
