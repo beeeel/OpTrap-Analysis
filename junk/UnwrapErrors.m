@@ -8,7 +8,7 @@ CellType = 'HL60';
 Set = 'with_drugs';
 Nums = [1:20];
 % Nums = [4,5,6,8,9,11,13,18,20]; % HL60 drugs nums
-
+%%
 Fh = figure(9);
 clf
 for Num = 1:length(Nums)
