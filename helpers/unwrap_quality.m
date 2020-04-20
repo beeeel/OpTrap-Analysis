@@ -87,7 +87,7 @@ try
     Out = {false};
 catch
     LoadImstackInfoMeta(CellType, Set, Num);
-    UnwrapOpts = {'UseGradient',false,'edge_method','DoG_fitting'};
+    UnwrapOpts = {'UseGradient',true,'edge_method','simple'};
     if ~meta.line_maxima_v
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
