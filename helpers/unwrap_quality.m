@@ -87,15 +87,13 @@ try
     Out = {false};
 catch
     LoadImstackInfoMeta(CellType, Set, Num);
-    UnwrapOpts = {'UseGradient',true,'edge_method','simple'};
+    UnwrapOpts = {'UseGradient',false,'edge_method','DoG_fitting'};
     if ~meta.line_maxima_v
         [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
             Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
     else
-        %%
         [u_fits, Unwrapped, FitEqn, ~, ~, ~] = unwrap_cell_v4(...
             Imstack, [info.mCentres] , repmat(110,1,size(Imstack{1},1)),UnwrapOpts{:});
-        %%
     end
     %info = H_UpdateInfoUfits(info, u_fits);
     Out = {Unwrapped, u_fits, FitEqn};
