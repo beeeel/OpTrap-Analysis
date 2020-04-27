@@ -3,8 +3,8 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'LS174T'};
-DSetsDefault = {{'normoxia','hypoxia'}} ;
+CellDefault = {'LS174T','HL60','MV411'};
+DSetsDefault = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}} ;
 NumsDefault = [1:20];
 
 % What settings
