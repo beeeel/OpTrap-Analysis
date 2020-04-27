@@ -54,7 +54,7 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
     'centering', 'ifNaN','parallel','weighted'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, false};
+    0, 'mean',false, true};
 
 tic
 
@@ -139,25 +139,20 @@ end
         ThisFit = fittype(FitEqn,'independent',{'Theta','R'});
         FitVars = coeffnames(ThisFit);
         if ~Par.parallel
-            if Par.weighted
-                error('Weighted not programmed yet')
-                %{
-        if length(FitVars) == 3
-            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),x);
-        else
-            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),val(4),val(5),x);
-        end
-        
-        for frame = 1:N_Frs
-            th_fit = repmat(Theta,1,Par.n_reps) + reshape(360*(0:Par.n_reps-1).*ones(Par.n_theta,1),1,[]);
-            FitMdl = fitnlm(double(th_fit'),repmat(Ia(:,:,frame)',Par.n_reps,1),...
-                WFitEqn,StartVal(frame,:),'Weights',repmat(Ia(:,:,frame)',Par.n_reps,1), ...
-                'Exclude',repmat(~idxa(:,:,frame)',Par.n_reps,1));
-            Fits(:, frame) = FitMdl.Coefficients(:,1).Estimate;
-            Errs(:, frame) = FitMdl.Coefficients(:,2).SE;
-            ProgressBar(frame./N_Frs)
-        end
-                %}
+            if Par.weighted                
+                WFun = @(r, theta, frame) repmat(normalize(normpdf(1:max(Rs),Radius(frame), Radius(frame)/2),'scale','first')',1,length(theta));
+                for frame = 1:N_Frs
+                    % Take corresponding angles, repeat them and unwrap
+                    [ThOut, rOut, IOut] = prepareSurfaceData(Theta, Rs, Unwrapped(:,:,frame));
+                    Weights = WFun(Rs, Theta, frame);
+                    fitobj = fit([ThOut, rOut], IOut,ThisFit,'Upper',ub,'Lower',lb,'Start',StartVal(frame,:),'Weights',Weights);
+                    for VarN = 1:length(FitVars) % Extract fitted values from cfit object
+                        Fits(VarN, frame) = fitobj.(FitVars{VarN});
+                    end
+                    ConfInt = confint(fitobj);
+                    Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
+                    ProgressBar(frame./N_Frs)
+                end
             else
                 for frame = 1:N_Frs
                     % Take corresponding angles, repeat them and unwrap
@@ -168,8 +163,7 @@ end
                     end
                     ConfInt = confint(fitobj);
                     Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-                    prog = ceil(100 * frame / N_Frs);
-                    fprintf('%s\r',['[' repmat('=',1,prog) repmat(' ',1,100-prog) ']'])
+                    ProgressBar(frame./N_Frs)
                 end
             end
         else
