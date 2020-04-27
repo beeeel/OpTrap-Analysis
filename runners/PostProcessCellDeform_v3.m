@@ -105,8 +105,8 @@ meta.TotalRunTime = toc(StartTime);
         SegFields = [RegionFields, 'mask', 'seg_fails','ellipse_fits', 'TaylorParameter', 'Flatness'];
         SegValues = [RegionValues, false(sz_frame), uint8(0), zeros(6,1), 0, 0];
         
-        FindFields = {'centres', 'radius', 'find_fails', 'crop'};
-        FindValues = {[0;0], 0, uint8(0), [1;sz_frame(2);1;sz_frame(1)]};
+        FindFields = {'centres', 'radius'};
+        FindValues = {[0;0], 0};
         
         UnwrapFields = {'uMajorAxisLength','uMinorAxisLength',...
             'uOrientation','uTaylorParameter','uFlatness','uOffset','uFitErrs'};
@@ -167,19 +167,27 @@ meta.TotalRunTime = toc(StartTime);
                     cell_dat = find_cell(Imstack, PPCD_Par.find_cell_args{:});
                 case 2
                     [cell_dat, FCPar] = find_cell_v2(Imstack, PPCD_Par.find_cell_args{:});
+                case 5
+                    [Centres, Widths, FCPar] = find_cell_v5(Imstack, PPCD.find_cell_args{:});
             end
-            
-            % Transfer the info from cell_dat struct into info struct
-            InfoFields = fieldnames(cell_dat);
-            for frame = 1:N_frames
-                for f_no = 1:numel(InfoFields)
-                    info(frame).(InfoFields{f_no}) = cell_dat(frame).(InfoFields{f_no});
+            if PPCD_Par.find_cell_v <= 3
+                % Transfer the info from cell_dat struct into info struct
+                InfoFields = fieldnames(cell_dat);
+                for frame = 1:N_frames
+                    for f_no = 1:numel(InfoFields)
+                        info(frame).(InfoFields{f_no}) = cell_dat(frame).(InfoFields{f_no});
+                    end
+                end
+            else
+                for frame = 1:N_frames
+                    info(frame).centres = Centres(:,frame);
+                    info(frame).radius = Widths(:,frame);
                 end
             end
             % Save parameters from find_cell
             meta.find_cell_args = FCPar;
             
-            clear cell_dat FCPar
+            clear cell_dat FCPar Centres Widths
             meta.find_cell_time = toc(StartTime) - before;
             fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
                 pct, meta.find_cell_time, pct)
@@ -227,17 +235,12 @@ meta.TotalRunTime = toc(StartTime);
             % Take cell location dependent on how it was found
             if PPCD_Par.find_cell_v == 0 && PPCD_Par.line_maxima_v == 0
                 error('You need to set a version for find_cell or line_maxima in order to run unwrap_cell')
-            elseif PPCD_Par.line_maxima_v == 0
+            elseif PPCD_Par.find_cell_v ~= 0
                 Centres = [info.centres];
                 Radii = [info.radius];
             else
                 Centres = [info.mCentres];
-                switch PPCD_Par.line_maxima_v
-                    case 1
-                        Radii = repmat(min(sz_frame)/2,1,N_frames);
-                    case 2
-                        Radii = mean(Widths)/2;
-                end
+                Radii = repmat(min(sz_frame)/2,1,N_frames);
             end
             
             % Do the unwrapping

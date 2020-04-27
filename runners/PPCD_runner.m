@@ -5,10 +5,10 @@ Par = [];
 % Which datasets
 CellDefault = {'LS174T','HL60','MV411'};
 DSetsDefault = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}} ;
-NumsDefault = [1:20];
+NumsDefault = 1:20;
 
 % What settings
-FindVerDefault = 0;
+FindVerDefault = 5;
 FindDefault = {};% {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 %FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
 SegVerDefault = 0;
@@ -43,8 +43,7 @@ for idx = 1:length(Par.CellType)
             [info, meta] = PostProcessCellDeform_v3(Imstack,...
                 'find_cell_v',Par.FindVer, 'find_cell_args',Par.FindOpts, ...
                 'segment_cell_v',Par.SegVer,'segment_cell_args', Par.SegOpts,...
-                'unwrap_cell_v',Par.UnwrapVer,'unwrap_cell_args', Par.UnwrapOpts,...
-                'line_maxima_v',1);
+                'unwrap_cell_v',Par.UnwrapVer,'unwrap_cell_args', Par.UnwrapOpts);
             
             if Par.SummFig == true
                 MakeSummFig(info);
@@ -72,15 +71,15 @@ end
         p = inputParser();
         FName = 'PPCD_runner input validation';
         addParameter(p,'FindVer',FindVerDefault,@(x)validateattributes(x,...
-            {'numeric'},{'nonempty','nonnegative','<',3},FName,'FindVer'))
+            {'numeric'},{'nonempty','nonnegative'},FName,'FindVer'))
         addParameter(p,'FindOpts',FindDefault,@(x)validateattributes(x,...
             {'cell'},{'nonempty'},FName,'FindOpts'))
         addParameter(p,'SegVer',SegVerDefault,@(x)validateattributes(x,...
-            {'numeric'},{'nonempty','nonnegative','<',3},FName,'SegVer'))
+            {'numeric'},{'nonempty','nonnegative'},FName,'SegVer'))
         addParameter(p,'SegOpts',SegDefault,@(x)validateattributes(x,...
             {'cell'},{p,'nonempty'},FName,'SegOpts'))
         addParameter(p,'UnwrapVer',UnwrapVerDefault,@(x)validateattributes(x,...
-            {'numeric'},{'nonempty','nonnegative','<',5},FName,'UnwrapVer'))
+            {'numeric'},{'nonempty','nonnegative'},FName,'UnwrapVer'))
         addParameter(p,'UnwrapOpts',UnwrapDefault,@(x)validateattributes(x,...
             {'cell'},{'nonempty'},FName,'UnwrapOpts'))
         addParameter(p,'KeepFields',KeepDefault,@(x)validateattributes(x,...
