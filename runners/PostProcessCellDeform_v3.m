@@ -44,7 +44,7 @@ meta.TotalRunTime = toc(StartTime);
         VMaxFC = 3;
         VMaxSC = 6;
         VMaxUC = 4;
-        VMaxLM = 1;
+        VMaxLM = 2;
         
         FStack = dbstack;
         FName = FStack(2).name;
@@ -112,8 +112,12 @@ meta.TotalRunTime = toc(StartTime);
             'uOrientation','uTaylorParameter','uFlatness','uOffset','uFitErrs'};
         UnwrapValues = {0, 0, ...
             0, 0, 0, zeros(3,1), zeros(3,1)};
-        InfoFields = [FindFields, UnwrapFields, SegFields, 'filepath', 'mCentres'];
-        InfoValues = [FindValues, UnwrapValues, SegValues, FilePath{1}, [0;0]];
+        
+        LineMaxFields = {'mCentres', 'mWidths'};
+        LineMaxDefaults = {[0;0], [0;0]};
+        
+        InfoFields = [FindFields, UnwrapFields, SegFields, LineMaxFields, 'filepath'];
+        InfoValues = [FindValues, UnwrapValues, SegValues, LineMaxDefaults, FilePath{1}];
         
         MetaFields = {'filepath', 'N_Frames','Frame_size', 'TotalRunTime', ...
             'find_cell_time', 'unwrap_cell_time', 'segment_cell_time', 'line_maxima_time',...
@@ -142,7 +146,7 @@ meta.TotalRunTime = toc(StartTime);
             meta = rmfield(meta, {'unwrap_cell_time','unwrap_cell_args'});
         end
         if Par.line_maxima_v == 0
-            info = rmfield(info, 'mCentres');
+            info = rmfield(info, LineMaxFields);
             meta = rmfield(meta, {'line_maxima_time','line_maxima_args'});
         end
     end
@@ -193,12 +197,15 @@ meta.TotalRunTime = toc(StartTime);
             switch PPCD_Par.line_maxima_v
                 case 1
                     [Centres, LMPar] = LineMaxima_v1(Imstack,PPCD_Par.line_maxima_args{:});
+                case 2
+                    [Centres, Widths, LMPar] = LineMaxima_v2(Imstack,PPCD_Par.line_maxima_args{:});
                 otherwise
                     error('huhnknown line_maxima_v')
             end
             % Parse outputs
             for frame = 1:N_frames
                 info(frame).mCentres = Centres(:,frame);
+                info(frame).mWidths = Widths(:,frame);
             end
             meta.line_maxima_args = LMPar;
             meta.line_maxima_time = toc(StartTime) - before;
@@ -225,7 +232,12 @@ meta.TotalRunTime = toc(StartTime);
                 Radii = [info.radius];
             else
                 Centres = [info.mCentres];
-                Radii = repmat(min(sz_frame)/2,1,N_frames);
+                switch PPCD_Par.line_maxima_v
+                    case 1
+                        Radii = repmat(min(sz_frame)/2,1,N_frames);
+                    case 2
+                        Radii = mean(Widths)/2;
+                end
             end
             
             % Do the unwrapping
