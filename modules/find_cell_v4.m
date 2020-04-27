@@ -1,5 +1,5 @@
-function [Centres, P] = LineMaxima_v1(Imstack,varargin)
-%% centres = LineMaxima_v1(Imstack, varargin)
+function [Centres, P] = find_cell_v4(Imstack,varargin)
+%% centres = find_cell_v4(Imstack, varargin)
 % Find the centre of the cell in each image of an Imstack by considering
 % distance between the row/column maxima in each frame, after applying
 % contrast enhancement. 
