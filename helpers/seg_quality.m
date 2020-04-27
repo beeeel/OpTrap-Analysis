@@ -8,7 +8,7 @@ Set = 'normoxia';
 Num = '17';
 global Imstack info meta;
 
-[Imstack, info, meta] = LoadImstackInfoMeta(CellType,Set,Num);
+LoadImstackInfoMeta(CellType,Set,Num);
 
 %% Segmentation video
 % This can also save a gif or an avi movie
@@ -36,7 +36,7 @@ frs =680:5:750;                 % Frames to display
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
-run_unwrap = 1;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
+run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
 UnwrapOpts = {'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'UseGradient',true}; % Options for unwrap
 
 % Font sizes for axes and titles
@@ -44,9 +44,15 @@ FontSizes.XFontSize = 12;
 FontSizes.YFontSize = 12;
 FontSizes.TFontSize = 12;
 
-if isempty(whos('offset')); run_unwrap = 1; end
-if run_unwrap && meta.find_cell_v; [u_fits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
-elseif run_unwrap; [UnwrapFits, ~, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});end %#ok<UNRCH>
+%%
+if ~isfield(info,'uOffset'); run_unwrap = 1; end
+if run_unwrap && meta.find_cell_v
+    [UnwrapFits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
+elseif run_unwrap 
+    [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
+    for frame = 1:meta.N_Frames; info(frame).uOffset = offset(:,frame); end
+    info = H_UpdateInfoUfits(info, UnwrapFits);
+end
 
 if n_plots == 4; sbplt = [4 2 4];
 elseif n_plots == 6; sbplt = [6 2 6]; end
@@ -55,12 +61,9 @@ filename = strsplit(info(1).filepath,{'/','.','_'});
 fname = strjoin({'seg',filename{9:15}},'_'); % Filename base for saving - seg_(original filename)
 h = figure(13);
 
-centroids = [info.Centroid];
 theta = 0:0.01:2*pi;
 Xdata = 1:size(info,2);
-if run_unwrap; info = H_UpdateInfoUfits(info, u_fits); end
-if meta.seg_cell_v == 5; fits = [info.ellipse_fits]; end
-if strcmp(pt_mode,'analysis'); crops = [info.crop]; end
+if meta.segment_cell_v == 5; fits = [info.ellipse_fits]; end
 if strcmp(show_mask,'initial')
     [rr, cc] = meshgrid(1:size(Imstack{1}{1,1},2),...
         1:size(Imstack{1}{1,1},1));
@@ -104,7 +107,7 @@ for frame = frs
     if strcmp(show_fit, 'regionProps')
         % Using regionprops fitting
         PlotEllipseOverlay(info(frame).MajorAxisLength, info(frame).MinorAxisLength, ...
-            info(frame).Orientation,centroids(frame*2-1:frame*2))
+            info(frame).Orientation,info(frame).Centroid)
     elseif strcmp(show_fit, 'ellipseDetection')
         % Using ellipseDetection fitting
         PlotEllipseOverlay(2 * info(frame).fits(3), 2 * info(frame).fits(4),...
@@ -112,7 +115,7 @@ for frame = frs
     elseif strcmp(show_fit, 'unwrap')
         % Using unwrap cell fitting
         PlotEllipseOverlay(2*info(frame).uMajorAxisLength, 2*info(frame).uMinorAxisLength,...
-            info(frame).uOrientation, centres(:,frame) + info.uOffset(2:3,frame))
+            info(frame).uOrientation, centres(:,frame) + info(frame).uOffset(2:3))
     elseif strcmp(show_fit,'linemax')
         plot(Centres(1,frame),Centres(2,frame),'kx')
     end
@@ -129,7 +132,7 @@ for frame = frs
         
         subplot(sbplt(1), sbplt(2), sbplt(3) + 3)
         cla
-        N_PlotCentreRP(centroids, frame, length(Imstack{1}{1,1}), FontSizes)
+        N_PlotCentreRP([info.Centroid], frame, length(Imstack{1}{1,1}), FontSizes)
         
         if n_plots == 4; xlabel('frame number'); end
         
@@ -214,6 +217,8 @@ elseif makevid == 1
     clear im cm fr imind
 end
 %% These plots are a bit nicer to show people
+centroids = [info.Centroid];
+
 figure(19)
 subplot(221)
 plot([info.TaylorParameter])
