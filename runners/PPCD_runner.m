@@ -141,7 +141,7 @@ end
                     else
                         FileName = ['MV411_' RunNo '_0.020mms-1_1.avi'];
                     end
-                elseif strcmp(DSet,'drugs')
+                elseif strcmp(DSet,'with_drugs')
                     SetName = 'MV411_with_drugs';
                     FileName = ['180717_' RunNo '_MV411_0.020mms-1_1.avi'];
                 end
