@@ -168,7 +168,7 @@ meta.TotalRunTime = toc(StartTime);
                 case 2
                     [cell_dat, FCPar] = find_cell_v2(Imstack, PPCD_Par.find_cell_args{:});
                 case 5
-                    [Centres, Widths, FCPar] = find_cell_v5(Imstack, PPCD.find_cell_args{:});
+                    [Centres, Widths, FCPar] = find_cell_v5(Imstack, PPCD_Par.find_cell_args{:});
             end
             if PPCD_Par.find_cell_v <= 3
                 % Transfer the info from cell_dat struct into info struct
