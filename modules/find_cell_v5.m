@@ -43,7 +43,7 @@ for Frame = 1:NFrames
     
     ProgressBar(Frame/NFrames);
 end
-
+Widths = mean(Widths);
 fprintf('Finished finding centre in %g s\n',toc)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
