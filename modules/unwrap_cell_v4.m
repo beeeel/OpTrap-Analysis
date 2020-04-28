@@ -143,9 +143,9 @@ end
                 WFun = @(r, theta, frame) repmat(normalize(normpdf(1:max(Rs),Radius(frame), Radius(frame)/2),'scale','first')',1,length(theta));
                 for frame = 1:N_Frs
                     % Take corresponding angles, repeat them and unwrap
-                    [ThOut, rOut, IOut] = prepareSurfaceData(Theta, Rs, Unwrapped(:,:,frame));
                     Weights = WFun(Rs, Theta, frame);
-                    fitobj = fit([ThOut, rOut], IOut,ThisFit,'Upper',ub,'Lower',lb,'Start',StartVal(frame,:),'Weights',Weights);
+                    [ThOut, rOut, IOut, WOut] = prepareSurfaceData(Theta, Rs, Unwrapped(:,:,frame), Weights);
+                    fitobj = fit([ThOut, rOut], IOut,ThisFit,'Upper',ub,'Lower',lb,'Start',StartVal(frame,:),'Weights',WOut);
                     for VarN = 1:length(FitVars) % Extract fitted values from cfit object
                         Fits(VarN, frame) = fitobj.(FitVars{VarN});
                     end
