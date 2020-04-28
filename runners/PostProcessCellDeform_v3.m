@@ -41,7 +41,7 @@ meta.TotalRunTime = toc(StartTime);
     function PPCD_Par = ParseInputs(Imstack, varargin)
         % Max version numbers of modules
         ModNames = {'segment_cell','find_cell','unwrap_cell','line_maxima'};
-        VMaxFC = 3;
+        VMaxFC = 5;
         VMaxSC = 6;
         VMaxUC = 4;
         VMaxLM = 2;
@@ -49,7 +49,7 @@ meta.TotalRunTime = toc(StartTime);
         FStack = dbstack;
         FName = FStack(2).name;
         fprintf('Parsing inputs to %s\n',FName)
-        
+       
         P = inputParser();
         
         addRequired(P,'Imstack',@(x) ImstackTest(x));
