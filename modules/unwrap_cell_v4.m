@@ -52,9 +52,9 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 % only one frame, or a single frame's worth of centres/radii.
 
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN','parallel','weighted'};
+    'centering', 'ifNaN','parallel','weighted','extrap_val'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, true};
+    0, 'mean',false, true, 0};
 
 tic
 
@@ -100,10 +100,10 @@ end
         N_Frs = length(Imstack{1});
         
         % Preallocate
-        Theta = linspace(1,360,Par.n_theta);
-        Rs = (1:round(Par.sc_up * max(Radius)))';
-        Fits = zeros(length(FitVars),length(Imstack{1}));
-        Errs = Fits;
+        Theta = linspace(1,360,Par.n_theta); % Angular space sampling points
+        Rs = (1:round(Par.sc_up * max(Radius)))';% Radial space ""     ""
+        Fits = zeros(length(FitVars),length(Imstack{1})); % Fit results
+        Errs = Fits;                                      % Fit errors
         
         % Debugging memory usage
         Sz = size(Imstack{1}{1,1});
@@ -122,7 +122,7 @@ end
             single(reshape(Centres(1,:),1,1,N_Frs) + Rs.*cos(Theta*pi/180)),...                    % Xq
             single(reshape(Centres(2,:),1,1,N_Frs) + Rs.*sin(Theta*pi/180)),...                    % Yq
             single(repmat(reshape(1:N_Frs,1,1,N_Frs),length(Rs),Par.n_theta)),...  % Zq
-            Par.inter_method));                                                                             % METHOD
+            Par.inter_method, Par.extrap_val));                                                                             % METHOD
         fprintf('Finished unwrapping at %gs\n',toc)
         
         [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, FitEqn, lb, ub, StartVal, Fits, Errs, N_Frs, Par);
