@@ -4,7 +4,7 @@
 % Load
 CellType = 'LS174T';
 Set = 'normoxia';
-Num = '11';
+Num = '20';
 
 % Display options
 Frs = [1, 900]; % Which frames
@@ -53,7 +53,7 @@ ax = gca;
 ax.Color = ax.Parent.Color;
 ax.XColor = ax.Parent.Color;
 ax.YColor = ax.Parent.Color;
-title({[CellType ' ' Set ' ' Num ' example fits with CI'], 'Showing fitted axis + confidence interval with errors from','standard deviation of initial deformation'},...
+title({[CellType ' ' Set ' ' Num ' example fits with CI'], ['Showing fitted axis + confidence interval. ' num2str(meta.N_Frames) ' frames.']},...with errors from','standard deviation of initial deformation'},...
     'FontSize',FSizes.Ttl1)
 
 for n = 0:3
