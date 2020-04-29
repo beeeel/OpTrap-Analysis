@@ -189,7 +189,7 @@ meta.TotalRunTime = toc(StartTime);
             
             clear cell_dat FCPar Centres Widths
             meta.find_cell_time = toc(StartTime) - before;
-            fprintf('%s\Found cells\n%g s elapsed\n%s\n',...
+            fprintf('%s\nFound cells\n%g s elapsed\n%s\n',...
                 pct, meta.find_cell_time, pct)
         else
             fprintf('%s\nSkipping find_cell\n%s\n', pct, pct)
