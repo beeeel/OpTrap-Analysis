@@ -39,6 +39,7 @@ elseif strcmp(CellType,'HL60')
     InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set matName '.mat']};
     DataFile = {[DataDir '2017_10_movies-from-aishah/'...
         CellType '/' CellType '_' Set '/' matName(2:end) '.avi']};
+    Loader = 'avi_to_imstack';
 elseif strcmp(CellType,'LS174T')
     switch Set
         case 'hypoxia'
@@ -46,8 +47,28 @@ elseif strcmp(CellType,'LS174T')
         case 'normoxia'
             Date = '200717';
     end
+    Loader = 'avi_to_imstack';
     DataFile = {[DataDir '2017_10_movies-from-aishah/LS174T/' Date '_' Num '_LS174T_' Set '_1.avi']};
-    InfoFile = {[InfosDir 'info_seg_LS174T_' Set '_' Date '_' Num '_LS174T_' Set '_1.mat']};
+    InfoFile = {[InfosDir 'info_reduced_seg_LS174T_' Set '_' Date '_' Num '_LS174T_' Set '_1.mat']};
+elseif strcmp(CellType,'MV411')
+    switch Set
+        case 'normoxia'
+            if str2double(Num) <= 10
+                FName = ['100717_' Num '_ ' CellType '_1.avi'];
+            elseif ~strcmp(Num, '25')
+                FName = [Set '_' Num '_0.020mms-1_1.avi'];
+            else
+                FName = [Set '_' Num '_0.020mms-1_2.avi'];
+            end
+        case 'with_drugs'
+            FName = ['180717_' Num '_' CellType '_0.020mms-1_1.avi'];
+            if strcmp(Num,'12')
+                FName(end-4) = '2';
+            end
+    end
+    InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set '_' FName(1:end-3) 'mat']};
+    DataFile = {[DataDir '2017_10_movies-from-aishah/MV411/MV411_' Set '/' FName]};
+    Loader = 'avi_to_imstack';
 end
 
 % 2) Load it if the last file was different to this

@@ -2,9 +2,9 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'LS174T';
+CellType = 'MV411';
 Set = 'normoxia';
-Num = '20';
+Num = '1';
 
 % Display options
 Frs = [1, 900]; % Which frames
