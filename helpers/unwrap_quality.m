@@ -18,10 +18,7 @@ FSizes.YL1 = 14; % XLabels
 FSizes.YL2 = 10;
 
 global Imstack info meta
-[args] = N_TidyLoader(CellType, Set, Num);
-if length(args)>1
-    [Unwrapped, Ia, FitEqn] = args{:};
-end
+LoadImstackInfoMeta(CellType, Set, Num);
 
 %% Show overlaid images and fits with confidence interval
 % Fits are rotated and translated to orientation and centre of cell.
@@ -78,27 +75,3 @@ for n = 0:3
 end
 
 SaveFigPng(['fits_CI_std_D_' strjoin({CellType,Set,Num},'_')],'EQ',SaveFig,SavePng)
-
-%%
-function [Out] = N_TidyLoader(CellType, Set, Num)
-global Imstack info meta
-try
-    compare_info_meta_imstack(info, meta, Imstack)
-    Out = {false};
-catch
-    LoadImstackInfoMeta(CellType, Set, Num);
-    UnwrapOpts = {'UseGradient',false,'edge_method','DoG_fitting'};
-    if ~meta.line_maxima_v
-        [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
-            Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
-    else
-        %%
-        [u_fits, Unwrapped, FitEqn, ~, ~, ~] = unwrap_cell_v4(...
-            Imstack, [info.mCentres] , repmat(110,1,size(Imstack{1},1)),UnwrapOpts{:});
-        %%
-    end
-    %info = H_UpdateInfoUfits(info, u_fits);
-    Out = {Unwrapped, u_fits, FitEqn};
-    %}
-end
-end
