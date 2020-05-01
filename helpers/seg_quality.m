@@ -54,8 +54,14 @@ elseif run_unwrap
     info = H_UpdateInfoUfits(info, UnwrapFits);
 end
 
-if n_plots == 4; sbplt = [4 2 4];
-elseif n_plots == 6; sbplt = [6 2 6]; end
+AllPlots = {'uTaylorParameter','Taylor Parameter [unwrapping]','','';...
+    'centres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.centres]'',frame)';...
+    'mCentres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.mCentres]'',frame)';...
+    'uOrientation','Orientation [unwrapping]','angle [Rad]', ''};
+SelectedPlots = [1 3 4];
+
+if length(SelectedPlots) <= 4; subplt = [4 2 4];
+elseif length(SelectedPlots) <= 6; subplt = [6 2 6]; end
 
 filename = strsplit(info(1).filepath,{'/','.','_'});
 fname = strjoin({'seg',filename{9:15}},'_'); % Filename base for saving - seg_(original filename)
@@ -63,7 +69,9 @@ h = figure(13);
 
 theta = 0:0.01:2*pi;
 Xdata = 1:size(info,2);
+
 if meta.segment_cell_v == 5; fits = [info.ellipse_fits]; end
+
 if strcmp(show_mask,'initial')
     [rr, cc] = meshgrid(1:size(Imstack{1}{1,1},2),...
         1:size(Imstack{1}{1,1},1));
@@ -101,7 +109,7 @@ for frame = frs
     if size(Imstack{1}{1,1},1) == 1080
         ylim([270, 810]), xlim([480, 1440])
     end
-    title(['Segmentation and fitting: frame ' num2str(frame)],'FontSize',FontSizes.TFontSize+4)
+    title(['Segmentation and fitting: frame ' num2str(frame) ' of ' num2str(meta.N_Frames)],'FontSize',FontSizes.TFontSize+4)
     
     % Draw fitted ellipse
     if strcmp(show_fit, 'regionProps')
@@ -121,6 +129,16 @@ for frame = frs
     end
     
     % Draw plots below
+    count = 1;
+    for plt = SelectedPlots
+        subplot(subplt(1), subplt(2), subplt(3) + count)
+        N_trackPlot(1:meta.N_Frames,[info.(AllPlots{plt,1})], frame);
+        title(AllPlots{plt, 2},'FontSize',FontSizes.TFontSize)
+        ylabel(AllPlots{plt,3},'FontSize',FontSizes.YFontSize)
+        xlabel('Frame (100fps?)','FontSize',FontSizes.XFontSize)
+        count = count + 1;
+    end
+    %{
     if n_plots
         subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
         cla
@@ -209,6 +227,7 @@ for frame = frs
         fr = getframe(h);
         writeVideo(v, fr);
     end
+    %} 
 end
 if makevid == 2
     close(v);
