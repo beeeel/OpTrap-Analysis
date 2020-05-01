@@ -201,8 +201,8 @@ end
         %% Get an equation and bounds for fitting
         switch Func
             case 'circle'
-                switch Par.centering
-                    case '2D'
+%                 switch Par.centering
+%                     case '2D'
                         % Parametric eqn of off-centre circle (x = cos(t) + dx, y = sin(t) + dy),
                         % convert to polar (r = x.^2 + y.^2), insert DoG
                         % radial profile
@@ -213,7 +213,7 @@ end
                         lb = [0, 0, 0, -size(Imstack{1}{1,1})/2];
                         ub = [Par.sc_up * max(Radius), inf, inf, size(Imstack{1}{1,1})/2];
                         StartVal = [Radius', repmat([5, 1e4, 0, 0],size(Radius,2), 1)];
-                    case '1D'
+%                     case '1D'
                         % 
             case 'ellipse'
                 % From parametric equation of ellipse (x = a cos(t), y = b sin(t)), take to
