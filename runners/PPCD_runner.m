@@ -3,8 +3,8 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'LS174T','HL60','MV411'};
-DSetsDefault = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}} ;
+CellDefault = {'HL60'};%{'LS174T','HL60','MV411'};
+DSetsDefault = {{'normoxia','with_drugs'}};%{{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}} ;
 NumsDefault = 1:20;
 
 % What settings
@@ -14,7 +14,7 @@ FindDefault = {};% {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
 SegVerDefault = 0;
 SegDefault = {};% {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
 UnwrapVerDefault = 4;
-UnwrapDefault = {'UseGradient',	0, 'edge_method','DoG_fitting'};
+UnwrapDefault = {};
 
 % What to save
 SummFigDefault = true;

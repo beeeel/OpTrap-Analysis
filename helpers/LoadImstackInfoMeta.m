@@ -5,6 +5,7 @@ function LoadImstackInfoMeta(CellType, Set, Num, varargin)
 validateattributes(Num,{'string','char'},{'nonempty','scalartext'},'Num')
 
 global Imstack info meta
+persistent InfoFileOld DataFileOld
 
 [~, HName] = system('hostname');
 HName = strsplit(HName);
@@ -15,15 +16,16 @@ elseif strcmp(HName{1},'bowtie')
 end
 
 InfosDir = [DataDir 'infos/'];
-if isempty(whos('Imstack')); Imstack = {{0,''}}; end % Create an empty
 
+% 1) Get filenames for data and info
 if strcmp(CellType,'hela')
-    S = load([InfosDir 'info-hela_ctrl_s_020_tr_70_' Num '.mat']);
-    Imstack = load_imstack('0610/Deformation','ctrl','020','70',0,Num);
+    InfoFile = {[InfosDir 'info-hela_ctrl_s_020_tr_70_' Num '.mat']};
+    DataFile = {'0610/Deformation','ctrl','020','70',0,Num};
+    Loader = 'load_imstack';
 elseif strcmp(Set,'Jenna')
-    S = load(strcat(InfosDir, 'info_Jenna_test_no_erode',Num,'.mat'));
-    imfile = [DataDir '1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',Num,'_MMStack.ome.tif'];
-    Imstack = bfopen(imfile);
+    InfoFile = {strcat(InfosDir,'info_Jenna_test_no_erode',Num,'.mat')};
+    DataFile = {[DataDir '1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',Num,'_MMStack.ome.tif']};
+    Loader = 'bfopen';
 elseif strcmp(CellType,'HL60')
     if strcmp(Set,'with_drugs')
         matName = ['_190717_HL60_' Num '_0.020mm-1_1'];
@@ -34,16 +36,50 @@ elseif strcmp(CellType,'HL60')
             matName = ['_' CellType '_' Num '_0.020mms-1_1'];
         end 
     end
-    S = load([InfosDir 'info_reduced_seg_' CellType '_' Set matName '.mat']);
-    imfile = [DataDir '2017_10_movies-from-aishah/'...
-        CellType '/' CellType '_' Set '/' matName(2:end) '.avi'];
-    Imstack = avi_to_imstack(imfile);
+    InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set matName '.mat']};
+    DataFile = {[DataDir '2017_10_movies-from-aishah/'...
+        CellType '/' CellType '_' Set '/' matName(2:end) '.avi']};
+    Loader = 'avi_to_imstack';
 elseif strcmp(CellType,'LS174T')
-    imfile = ['200717_' Num '_LS174T_' Set '_1.avi'];
-    if strcmp(Set,'hypoxia'); imfile(2) = '1'; end
-    S = load([InfosDir 'info_seg_LS174T_' Set '_' imfile(1:end-4) '.mat']);
-    Imstack = avi_to_imstack([DataDir '2017_10_movies-from-aishah/LS174T/' imfile]);
+    switch Set
+        case 'hypoxia'
+            Date = '210717';
+        case 'normoxia'
+            Date = '200717';
+    end
+    Loader = 'avi_to_imstack';
+    DataFile = {[DataDir '2017_10_movies-from-aishah/LS174T/' Date '_' Num '_LS174T_' Set '_1.avi']};
+    InfoFile = {[InfosDir 'info_reduced_seg_LS174T_' Set '_' Date '_' Num '_LS174T_' Set '_1.mat']};
+elseif strcmp(CellType,'MV411')
+    switch Set
+        case 'normoxia'
+            if str2double(Num) <= 10
+                FName = ['100717_' Num '_ ' CellType '_1.avi'];
+            elseif ~strcmp(Num, '25')
+                FName = [Set '_' Num '_0.020mms-1_1.avi'];
+            else
+                FName = [Set '_' Num '_0.020mms-1_2.avi'];
+            end
+        case 'with_drugs'
+            FName = ['180717_' Num '_' CellType '_0.020mms-1_1.avi'];
+            if strcmp(Num,'12')
+                FName(end-4) = '2';
+            end
+    end
+    InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set '_' FName(1:end-3) 'mat']};
+    DataFile = {[DataDir '2017_10_movies-from-aishah/MV411/MV411_' Set '/' FName]};
+    Loader = 'avi_to_imstack';
 end
-info = S.info;
-meta = S.meta;
+
+% 2) Load it if the last file was different to this
+if ~strcmp(InfoFileOld, InfoFile) || ~strcmp(DataFileOld, DataFile)
+    Imstack = eval([Loader '(DataFile{:});']);
+    S = load(InfoFile{:});
+    % 3) Extract info and meta for output
+    info = S.info;
+    meta = S.meta;
+    % 4) Update trackers
+    InfoFileOld = InfoFile;
+    DataFileOld = DataFile;
+end
 end

@@ -2,9 +2,9 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'LS174T';
+CellType = 'MV411';
 Set = 'normoxia';
-Num = '11';
+Num = '1';
 
 % Display options
 Frs = [1, 900]; % Which frames
@@ -18,10 +18,7 @@ FSizes.YL1 = 14; % XLabels
 FSizes.YL2 = 10;
 
 global Imstack info meta
-[args] = N_TidyLoader(CellType, Set, Num);
-if length(args)>1
-    [Unwrapped, Ia, FitEqn] = args{:};
-end
+LoadImstackInfoMeta(CellType, Set, Num);
 
 %% Show overlaid images and fits with confidence interval
 % Fits are rotated and translated to orientation and centre of cell.
@@ -53,12 +50,13 @@ ax = gca;
 ax.Color = ax.Parent.Color;
 ax.XColor = ax.Parent.Color;
 ax.YColor = ax.Parent.Color;
-title({[CellType ' ' Set ' ' Num ' example fits with CI'], 'Showing fitted axis + confidence interval with errors from','standard deviation of initial deformation'},...
+title({[CellType ' ' Set ' ' Num ' example fits with CI'], ['Showing fitted axis + confidence interval. ' num2str(meta.N_Frames) ' frames.']},...with errors from','standard deviation of initial deformation'},...
     'FontSize',FSizes.Ttl1)
 
 for n = 0:3
-    fr2 = Frs(mod(n,2)+1); 
-    fr1 = Frs(ceil((n+1)/2));
+    % Which frames to take image and fits from
+    fr2 = Frs(mod(n,2)+1); % Fits from here - [1, 2, 1, 2]
+    fr1 = Frs(ceil((n+1)/2)); % Image from here - [1, 1, 2, 2]
     % The workhorse of the loop - the list of subplots covered
     V = floor(n/2) * N*(M-1)/2 + mod(n,2) * (N+1)/2 + (1:(N-1)/2) + (2*N:N:N*(-3+M)/2)';
     subplot(M,N,reshape(V,1,[]))
@@ -78,27 +76,3 @@ for n = 0:3
 end
 
 SaveFigPng(['fits_CI_std_D_' strjoin({CellType,Set,Num},'_')],'EQ',SaveFig,SavePng)
-
-%%
-function [Out] = N_TidyLoader(CellType, Set, Num)
-global Imstack info meta
-try
-    compare_info_meta_imstack(info, meta, Imstack)
-    Out = {false};
-catch
-    LoadImstackInfoMeta(CellType, Set, Num);
-    UnwrapOpts = {'UseGradient',false,'edge_method','DoG_fitting'};
-    if ~meta.line_maxima_v
-        [u_fits, ~, Ia, FitEqn, ~] = unwrap_cell_v2(...
-            Imstack, [info.centres] , [info.radius],UnwrapOpts{:});
-    else
-        %%
-        [u_fits, Unwrapped, FitEqn, ~, ~, ~] = unwrap_cell_v4(...
-            Imstack, [info.mCentres] , repmat(110,1,size(Imstack{1},1)),UnwrapOpts{:});
-        %%
-    end
-    %info = H_UpdateInfoUfits(info, u_fits);
-    Out = {Unwrapped, u_fits, FitEqn};
-    %}
-end
-end
