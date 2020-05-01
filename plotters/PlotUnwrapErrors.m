@@ -13,15 +13,7 @@ else
 end
 
 % Check correct info, meta and Imstack are loaded
-try
-    compare_info_meta_imstack(info, meta, Imstack)
-    FName = strsplit(meta.filepath,'/');
-    if ~strcmp(FName{end-1},CellType) && ~strcmp(FName{end-2},CellType)
-        error('haha I just want to get to the catch clause')
-    end
-catch 
-    LoadImstackInfoMeta(CellType,Set,Num);
-end
+LoadImstackInfoMeta(CellType,Set,Num);
 
 N_frames = size(Imstack{1},1);
 
