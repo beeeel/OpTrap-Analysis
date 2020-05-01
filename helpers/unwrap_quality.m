@@ -54,8 +54,9 @@ title({[CellType ' ' Set ' ' Num ' example fits with CI'], ['Showing fitted axis
     'FontSize',FSizes.Ttl1)
 
 for n = 0:3
-    fr2 = Frs(mod(n,2)+1); 
-    fr1 = Frs(ceil((n+1)/2));
+    % Which frames to take image and fits from
+    fr2 = Frs(mod(n,2)+1); % Fits from here - [1, 2, 1, 2]
+    fr1 = Frs(ceil((n+1)/2)); % Image from here - [1, 1, 2, 2]
     % The workhorse of the loop - the list of subplots covered
     V = floor(n/2) * N*(M-1)/2 + mod(n,2) * (N+1)/2 + (1:(N-1)/2) + (2*N:N:N*(-3+M)/2)';
     subplot(M,N,reshape(V,1,[]))
