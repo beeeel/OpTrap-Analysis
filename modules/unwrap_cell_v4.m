@@ -64,22 +64,28 @@ Par = ParseInputs(fields, defaults, varargin{:});
 [Centres, Radius] = FixNaNs(Centres, Radius, Imstack, Par);
 
 % Get the circle equation
-%[CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
-
-% Debugging memory usage
-Var = whos;
-fprintf('Currently hogging %g GB of memory! Whoops!\n',sum([Var.bytes])./1e9)
-clear Var;
-
-% Perform unwrapping and fitting for off-centreness
-%[Offset, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
+if strcmp(Par.centering,'circle')
+    [CircleEqn, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
+       
+    % Debugging memory usage
+    Var = whos;
+    fprintf('Currently hogging %g GB of memory! Whoops!\n',sum([Var.bytes])./1e9)
+    clear Var;
+    
+    % Perform unwrapping and fitting for off-centreness
+    [Offset, ~, ~] = UnwrapAndFit(Imstack, CircleEqn, Radius,  Centres, lb, ub, StartVal, Par);
+end
 
 % Get the ellipse equation
 [FitEqn, lb, ub, StartVal] = GetEqn('ellipse', Imstack, Par, Radius);
 
 % Perform unwrapping and fitting with updated centre locations
-%[Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Offset(1,:),  Centres + Offset(4:5,:), lb, ub, StartVal, Par);
-[Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres, lb, ub, StartVal, Par);
+switch Par.centering
+    case 'circle'
+        [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Offset(1,:),  Centres + Offset(4:5,:), lb, ub, StartVal, Par);
+    otherwise
+        [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, FitEqn, Radius,  Centres, lb, ub, StartVal, Par);
+end
 
 
 % Fix the equivalent fitting equations problem - if b>a
