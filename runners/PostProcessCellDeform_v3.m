@@ -262,7 +262,6 @@ meta.TotalRunTime = toc(StartTime);
                 info(frame).uMajorAxisLength = UnwrapFits(1,frame);
                 info(frame).uMinorAxisLength = UnwrapFits(2,frame);
                 info(frame).uOrientation = UnwrapFits(3,frame);
-                info(frame).uOffset = UnwrapOffset(:,frame);
                 info(frame).uFitErrs = FitErrs(1:3,frame);
                 
                 % Taylor's deformation parameter : (LongestAxisLength-ShortestAxisLength)/(LongestAxisLength+ShortestAxisLength)
@@ -273,6 +272,13 @@ meta.TotalRunTime = toc(StartTime);
                 % Flatness : (majorAxisLength-MinorAxisLength)/MajorAxisLength
                 info(frame).uFlatness = ( UnwrapFits(1,frame) - ...
                     UnwrapFits(2,frame)) /  UnwrapFits(1,frame);
+            end
+            % Offset is not always found - depends on args. This hotfix is
+            % ugly af but it works
+            if ~isempty(UnwrapOffset)
+                for frame = 1:N_frames
+                    info(frame).uOffset = UnwrapOffset(:,frame);
+                end
             end
             meta.unwrap_cell_args = UCPar;
             meta.unwrap_cell_time = toc(StartTime) - before;
