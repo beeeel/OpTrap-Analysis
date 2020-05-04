@@ -19,7 +19,7 @@ UnwrapDefault = {};
 % What to save
 SummFigDefault = true;
 ToSaveDefault = true;
-KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','uOrientation','uOffset','uFitErrs','mCentres','filepath'};
+KeepDefault = {'uTaylorParameter','uMinorAxisLength','uMajorAxisLength','uOrientation','uOffset','uFitErrs','centres','radius','filepath'};
 SaveAllDefault = false;
             
 % Where to save

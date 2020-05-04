@@ -2,7 +2,7 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'MV411';
+CellType = 'HL60';
 Set = 'normoxia';
 Num = '1';
 
