@@ -89,9 +89,9 @@ Fits(1:2,:) = [max(Fits(1:2,:)); min(Fits(1:2,:))];
 switch nargout
     case 2; varargout = {Unwrapped};
     case 3; varargout = {Unwrapped, FitEqn};
-    case 4; varargout = {Unwrapped, FitEqn, Offset};
-    case 5; varargout = {Unwrapped, FitEqn, Offset, FitErrs};
-    case 6; varargout = {Unwrapped, FitEqn, Offset, FitErrs, Par};
+    case 4; varargout = {Unwrapped, FitEqn, []};
+    case 5; varargout = {Unwrapped, FitEqn, [], FitErrs};
+    case 6; varargout = {Unwrapped, FitEqn, [], FitErrs, Par}; % empty matrix replaced Offset
 end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Functions start here
