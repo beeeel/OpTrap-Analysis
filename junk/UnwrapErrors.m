@@ -1,11 +1,12 @@
 %% Show unwrapped result with errorbars
 % Show errors from standard deviation of stationary deformation. 
 SubPlots = true;
-SvPng = true;
-SvFig = true;
+SvMulti = true;
+SvPng = false;
+SvFig = false;
 
 CellType = 'HL60';
-Set = 'with_drugs';
+Set = 'normoxia';
 Nums = [1:20];
 % Nums = [4,5,6,8,9,11,13,18,20]; % HL60 drugs nums
 %%
@@ -22,18 +23,18 @@ for Num = 1:length(Nums)
     end
 end
 
-TNum = 19;
+TtlNum = 19;
 % XLNum = 12;
-YLNum = 12;
+YLabNum = 12;
 if SubPlots
     %% Fixup if subplot
     Axs = ones(length(Fh.Children));
     for Ax = Fh.Children'
-        This = find(Fh.Children == Ax);
-        if This ~= TNum
+        ThisAxNum = find(Fh.Children == Ax);
+        if ThisAxNum ~= TtlNum
             Ax.Title.String = Ax.Title.String(end);
         end
-        if This ~=YLNum
+        if ThisAxNum ~=YLabNum
             Ax.YLabel.String = '';
         end
         Ax.XLabel.FontSize = 14;
@@ -41,7 +42,7 @@ if SubPlots
 %             Ax.XLabel.FontSize = 8;
 %         end
     end
-    SaveFigAndPng(CellType, Set, SvPng,SvFig, 0, false)
+    SaveFigAndPng(CellType, Set, SvMulti,SvMulti, 0, false)
 end
 
 %%
