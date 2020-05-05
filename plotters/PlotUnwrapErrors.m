@@ -15,15 +15,13 @@ end
 % Check correct info, meta and Imstack are loaded
 LoadImstackInfoMeta(CellType,Set,Num);
 
-N_frames = size(Imstack{1},1);
-
 %% Plotting variables
 FSize = 16;
 Frs = 1:90;
 
-Tdata = linspace(0,size(Imstack{1},1)/100,size(Imstack{1},1));
+Tdata = linspace(0,meta.N_Frames/100,meta.N_Frames);
 %% Calculate error from standard deviation of deformation from select frames
-DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,N_frames);
+DErrs = repmat(std([info(Frs).uTaylorParameter],0,2),1,meta.N_Frames);
 %figure(Fh)
 %clf
 hold on
