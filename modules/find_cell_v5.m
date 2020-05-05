@@ -71,7 +71,7 @@ fprintf('Finished finding centre in %g s\n',toc)
         
         
         parse(P,Imstack,varargin{:})
-        P = P.Results;
+        P = rmfield(P.Results,'Imstack');
         function ImstackTest(x)
             try
                 x{1}; %#ok<VUNUS>
