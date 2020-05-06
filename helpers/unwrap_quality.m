@@ -2,12 +2,12 @@
 % Show fit on cell and fit from different frame on cell
 
 % Load
-CellType = 'HL60';
+CellType = 'LS174T';
 Set = 'normoxia';
-Num = '1';
+Num = '11';
 
 % Display options
-Frs = [1, 900]; % Which frames
+Frs = [42, 770]; % Which frames
 
 % Fontsizes
 FSizes.Ttl1 = 20; % Titles
@@ -24,7 +24,7 @@ LoadImstackInfoMeta(CellType, Set, Num);
 % Fits are rotated and translated to orientation and centre of cell.
 % Confidence interval from standard deviation of initial deformation.
 SaveFig = false;
-SavePng = false;
+SavePng = true;
 
 Ds = [info.uTaylorParameter];
 DErrs = repmat(std(Ds(1:100)),1,length(info));
@@ -65,13 +65,13 @@ for n = 0:3
     % The offset seemed to make it fit wrong. This has been "hacked out".
     PlotEllipseOverlay(2 * info(fr2).uMajorAxisLength, ...
         2*info(fr2).uMinorAxisLength,...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'k','LineWidth',3)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'k','LineWidth',3)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength + aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength - bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'r:','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'r:','LineWidth',2)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength - aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength + bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'b--','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'b--','LineWidth',2)
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
 end
 
