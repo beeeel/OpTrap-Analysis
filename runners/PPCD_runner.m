@@ -3,14 +3,13 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'LS174T'};% {'LS174T','HL60','MV411'};
-DSetsDefault = {{'normoxia','hypoxia'}}; % {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}} ;
-NumsDefault = 1:20;
+CellDefault = {'LS174T','HL60','MV411'};
+DSetsDefault = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
+NumsDefault = {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
 
 % What settings
 FindVerDefault = 5;
-FindDefault = {};% {'Sensitivity',0.95,'Rs',[80 120],'Gfilt',3};
-%FindDefault = {'Sensitivity',0.96,'Rs',[30 50],'Gfilt',3};
+FindDefault = {};
 SegVerDefault = 0;
 SegDefault = {};% {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
 UnwrapVerDefault = 4;
@@ -28,14 +27,14 @@ FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
 
 ParseInputs();
 
-for idx = 1:length(Par.CellType)
-    FolderName = ['~/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{idx} '/'];
+for CTidx = 1:length(Par.CellType)
+    FolderName = ['~/Documents/data/OpTrap/2017_10_movies-from-aishah/' Par.CellType{CTidx} '/'];
     disp(FolderName)
-    for Didx = 1:length(Par.DSets{idx})
-        DSet = Par.DSets{idx}{Didx};
+    for Didx = 1:length(Par.DSets{CTidx})
+        DSet = Par.DSets{CTidx}{Didx};
         disp(DSet)
         %%{
-        for Num = Par.Nums
+        for Num = Par.Nums{CTidx}{Didx}
             RunNo = num2str(Num);
             disp(RunNo)
             [Imstack, SetName, FileName] = N_LoadImstack();
@@ -111,7 +110,7 @@ end
     end
 %%
     function [Imstack, SetName, FileName]  = N_LoadImstack()
-            if strcmp(Par.CellType{idx}, 'HL60')
+            if strcmp(Par.CellType{CTidx}, 'HL60')
                 if strcmp(DSet,'normoxia')
                     SetName = 'HL60_normoxia';
                     if str2double(RunNo) <= 10
@@ -124,15 +123,15 @@ end
                     FileName = ['190717_HL60_' RunNo '_0.020mm-1_1.avi'];
                 end
                 Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
-            elseif strcmp(Par.CellType{idx},'LS174T')
-                SetName = [Par.CellType{idx} '_' DSet];
-                FileName = ['200717_' RunNo '_' Par.CellType{idx} '_' DSet '_1.avi'];
+            elseif strcmp(Par.CellType{CTidx},'LS174T')
+                SetName = [Par.CellType{CTidx} '_' DSet];
+                FileName = ['200717_' RunNo '_' Par.CellType{CTidx} '_' DSet '_1.avi'];
                 if strcmp(DSet,'hypoxia')
                     FileName(2) = '1';
                 end
                 Imstack = avi_to_imstack([FolderName FileName]);
-            elseif strcmp(Par.CellType{idx},'HeLa')
-            elseif strcmp(Par.CellType{idx}, 'MV411')
+            elseif strcmp(Par.CellType{CTidx},'HeLa')
+            elseif strcmp(Par.CellType{CTidx}, 'MV411')
                 if strcmp(DSet,'normoxia')
                     SetName = 'MV411_normoxia';
                     if str2double(RunNo) <= 10
