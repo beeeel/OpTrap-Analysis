@@ -4,7 +4,7 @@
 % Load
 CellType = 'HL60';
 Set = 'normoxia';
-Num = '1';
+Num = '2';
 
 % Display options
 Frs = [1, 900]; % Which frames
@@ -65,13 +65,13 @@ for n = 0:3
     % The offset seemed to make it fit wrong. This has been "hacked out".
     PlotEllipseOverlay(2 * info(fr2).uMajorAxisLength, ...
         2*info(fr2).uMinorAxisLength,...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'k','LineWidth',3)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'k','LineWidth',3)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength + aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength - bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'r:','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'r:','LineWidth',2)
     PlotEllipseOverlay(2 * (info(fr2).uMajorAxisLength - aErrs(fr2)), ...
         2 * (info(fr2).uMinorAxisLength + bErrs(fr2) ),...
-        info(fr1).uOrientation, info(fr1).mCentres + 0* info(fr1).uOffset(2:3),'b--','LineWidth',2)
+        info(fr1).uOrientation, info(fr1).centres + 0* info(fr1).uOffset(2:3),'b--','LineWidth',2)
     title(Titles{n+1},'FontSize',FSizes.Ttl2)
 end
 
