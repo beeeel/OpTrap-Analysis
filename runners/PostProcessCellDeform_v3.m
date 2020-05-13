@@ -15,7 +15,7 @@ StartTime = tic;
 % Used by functions
 pct = [' ' repmat('%',1,25)];
 % Where the file was
-FilePath = strsplit(Imstack{1}{1,2});
+FilePath = GetFilePath(Imstack);
 % Number of frames
 N_frames = size(Imstack{1},1);
 % Size of each frame
@@ -37,6 +37,16 @@ RunUnwrapCell();
 RunSegmentCell();
 
 meta.TotalRunTime = toc(StartTime);
+%% Get filepath from Imstack
+    function FilePath = GetFilePath(Imstack)
+        SplitPath = strsplit(Imstack{1}{1,2});
+        if length(SplitPath) <= 2
+            FilePath = SplitPath{1};
+        elseif length(SplitPath) >= 3
+            FilePath = strjoin(SplitPath(1:end-1),' '); % Some filenames contain spaces
+            warning('Filepath may contain spaces - be careful or my code will give you weird bugs!')
+        end
+    end
 %% Parse input arguments
     function PPCD_Par = ParseInputs(Imstack, varargin)
         % Max version numbers of modules
