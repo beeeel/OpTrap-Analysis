@@ -56,9 +56,9 @@ elseif strcmp(CellType,'MV411')
             if str2double(Num) <= 10
                 FName = ['100717_' Num '_ ' CellType '_1.avi'];
             elseif ~strcmp(Num, '25')
-                FName = [Set '_' Num '_0.020mms-1_1.avi'];
+                FName = [CellType '_' Num '_0.020mms-1_1.avi'];
             else
-                FName = [Set '_' Num '_0.020mms-1_2.avi'];
+                FName = [CellType '_' Num '_0.020mms-1_2.avi'];
             end
         case 'with_drugs'
             FName = ['180717_' Num '_' CellType '_0.020mms-1_1.avi'];
