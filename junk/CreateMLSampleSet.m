@@ -7,7 +7,7 @@ FramesPerSet = 100;
 % Which datasets to take images from
 Cells = {'LS174T', 'HL60', 'MV411'};
 DSets = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
-Nums = {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
+Nums = {{1:20, 1:20},{1:30, 1:20},{1:24, 1:20}};
 
 % Calculate how many images there will be
 AllNums = [Nums{:}];
