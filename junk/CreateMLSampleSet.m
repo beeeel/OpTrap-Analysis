@@ -17,7 +17,7 @@ NumIms = FramesPerSet * NumSets;
 SelectedIms = cell(NumIms, 2);
 Count = 1;
 global Imstack info meta
-
+StartTime = tic;
 for CTidx = 1:length(Cells)
     CellType = Cells{CTidx};
     disp(['Started ' CellType])
@@ -60,6 +60,7 @@ for CTidx = 1:length(Cells)
         end
     end
 end
+toc(StartTime)
 %% Augment
 % Take a circular mask, interpolate the sample to create deformation, stick
 % back on top of the image
