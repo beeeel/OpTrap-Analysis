@@ -136,8 +136,10 @@ end
                     SetName = 'MV411_normoxia';
                     if str2double(RunNo) <= 10
                         FileName = ['100717_' RunNo '_ MV411_1.avi'];
-                    else
+                    elseif str2double(RunNo) ~= 25
                         FileName = ['MV411_' RunNo '_0.020mms-1_1.avi'];
+                    else
+                        FileName = ['MV411_' RunNo '_0.020mms-1_2.avi'];
                     end
                 elseif strcmp(DSet,'with_drugs')
                     SetName = 'MV411_with_drugs';
