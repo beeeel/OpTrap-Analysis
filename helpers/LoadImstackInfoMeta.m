@@ -98,7 +98,7 @@ elseif strcmp(CellType,'MV411')
 end
 
 % 2) Load it if the last file was different to this
-if ~strcmp(InfoFileOld, InfoFile) || ~strcmp(DataFileOld, DataFile)
+if ~strcmp(InfoFileOld, InfoFile) || ~strcmp(DataFileOld, DataFile) || ImstackOnly
     Imstack = eval([Loader '(DataFile{:});']);
     if ~ImstackOnly
         S = load(InfoFile{:});
