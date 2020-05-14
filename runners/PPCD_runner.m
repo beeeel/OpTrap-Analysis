@@ -35,9 +35,9 @@ for CTidx = 1:length(Par.CellType)
         disp(DSet)
         %%{
         for Num = Par.Nums{CTidx}{Didx}
-            RunNo = num2str(Num);
-            disp(RunNo)
-            [Imstack, SetName, FileName] = N_LoadImstack();
+            NumStr = num2str(Num);
+            disp(NumStr)
+            Imstack = N_LoadImstack();
             %%
             [info, meta] = PostProcessCellDeform_v3(Imstack,...
                 'find_cell_v',Par.FindVer, 'find_cell_args',Par.FindOpts, ...
@@ -56,9 +56,9 @@ for CTidx = 1:length(Par.CellType)
                             info = rmfield(info, fld{:});
                         end
                     end
-                    save([Par.InfosDir 'info_reduced_seg_' strjoin({SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_reduced_seg_' strjoin({Par.CellType{CTidx}, DSet, NumStr},'_') '.mat'], 'info', 'meta');
                 else
-                    save([Par.InfosDir 'info_seg_' strjoin({SetName, FileName(1:end-4)},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_seg_' strjoin({Par.CellType{CTidx}, DSet, NumStr},'_') '.mat'], 'info', 'meta');
                 end
             end
         end
@@ -109,7 +109,9 @@ end
         end
     end
 %%
-    function [Imstack, SetName, FileName]  = N_LoadImstack()
+    function Imstack = N_LoadImstack()
+        Imstack = LoadImstackInfoMeta(Par.CellType{CTidx}, DSet, NumStr);
+        %{
             if strcmp(Par.CellType{CTidx}, 'HL60')
                 if strcmp(DSet,'normoxia')
                     SetName = 'HL60_normoxia';
@@ -148,6 +150,7 @@ end
                 Imstack = avi_to_imstack([FolderName SetName '/' FileName]);
                 
             end
+        %}
     end
 %%
     function MakeSummFig(info)
@@ -205,7 +208,7 @@ end
                 title('Centres (find\_cell)')
             end
         end
-        hgsave([Par.FigSaveDir, strjoin({SetName,RunNo,'summaryplot'},'_')])
+        hgsave([Par.FigSaveDir, strjoin({Par.CellType{CTidx},DSet,NumStr,'summaryplot'},'_')])
         close
         
     end
