@@ -41,7 +41,7 @@ meta.TotalRunTime = toc(StartTime);
     function FilePath = GetFilePath(Imstack)
         SplitPath = strsplit(Imstack{1}{1,2});
         if length(SplitPath) <= 2
-            FilePath = SplitPath{1};
+            FilePath = SplitPath(1);
         elseif length(SplitPath) >= 3
             FilePath = {strjoin(SplitPath(1:end-1),' ')}; % Some filenames contain spaces
             warning('Filepath may contain spaces - be careful or my code will give you weird bugs!')
