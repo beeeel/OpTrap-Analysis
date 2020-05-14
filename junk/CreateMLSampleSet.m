@@ -7,7 +7,7 @@ FramesPerSet = 100;
 % Which datasets to take images from
 Cells = {'LS174T', 'HL60', 'MV411'};
 DSets = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
-Nums = {{1:20, 1:20},{1:30, 1:20},{1:24, 1:20}};
+Nums = {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
 
 % Calculate how many images there will be
 AllNums = [Nums{:}];
@@ -51,8 +51,9 @@ for CTidx = 1:length(Cells)
                 ImInfo.Centre = info(ImInfo.FrNum).centres;
                 ImInfo.ImW = size(Imstack{1}{ImInfo.FrNum},2);
                 ImInfo.ImH = size(Imstack{1}{ImInfo.FrNum},1);
+                OutSize = 2^ceil(log2(max(size(Imstack{1}{1,1}))));
                 
-                SelectedIms{Count,1} = zeros(2^ceil(log2(max(size(Imstack{1}{1,1})))));
+                SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize,OutSize);
                 SelectedIms{Count,1}(1:ImInfo.ImH, 1:ImInfo.ImW) = Imstack{1}{ImInfo.FrNum,1};
                 SelectedIms{Count,2} = ImInfo;
                 Count = Count + 1;
@@ -77,7 +78,7 @@ for Imidx = 1:Count-1
         Dir = [SaveDir 'relaxed/'];
     end
     FName = strjoin({II.CellType, II.Set, II.Num, num2str(II.FrNum)},'_');
-    imwrite(SelectedIms{Imidx,1},[Dir FName '.pgm'])
+    imwrite(uint8(SelectedIms{Imidx,1}),[Dir FName '.pgm'])
     [FID, msg] = fopen([Dir FName '.txt'],'w');
     fprintf(FID,'CellType\t%s\tSet\t%s\tSetNum\t%s\tFrame\t%i\tRadius\t%g\tCentre(x)\t%g\tCentre(y)\t%g',II.CellType,II.Set,II.Num,II.FrNum,II.Radius,II.Centre(1),II.Centre(2));
     fclose(FID);
