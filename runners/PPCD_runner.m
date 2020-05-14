@@ -94,7 +94,7 @@ end
             {'string','char'},{'nonempty','row','scalartext'},FName,'FigSaveDir'))
         addParameter(p,'DSets',DSetsDefault,@(x)ValidateDSets(x))
         addParameter(p,'Nums',NumsDefault,@(x)validateattributes(x,...
-            {'cell'},{'nonempty','row','nonnegative'},FName,'Nums'))
+            {'cell'},{'nonempty','row'},FName,'Nums'))
         
         parse(p,varargin{:});
         Par = p.Results;
