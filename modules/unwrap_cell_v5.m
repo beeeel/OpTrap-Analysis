@@ -81,7 +81,7 @@ end
 
 % Perform unwrapping and fitting with updated centre locations
 if ~ isempty(whos('Offset'))
-    [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Offset(1,:),  Centres + Offset(4:5,:), lb, ub, StartVal, Par);
+    [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Offset(1,:),  Centres + Offset(end-1:end,:), lb, ub, StartVal, Par);
 else
     [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Radius,  Centres, lb, ub, StartVal, Par);
 end
@@ -144,8 +144,9 @@ end
         % the fit
         disp('Starting fitting')
         FitVars = coeffnames(ThisFit);
-        switch length(indepnames(ThisFit))
-            case 2
+        FitDimensions = length(indepnames(ThisFit));
+        switch FitDimensions
+            case 2 % Fitting 2D
                 if ~Par.parallel
                     if Par.weighted
                         WFun = @(r, theta, frame) repmat(normalize(normpdf(1:max(Rs),Radius(frame), Radius(frame)/2),'scale','first')',1,length(theta));
@@ -207,9 +208,9 @@ end
                 if ~Par.parallel
                     if Par.weighted
                         if length(FitVars) == 3
-                            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),x);
+                            WFitEqn = @(val, x) feval(ThisFit,val(1),val(2),val(3),x);
                         else
-                            WFitEqn = @(val, x) FitEqn(val(1),val(2),val(3),val(4),val(5),x);
+                            WFitEqn = @(val, x) feval(ThisFit,val(1),val(2),val(3),val(4),val(5),x);
                         end
                         
                         for frame = 1:N_Frs
