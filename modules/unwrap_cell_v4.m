@@ -52,9 +52,9 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 % only one frame, or a single frame's worth of centres/radii.
 
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
-    'centering', 'ifNaN','parallel','weighted','extrap_val'};
+    'centering', 'ifNaN','parallel','weighted','extrap_val','norm_method'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, true, 0};
+    0, 'mean',false, true, 0,'demean'};
 
 tic
 
@@ -133,10 +133,27 @@ end
             Par.inter_method, Par.extrap_val));                                                                             % METHOD
         fprintf('Finished unwrapping at %gs\n',toc)
         
+        if ~isempty(Par.norm_method)
+            Unwrapped = N_DoNormalize(Unwrapped, Par);
+        end
+        
         [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, FitEqn, lb, ub, StartVal, Fits, Errs, N_Frs, Par);
         
         fprintf('%s\r',repmat(' ',1,104))
         fprintf('Fitted data at %gs\n',toc)
+    end
+    
+    function Unwrapped = N_DoNormalize(Unwrapped, Par)
+        %% Normalize data to sit symmetrically about 0
+        [NRs, NThs, NFrs] = size(Unwrapped);
+        VecFrames = reshape(Unwrapped, 1, [], NFrs);
+        switch Par.norm_method
+            case 'demean'
+                VecFrames = normalize(VecFrames, 2, 'center','mean');
+            case 'demedian'
+                VecFrames = normalize(VecFrames, 2, 'center','median');
+        end
+        Unwrapped = reshape(VecFrames, NRs, NThs, NFrs);
     end
 
     function [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, FitEqn, lb, ub, StartVal, Fits, Errs, N_Frs, Par)
@@ -159,7 +176,7 @@ end
                     end
                     ConfInt = confint(fitobj);
                     Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-                    ProgressBar(frame./N_Frs)
+                    MyProgressBar(frame./N_Frs)
                 end
             else
                 for frame = 1:N_Frs
@@ -171,7 +188,7 @@ end
                     end
                     ConfInt = confint(fitobj);
                     Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-                    ProgressBar(frame./N_Frs)
+                    MyProgressBar(frame./N_Frs)
                 end
             end
         else
