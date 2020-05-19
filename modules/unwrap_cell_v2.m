@@ -165,7 +165,7 @@ if ~Par.parallel
                 'Exclude',repmat(~idxa(:,:,frame)',Par.n_reps,1));
             Fits(:, frame) = FitMdl.Coefficients(:,1).Estimate;
             Errs(:, frame) = FitMdl.Coefficients(:,2).SE;
-            ProgressBar(frame./N_Frs)
+            MyProgressBar(frame./N_Frs)
         end
     else
         for frame = 1:N_Frs

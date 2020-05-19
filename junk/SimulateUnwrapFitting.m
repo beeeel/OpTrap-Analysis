@@ -47,7 +47,7 @@ for repeat = 1:n_repeats
             'Lower', [0 0 -pi/2], 'Upper', [inf inf pi/2], 'Start', [10, 10, 3]);
         sim_fits(:,sim,repeat) = [fitobj.a, fitobj.b, fitobj.phi];
     end
-    ProgressBar(repeat / n_repeats);
+    MyProgressBar(repeat / n_repeats);
 end
 % Fix the equivalent fitting equations problem - if b>a
 sim_fits(3,:) = sim_fits(3,:) + (sim_fits(2,:) > sim_fits(1,:)) * pi/2;

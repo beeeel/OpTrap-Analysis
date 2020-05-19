@@ -36,7 +36,7 @@ for Frame = 1:NFrames
     Centres(1,Frame) = median(mean([RowFirsts(NERows(NERows~=0)),RowLasts(NERows(NERows~=0))],2));
     Centres(2,Frame) = median(mean([ColFirsts(NECols(NECols~=0)),ColLasts(NECols(NECols~=0))],2));
 
-    ProgressBar(Frame/NFrames);
+    MyProgressBar(Frame/NFrames);
 end
 
 fprintf('Finished finding centre in %g s\n',toc)

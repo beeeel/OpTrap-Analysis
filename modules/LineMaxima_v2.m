@@ -40,7 +40,7 @@ for Frame = 1:NFrames
     Widths(1,Frame) = prctile(RowLasts(NERows(NERows~=0)) - RowFirsts(NERows(NERows~=0)),P.WidthPercentile);
     Widths(2,Frame) = prctile(ColLasts(NECols(NECols~=0)) - ColFirsts(NECols(NECols~=0)),P.WidthPercentile);
     
-    ProgressBar(Frame/NFrames);
+    MyProgressBar(Frame/NFrames);
 end
 
 fprintf('Finished finding centre in %g s\n',toc)
