@@ -31,7 +31,7 @@ show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'non
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =680:5:750;                 % Frames to display
+frs =200;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -58,7 +58,7 @@ AllPlots = {'uTaylorParameter','Taylor Parameter [unwrapping]','','';...
     'centres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.centres]'',frame)';...
     'mCentres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.mCentres]'',frame)';...
     'uOrientation','Orientation [unwrapping]','angle [Rad]', ''};
-SelectedPlots = [1 3 4];
+SelectedPlots = [1 2 4];
 
 if length(SelectedPlots) <= 4; subplt = [4 2 4];
 elseif length(SelectedPlots) <= 6; subplt = [6 2 6]; end
@@ -72,7 +72,7 @@ Xdata = 1:size(info,2);
 
 if meta.segment_cell_v == 5; fits = [info.ellipse_fits]; end
 
-if strcmp(show_mask,'initial')
+if strcmp(show_mask,'initial') || meta.find_cell_v
     [rr, cc] = meshgrid(1:size(Imstack{1}{1,1},2),...
         1:size(Imstack{1}{1,1},1));
     centres = [info.centres];
