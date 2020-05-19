@@ -160,7 +160,7 @@ end
                             end
                             ConfInt = confint(fitobj);
                             Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-                            ProgressBar(frame./N_Frs)
+                            MyProgressBar(frame./N_Frs)
                         end
                     else
                         for frame = 1:N_Frs
@@ -172,7 +172,7 @@ end
                             end
                             ConfInt = confint(fitobj);
                             Errs(:,frame) = (ConfInt(2,:) - ConfInt(1,:))/2;
-                            ProgressBar(frame./N_Frs)
+                            MyProgressBar(frame./N_Frs)
                         end
                     end
                 else
@@ -220,7 +220,7 @@ end
                                 'Exclude',repmat(~idxa(:,:,frame)',Par.n_reps,1));
                             Fits(:, frame) = FitMdl.Coefficients(:,1).Estimate;
                             Errs(:, frame) = FitMdl.Coefficients(:,2).SE;
-                            ProgressBar(frame./N_Frs)
+                            MyProgressBar(frame./N_Frs)
                         end
                     else
                         for frame = 1:N_Frs
