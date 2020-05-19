@@ -24,7 +24,7 @@ LoadImstackInfoMeta(CellType, Set, Num);
 % Fits are rotated and translated to orientation and centre of cell.
 % Confidence interval from standard deviation of initial deformation.
 SaveFig = false;
-SavePng = true;
+SavePng = false;
 
 Ds = [info.uTaylorParameter];
 DErrs = repmat(std(Ds(1:100)),1,length(info));
