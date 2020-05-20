@@ -1,13 +1,13 @@
-function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
-%unwrap_cell_v4 - perform radial unwrapping by interpolation and fit to 2D
-%ellipse equation. Handle off-centre by fitting twice
-% [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin) -
+function [Fits, varargout] = unwrap_cell_v5(Imstack, Centres, Radius, varargin)
+%unwrap_cell_v5 - perform radial unwrapping by interpolation and fit to 2D
+%ellipse equation. Handle off-centre by fitting to 1D equation first
+% [Fits, varargout] = unwrap_cell_v5(Imstack, Centres, Radius, varargin) -
 % if Imstack has N frames, centres and radii must be 2xN and 1xN and
 % contain [X_centre, Y_centre] and radius in each column, respectively.
 %
 % Varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs}
 %
-% Differs from V1 in that it first fits for an off-centre circle, then for
+% Differs from V4 in that it first fits for an off-centre circle, then for
 % a centred ellipse.
 %
 % Draws n_theta different lines on each image space, from the centre given,
@@ -51,10 +51,10 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 %Note: This will throw "Error using reshape" if you try and run it with
 % only one frame, or a single frame's worth of centres/radii.
 
-fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
+fields = {'sc_up', 'n_theta1D','n_theta2D', 'n_reps', 'tol', 'inter_method', 'sc_down',...
     'centering', 'ifNaN','parallel','weighted','extrap_val','edge_method'};
-defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    '1D', 'mean',false, true, 0,'simple'};
+defaults = {1.2, 360, 10, 5, 0.15, 'linear', 0.5,...
+    '2D', 'mean',false, true, 0,'DoG'};
 
 tic
 
@@ -64,28 +64,20 @@ Par = ParseInputs(fields, defaults, varargin{:});
 [Centres, Radius] = FixNaNs(Centres, Radius, Imstack, Par);
 
 % Get the circle equation
-if strcmp(Par.centering,'circle') || strcmp(Par.centering,'1D')
-    [CircleFit, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
-       
-    % Debugging memory usage
-    Var = whos;
-    fprintf('Currently hogging %g GB of memory! Whoops!\n',sum([Var.bytes])./1e9)
-    clear Var;
-    
-    % Perform unwrapping and fitting for off-centreness
-    [Offset, ~, ~] = UnwrapAndFit(Imstack, CircleFit, Radius,  Centres, lb, ub, StartVal, Par);
-end
+[CircleFit, lb, ub, StartVal] = GetEqn('circle', Imstack, Par, Radius);
+% Debugging memory usage
+Var = whos;
+fprintf('Currently hogging %g GB of memory! Whoops!\n',sum([Var.bytes])./1e9)
+clear Var;
+
+% Perform unwrapping and fitting for off-centreness
+[Offset, ~, CircleErrs] = UnwrapAndFit(Imstack, CircleFit, Radius,  Centres, lb, ub, StartVal, Par);
 
 % Get the ellipse equation
 [EllipseFit, lb, ub, StartVal] = GetEqn('ellipse', Imstack, Par, Radius);
 
 % Perform unwrapping and fitting with updated centre locations
-if ~ isempty(whos('Offset'))
-    [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Offset(1,:),  Centres + Offset(end-1:end,:), lb, ub, StartVal, Par);
-else
-    [Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Radius,  Centres, lb, ub, StartVal, Par);
-end
-
+[Fits, Unwrapped, FitErrs] = UnwrapAndFit(Imstack, EllipseFit, Offset(1,:),  Centres + Offset(end-1:end,:), lb, ub, StartVal, Par);
 
 % Fix the equivalent fitting equations problem - if b>a
 Fits(3,:) = Fits(3,:) + (Fits(2,:) > Fits(1,:)) * pi/2;
@@ -105,9 +97,11 @@ end
         % Find the fitting variables to determine size of fits array
         FitVars = coeffnames(FitType);
         N_Frs = length(Imstack{1});
+        FitDims = length(indepnames(FitType));
+        n_theta = Par.(['n_theta' num2str(FitDims) 'D']);
         
         % Preallocate
-        Theta = linspace(1,360,Par.n_theta); % Angular space sampling points
+        Theta = linspace(1,360,n_theta); % Angular space sampling points - using appropriate setting for 1D or 2D
         Rs = (1:round(Par.sc_up * max(Radius)))';% Radial space ""     ""
         Fits = zeros(length(FitVars),length(Imstack{1})); % Fit results
         Errs = Fits;                                      % Fit errors
@@ -117,7 +111,7 @@ end
         Sgl = single(1);
         Sgl = whos('Sgl');
         SglMem = Sgl.bytes;
-        MemNeeded = (Sz(1) * Sz(2) * N_Frs + 4 * ( Par.n_theta * length(Rs) * N_Frs)) * SglMem ./ 1e9;
+        MemNeeded = (Sz(1) * Sz(2) * N_Frs + 4 * ( n_theta * length(Rs) * N_Frs)) * SglMem ./ 1e9;
         fprintf('About to request %g GB of memory. Gulp!\n',MemNeeded)
         
         % For speed, everything is in one call to interp3, returning single
@@ -128,17 +122,17 @@ end
             single(cat(3,Imstack{1}{:,1})),...                                                              % V
             single(reshape(Centres(1,:),1,1,N_Frs) + Rs.*cos(Theta*pi/180)),...                    % Xq
             single(reshape(Centres(2,:),1,1,N_Frs) + Rs.*sin(Theta*pi/180)),...                    % Yq
-            single(repmat(reshape(1:N_Frs,1,1,N_Frs),length(Rs),Par.n_theta)),...  % Zq
+            single(repmat(reshape(1:N_Frs,1,1,N_Frs),length(Rs),n_theta)),...  % Zq
             Par.inter_method, Par.extrap_val));                                                                             % METHOD
         fprintf('Finished unwrapping at %gs\n',toc)
         
-        [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, FitType, lb, ub, StartVal, Fits, Errs, N_Frs, Par);
+        [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, FitType, lb, ub, StartVal, Fits, Errs, N_Frs, n_theta, Par);
         
         fprintf('%s\r',repmat(' ',1,104))
         fprintf('Fitted data at %gs\n',toc)
     end
 
-    function [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, ThisFit, lb, ub, StartVal, Fits, Errs, N_Frs, Par)
+    function [Fits, Errs] = N_DoUnwrappedFits(Theta, Rs, Unwrapped, ThisFit, lb, ub, StartVal, Fits, Errs, N_Frs, n_theta, Par)
         %% Performs fits - parallel or non, or weighted
         % For each frame, take angles corresponding to fit points and perform
         % the fit
@@ -214,7 +208,7 @@ end
                         end
                         
                         for frame = 1:N_Frs
-                            th_fit = repmat(Theta,1,Par.n_reps) + reshape(360*(0:Par.n_reps-1).*ones(Par.n_theta,1),1,[]);
+                            th_fit = repmat(Theta,1,Par.n_reps) + reshape(360*(0:Par.n_reps-1).*ones(n_theta,1),1,[]);
                             FitMdl = fitnlm(double(th_fit'),repmat(Ia(:,:,frame)',Par.n_reps,1),...
                                 WFitEqn,StartVal(frame,:),'Weights',repmat(Ia(:,:,frame)',Par.n_reps,1), ...
                                 'Exclude',repmat(~idxa(:,:,frame)',Par.n_reps,1));
@@ -303,7 +297,7 @@ end
                 par = Par;
                 par.edge_method = 'simple';
                 [Ia, idxa] = FindMaxes(Edges, Radius, par);
-            case 'DoG_fitting'
+            case 'DoG'
                 Ia = zeros(size(Unwrapped(1,:,:)));
                 idxa = true(size(Ia));
                 
@@ -326,9 +320,9 @@ end
         end
     end
 
-    function [FitType, lb, ub, StartVal] = GetEqn(Func, Imstack, Par, Radius)
+    function [FitType, lb, ub, StartVal] = GetEqn(FuncType, Imstack, Par, Radius)
         %% Get an equation and bounds for fitting
-        switch Func
+        switch FuncType
             case 'circle'
                 switch Par.centering
                     case '2D'
