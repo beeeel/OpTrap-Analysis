@@ -1,13 +1,14 @@
 function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 %unwrap_cell_v4 - perform radial unwrapping by interpolation and fit to 2D
 %ellipse equation. Handle off-centre by fitting twice
+%
 % [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin) -
 % if Imstack has N frames, centres and radii must be 2xN and 1xN and
 % contain [X_centre, Y_centre] and radius in each column, respectively.
 %
 % Varargout = {Unwrapped, Ia, FitEqn, Offset, FitErrs}
 %
-% Differs from V1 in that it first fits for an off-centre circle, then for
+% Differs from V2 in that it first fits for an off-centre circle, then for
 % a centred ellipse.
 %
 % Draws n_theta different lines on each image space, from the centre given,
@@ -25,11 +26,13 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 % output arguments below:
 %
 % Varargout: 2 to 4 additional arguments, in this order: {Unwrapped, Ia,
-% FitEqn, Offset}. Unwrapped is size [n_r, n_theta, n_frames] containing
-% unwrapped cell images, Ia is size [1, n_theta, n_frames] containing
-% indexes used for fitting, FitEqn is a function handle used for fitting
-% the ellipse, Offset is size [3, n_frames], containing [r; dx; dy] where r
-% is fitted circle radius, and dx, dy are fitted centre offsets
+% FitEqn, Offset}. 
+% 
+% Unwrapped is size [n_r, n_theta, n_frames] containing unwrapped cell
+% images, Ia is size [1, n_theta, n_frames] containing indexes used for
+% fitting, FitEqn is a function handle used for fitting the ellipse, Offset
+% is size [3, n_frames], containing [r; dx; dy] where r is fitted circle
+% radius, and dx, dy are fitted centre offsets
 %
 % Possible input arguments:
 %   sc_up       - Scale factor for maximum sampling radius relative to maximum input radius
@@ -40,6 +43,10 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 %   inter_method- Interpolation method for unwrapping
 %   centering   - Fit the off-centre equation instead of the centred one (experimental)
 %   ifNaN       - What do if find_cell fails ('mean' or 'last')
+%   parallel    - Run fitting in parfor loop (small improvement)
+%   weighted    - Add radial gaussian weighting to fit data
+%   extrap_val  - What value to give to unwrap points outside the image
+%   norm_method - How to normalize unwrapped data prior to fitting
 %
 %tol: For large deformation, a larg tol value is needed - for D=0.1, tol>=0.25
 %

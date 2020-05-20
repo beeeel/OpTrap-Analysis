@@ -1,4 +1,6 @@
 function [Fits, Unwrapped, varargout] = unwrap_cell_v3(Imstack, Centres, Radius, varargin)
+% Unwrap_cell_v3 - abandoned attempt at fourier analysis
+%
 %UNWRAP_CELL_V3 - perform radial unwrapping of the cell using
 %interpolation, curve fitting or fourier analysis.
 % 
