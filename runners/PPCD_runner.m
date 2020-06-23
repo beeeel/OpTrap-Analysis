@@ -3,9 +3,9 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'MV411'}; % {'LS174T','HL60','MV411'};
+CellDefault = {'hela'}; % {'LS174T','HL60','MV411'};
 DSetsDefault = {{'normoxia','with_drugs'}}; % {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
-NumsDefault = {{1:30, 1:20}}; % {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
+NumsDefault = {{1:6}};%{{1:30, 1:20}}; % {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
 
 % What settings
 FindVerDefault = 5;
@@ -37,7 +37,7 @@ for CTidx = 1:length(Par.CellType)
         for Num = Par.Nums{CTidx}{Didx}
             NumStr = num2str(Num);
             disp(NumStr)
-            Imstack = N_LoadImstack();
+            Imstack = LoadImstackInfoMeta(Par.CellType{CTidx}, DSet, NumStr);
             %%
             [info, meta] = PostProcessCellDeform_v3(Imstack,...
                 'find_cell_v',Par.FindVer, 'find_cell_args',Par.FindOpts, ...
@@ -110,7 +110,6 @@ end
     end
 %%
     function Imstack = N_LoadImstack()
-        Imstack = LoadImstackInfoMeta(Par.CellType{CTidx}, DSet, NumStr);
         %{
             if strcmp(Par.CellType{CTidx}, 'HL60')
                 if strcmp(DSet,'normoxia')
