@@ -37,7 +37,7 @@ p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
 run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
-UnwrapOpts = {'sc_up',1.8,'ifNaN','mean','sc_down',0.35,'UseGradient',true}; % Options for unwrap
+UnwrapOpts = {'sc_up',1.8,'ifNaN','mean','sc_down',0.35}; % Options for unwrap
 
 % Font sizes for axes and titles
 FontSizes.XFontSize = 12;
@@ -49,7 +49,9 @@ if ~isfield(info,'uOffset'); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v
     [UnwrapFits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
 elseif run_unwrap 
-    [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.mCentres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
+    % Order of outputs is wrong for unwrap cell 3. Unwrap cell 4 ran too
+    % slow, not sure why
+    [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v5(Imstack, [info.centres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     for frame = 1:meta.N_Frames; info(frame).uOffset = offset(:,frame); end
     info = H_UpdateInfoUfits(info, UnwrapFits);
 end

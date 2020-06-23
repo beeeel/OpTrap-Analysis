@@ -4,7 +4,7 @@
 % Load
 CellType = 'LS174T';
 Set = 'normoxia';
-Num = '2';
+Num = '11';
 
 % Display options
 Frs = [42, 770]; % Which frames
