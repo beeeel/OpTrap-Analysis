@@ -7,7 +7,7 @@ Set = 'normoxia';
 Num = '11';
 
 % Display options
-Frs = [42, 770]; % Which frames
+Frs = [1, 770]; % Which frames
 
 % Fontsizes
 FSizes.Ttl1 = 20; % Titles
