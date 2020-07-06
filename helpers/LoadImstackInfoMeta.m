@@ -95,6 +95,8 @@ elseif strcmp(CellType,'MV411')
     InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set '_' FName(1:end-4) InfoSuffix '.mat']};
     DataFile = {[DataDir '2017_10_movies-from-aishah/MV411/MV411_' Set '/' FName]};
     Loader = 'avi_to_imstack';
+else
+    error(['Cell type ' CellType ' not recognised'])
 end
 
 % 2) Load it if the last file was different to this
