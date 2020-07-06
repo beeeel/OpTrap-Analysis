@@ -3,13 +3,14 @@
 % figure function with proper functionality (overlays, 2-6 plots, choice on
 % what the plots are)
 %% Load data
-CellType = 'HL60';
+CellType = 'LS174T';
 Set = 'normoxia';
-Num = '17';
+Num = '11';
 global Imstack info meta;
 
 LoadImstackInfoMeta(CellType,Set,Num);
-
+imagesc(Imstack{1}{1,1}), colormap gray, axis image off
+title([CellType ' ' Set ' ' Num])
 %% Segmentation video
 % This can also save a gif or an avi movie
 % Opens a figure window with an overlay of the segmentation atop the image,
@@ -31,7 +32,7 @@ show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'non
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =200;                 % Frames to display
+frs =805;                 % Frames to display
 
 p_time = 0.25;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
@@ -49,9 +50,7 @@ if ~isfield(info,'uOffset'); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v
     [UnwrapFits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
 elseif run_unwrap 
-    % Order of outputs is wrong for unwrap cell 3. Unwrap cell 4 ran too
-    % slow, not sure why
-    [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v5(Imstack, [info.centres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
+    [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.centres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     for frame = 1:meta.N_Frames; info(frame).uOffset = offset(:,frame); end
     info = H_UpdateInfoUfits(info, UnwrapFits);
 end
@@ -140,6 +139,8 @@ for frame = frs
         xlabel('Frame (100fps?)','FontSize',FontSizes.XFontSize)
         count = count + 1;
     end
+    drawnow
+    pause(p_time)
     %{
     if n_plots
         subplot(sbplt(1), sbplt(2), sbplt(3) + 1)
