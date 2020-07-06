@@ -61,7 +61,7 @@ function [Fits, varargout] = unwrap_cell_v4(Imstack, Centres, Radius, varargin)
 fields = {'sc_up', 'n_theta', 'n_reps', 'tol', 'inter_method', 'sc_down',...
     'centering', 'ifNaN','parallel','weighted','extrap_val','norm_method'};
 defaults = {1.2, 360, 5, 0.15, 'linear', 0.5,...
-    0, 'mean',false, true, 0,'demean'};
+    0, 'mean',false, false, 0,'demean'};
 
 tic
 
