@@ -3,9 +3,9 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'hela'}; % {'LS174T','HL60','MV411'};
+CellDefault = {'HL60'}; % {'LS174T','HL60','MV411'};
 DSetsDefault = {{'normoxia','with_drugs'}}; % {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
-NumsDefault = {{1:6}};%{{1:30, 1:20}}; % {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
+NumsDefault = {{1:30, 1:20}}; % {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
 
 % What settings
 FindVerDefault = 5;
