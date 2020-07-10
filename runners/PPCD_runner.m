@@ -37,7 +37,7 @@ for CTidx = 1:length(Par.CellType)
         for Num = Par.Nums{CTidx}{Didx}
             NumStr = num2str(Num);
             disp(NumStr)
-            Imstack = LoadImstackInfoMeta(Par.CellType{CTidx}, DSet, NumStr);
+            Imstack = LoadImstackInfoMeta(Par.CellType{CTidx}, DSet, NumStr, true);
             %%
             [info, meta] = PostProcessCellDeform_v3(Imstack,...
                 'find_cell_v',Par.FindVer, 'find_cell_args',Par.FindOpts, ...
