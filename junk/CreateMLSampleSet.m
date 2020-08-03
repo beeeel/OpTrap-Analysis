@@ -60,7 +60,7 @@ for CTidx = 1:length(Cells)
                 OutSize = min([512, 512],[ImInfo.ImH, ImInfo.ImW]);
                 
                 SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize(1),OutSize(2));
-                SelectedIms{Count,1}(1:ImInfo.ImH, 1:ImInfo.ImW) = Imstack{1}{ImInfo.FrNum,1}(1:OutSize(1),1:OutSize(2));
+                SelectedIms{Count,1}(1:OutSize(1), 1:OutSize(2)) = Imstack{1}{ImInfo.FrNum,1}(1:OutSize(1),1:OutSize(2));
                 SelectedIms{Count,2} = ImInfo;
                 Count = Count + 1;
             end
