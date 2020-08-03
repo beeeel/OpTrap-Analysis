@@ -9,8 +9,8 @@ Num = '11';
 global Imstack info meta;
 
 LoadImstackInfoMeta(CellType,Set,Num);
-imagesc(Imstack{1}{1,1}), colormap gray, axis image off
-title([CellType ' ' Set ' ' Num])
+% imagesc(Imstack{1}{1,1}), colormap gray, axis image off
+% title([CellType ' ' Set ' ' Num])
 %% Segmentation video
 % This can also save a gif or an avi movie
 % Opens a figure window with an overlay of the segmentation atop the image,
