@@ -51,9 +51,15 @@ for CTidx = 1:length(Cells)
                 ImInfo.Centre = info(ImInfo.FrNum).centres;
                 ImInfo.ImW = size(Imstack{1}{ImInfo.FrNum},2);
                 ImInfo.ImH = size(Imstack{1}{ImInfo.FrNum},1);
-                OutSize = 2^ceil(log2(max(size(Imstack{1}{1,1}))));
                 
-                SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize,OutSize);
+                % Round up output size to nearest power of 2
+                %OutSize = repmat(2^ceil(log2(max(size(Imstack{1}{1,1})))),1,2);
+                % Output size = image size
+%                 OutSize = size(Imstack{1}{1,1});                
+                % Output size = 512 * 512
+                OutSize = [512, 512];
+                
+                SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize(1),OutSize(2));
                 SelectedIms{Count,1}(1:ImInfo.ImH, 1:ImInfo.ImW) = Imstack{1}{ImInfo.FrNum,1};
                 SelectedIms{Count,2} = ImInfo;
                 Count = Count + 1;
