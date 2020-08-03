@@ -27,35 +27,34 @@ for CTidx = 1:length(Cells)
         for Num = Nums{CTidx}{DSidx}
             NumStr = num2str(Num);
             disp(['Loading ' NumStr])
-            LoadImstackInfoMeta(CellType, DSet, NumStr)
-%             BlockSize = meta.N_Frames./FramesPerSet;
-%             Offset = randi(BlockSize);            
-%             for frame = 0:FramesPerSet-1
+            LoadImstackInfoMeta(CellType, DSet, NumStr, true)
+            N_Frames = size(Imstack{1},1);
+            %             BlockSize = meta.N_Frames./FramesPerSet;
+            %             Offset = randi(BlockSize);
+            %             for frame = 0:FramesPerSet-1
             for frame = 1:FramesPerSet
                 if frame <= FramesPerSet/2
                     Offset = 0;
-                elseif meta.N_Frames == 1000
+                elseif N_Frames == 1000
                     Offset = 850 - FramesPerSet/2;
-                elseif meta.N_Frames == 2000
+                elseif N_Frames == 2000
                     Offset = 1850 - FramesPerSet/2;
                 else
-                    error([meta.N_Frames ' frames in this set: ' meta.filepath])
+                    error([N_Frames ' frames in this set: ' meta.filepath])
                 end
-
+                
                 ImInfo = struct;
                 ImInfo.CellType = CellType;
                 ImInfo.Set = DSet;
                 ImInfo.Num = NumStr;
                 ImInfo.FrNum = frame + Offset; %frame * BlockSize + Offset;
-                ImInfo.Radius = info(ImInfo.FrNum).radius;
-                ImInfo.Centre = info(ImInfo.FrNum).centres;
                 ImInfo.ImW = size(Imstack{1}{ImInfo.FrNum},2);
                 ImInfo.ImH = size(Imstack{1}{ImInfo.FrNum},1);
                 
                 % Round up output size to nearest power of 2
                 %OutSize = repmat(2^ceil(log2(max(size(Imstack{1}{1,1})))),1,2);
                 % Output size = image size
-                OutSize = size(Imstack{1}{1,1});                
+                %OutSize = size(Imstack{1}{1,1});
                 % Output size = 512 * 512
                 OutSize = min([512, 512],[ImInfo.ImH, ImInfo.ImW]);
                 
