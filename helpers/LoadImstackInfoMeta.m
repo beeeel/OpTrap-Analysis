@@ -1,5 +1,5 @@
 function varargout = LoadImstackInfoMeta(CellType, Set, Num, varargin)
-%% LoadImstackInfoMeta(CellType, Set, Num, [ImstackOnly, InfoSuffix])
+%% LoadImstackInfoMeta(CellType, Set, Num, [ImstackOnly, InfoPrefix, InfoSuffix, SimpleMatName])
 % Load an Imstack, and (maybe) according meta and info structs into global
 % variables
 
@@ -9,7 +9,13 @@ if nargin > 3
     validateattributes(varargin{1},{'logical'},{'nonempty','scalar'},'ImstackOnly')
 end
 if nargin > 4
-    validateattributes(varargin{2},{'string','char'},{'nonempty','scalartext'},'InfoSuffix')
+    validateattributes(varargin{2},{'string','char'},{'scalartext'},'InfoPrefix')
+end
+if nargin > 5
+    validateattributes(varargin{3},{'string','char'},{'nonempty','scalartext'},'InfoSuffix')
+end
+if nargin > 6
+    validateattributes(varargin{4},{'logical'},{'nonempty','scalar'},'SimpleMatName')
 end
 
 % 0) Prepare to get filenames
@@ -33,14 +39,29 @@ if nargin >= 4
 else 
     ImstackOnly = false;
 end
-if nargin == 5
-    if strncmp('_',varargin{2})
-        InfoSuffix = varargin{2};
+if nargin >= 5 && ~isempty(varargin{2})
+    if strncmp('_',varargin{2},1)
+        InfoPrefix = varargin{2};
     else
-        InfoSuffix = ['_' varargin{2}];
+        InfoPrefix = ['_' varargin{2}];
+    end
+else 
+    InfoPrefix = '';
+    warning('Default filenames were changed - if you want info_seg... use InfoPrefix')
+end
+if nargin >= 6 && ~isempty(varargin{3})
+    if strncmp('_',varargin{3},1)
+        InfoSuffix = varargin{3};
+    else
+        InfoSuffix = ['_' varargin{3}];
     end
 else 
     InfoSuffix = '';
+end
+if nargin >= 7
+    SimpleMatName = varargin{4};
+else
+    SimpleMatName = false;
 end
 
 % 1) Get filenames for data and info
@@ -60,9 +81,13 @@ elseif strcmp(CellType,'HL60')
             matName = ['_100717_' Num '_' CellType '_1'];
         else
             matName = ['_' CellType '_' Num '_0.020mms-1_1'];
-        end 
+        end
     end
-    InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set matName InfoSuffix '.mat']};
+    if ~SimpleMatName
+        InfoFile = {[InfosDir 'info_reduced' InfoPrefix '_' CellType '_' Set matName InfoSuffix '.mat']};
+    else
+        InfoFile = {[InfosDir 'info_reduced' InfoPrefix '_' CellType '_' Set '_' Num InfoSuffix '.mat']};
+    end
     DataFile = {[DataDir '2017_10_movies-from-aishah/'...
         CellType '/' CellType '_' Set '/' matName(2:end) '.avi']};
     Loader = 'avi_to_imstack';
@@ -75,7 +100,7 @@ elseif strcmp(CellType,'LS174T')
     end
     Loader = 'avi_to_imstack';
     DataFile = {[DataDir '2017_10_movies-from-aishah/LS174T/' Date '_' Num '_LS174T_' Set '_1.avi']};
-    InfoFile = {[InfosDir 'info_reduced_seg_LS174T_' Set '_' Date '_' Num '_LS174T_' Set '_1' InfoSuffix '.mat']};
+    InfoFile = {[InfosDir 'info_reduced' InfoPrefix '_LS174T_' Set '_' Date '_' Num '_LS174T_' Set '_1' InfoSuffix '.mat']};
 elseif strcmp(CellType,'MV411')
     switch Set
         case 'normoxia'
@@ -92,7 +117,7 @@ elseif strcmp(CellType,'MV411')
                 FName(end-4) = '2';
             end
     end
-    InfoFile = {[InfosDir 'info_reduced_seg_' CellType '_' Set '_' FName(1:end-4) InfoSuffix '.mat']};
+    InfoFile = {[InfosDir 'info_reduced' InfoPrefix '_' CellType '_' Set '_' FName(1:end-4) InfoSuffix '.mat']};
     DataFile = {[DataDir '2017_10_movies-from-aishah/MV411/MV411_' Set '/' FName]};
     Loader = 'avi_to_imstack';
 else
