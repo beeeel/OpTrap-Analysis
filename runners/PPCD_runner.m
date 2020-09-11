@@ -3,16 +3,16 @@ function PPCD_runner(varargin)
 
 Par = [];
 % Which datasets
-CellDefault = {'MV411'}; % {'LS174T','HL60','MV411'};
-DSetsDefault = {{'with_drugs'}}; % {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
-NumsDefault = {{1:30, 1:20}}; % {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
+CellDefault = {'LS174T','HL60','MV411'};
+DSetsDefault = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
+NumsDefault = {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
 
 % What settings
 FindVerDefault = 5;
 FindDefault = {};
 SegVerDefault = 0;
 SegDefault = {};% {'iterations', 300, 'method', 'edge','Lsigma',0.1,'Lalpha',5,'Lbeta',10};
-UnwrapVerDefault = 4;
+UnwrapVerDefault = 0;%4;
 UnwrapDefault = {};
 
 % What to save
@@ -24,6 +24,7 @@ SaveAllDefault = false;
 % Where to save
 InfosDirDefault = '~/Documents/data/OpTrap/infos/';
 FigSaveDirDefault = '~/Documents/data/OpTrap/processing_plots/';
+SuffixDefault = 'find5';
 
 ParseInputs();
 
@@ -56,9 +57,9 @@ for CTidx = 1:length(Par.CellType)
                             info = rmfield(info, fld{:});
                         end
                     end
-                    save([Par.InfosDir 'info_reduced_seg_' strjoin({Par.CellType{CTidx}, DSet, NumStr},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_reduced_' strjoin({Par.CellType{CTidx}, DSet, NumStr, Par.Suffix},'_') '.mat'], 'info', 'meta');
                 else
-                    save([Par.InfosDir 'info_seg_' strjoin({Par.CellType{CTidx}, DSet, NumStr},'_') '.mat'], 'info', 'meta');
+                    save([Par.InfosDir 'info_' strjoin({Par.CellType{CTidx}, DSet, NumStr, Par.Suffix},'_') '.mat'], 'info', 'meta');
                 end
             end
         end
@@ -92,6 +93,8 @@ end
             {'string','char'},{'nonempty','row','scalartext'},FName,'InfosDir'))
         addParameter(p,'FigSaveDir',FigSaveDirDefault,@(x)validateattributes(x,...
             {'string','char'},{'nonempty','row','scalartext'},FName,'FigSaveDir'))
+        addParameter(p,'Suffix',SuffixDefault,@(x)validateattributes(x,...
+            {'string','char'},{'nonempty','row','scalartext'},FName,'Suffix'))
         addParameter(p,'DSets',DSetsDefault,@(x)ValidateDSets(x))
         addParameter(p,'Nums',NumsDefault,@(x)validateattributes(x,...
             {'cell'},{'nonempty','row'},FName,'Nums'))
