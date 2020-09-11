@@ -1,8 +1,11 @@
 %% Take some images out to create training dataset
 % Output images directory
-SaveDir = '~/png/ML/Samples/';
+SaveDir = '~/AI_Optrap/Samples/Set6/';
 % How many images to take from each dataset
 FramesPerSet = 100;
+% Dummy class - images in this class are all 0s. 
+% 'stretched' or 'relaxed'. Anything else will be ignored/treated as none
+DummyClass = 'none';
 
 % Which datasets to take images from
 Cells = {'LS174T', 'HL60', 'MV411'};
@@ -18,6 +21,7 @@ SelectedIms = cell(NumIms, 2);
 Count = 1;
 global Imstack info meta
 StartTime = tic;
+
 for CTidx = 1:length(Cells)
     CellType = Cells{CTidx};
     disp(['Started ' CellType])
@@ -36,9 +40,9 @@ for CTidx = 1:length(Cells)
                 if frame <= FramesPerSet/2
                     Offset = 0;
                 elseif N_Frames == 1000
-                    Offset = 850 - FramesPerSet/2;
+                    Offset = 750 - FramesPerSet/2;
                 elseif N_Frames == 2000
-                    Offset = 1850 - FramesPerSet/2;
+                    Offset = 1650 - FramesPerSet/2;
                 else
                     error([N_Frames ' frames in this set: ' meta.filepath])
                 end
@@ -54,12 +58,16 @@ for CTidx = 1:length(Cells)
                 % Round up output size to nearest power of 2
                 %OutSize = repmat(2^ceil(log2(max(size(Imstack{1}{1,1})))),1,2);
                 % Output size = image size
-                %OutSize = size(Imstack{1}{1,1});
+                OutSize = size(Imstack{1}{1,1});
                 % Output size = 512 * 512
-                OutSize = min([512, 512],[ImInfo.ImH, ImInfo.ImW]);
+                %OutSize = min([512, 512],[ImInfo.ImH, ImInfo.ImW]);
+                % Output size = 256 * 256
+%                 OutSize = [256, 256];
                 
                 SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize(1),OutSize(2));
-                SelectedIms{Count,1}(1:OutSize(1), 1:OutSize(2)) = Imstack{1}{ImInfo.FrNum,1}(1:OutSize(1),1:OutSize(2));
+                SelectedIms{Count,1}(1:OutSize(1), 1:OutSize(2)) = Imstack{1}{ImInfo.FrNum,1}... Need to index to take the centre of the image
+                    (floor((ImInfo.ImH-OutSize(1))/2)+1:floor((ImInfo.ImH+OutSize(1))/2),... 
+                    floor((ImInfo.ImW-OutSize(2))/2)+1:floor((ImInfo.ImW+OutSize(2))/2));
                 SelectedIms{Count,2} = ImInfo;
                 Count = Count + 1;
             end
@@ -73,20 +81,44 @@ toc(StartTime)
 % for Imidx = 1:NumIms
 %     
 % end
-%% Save these files as .pgm (portable gray map)
+%% Save these files as .bmp (bitmap)
 LastNum = '';
+RelaxedCount = 1;
+StretchedCount = 1;
+
+% Catch some annoying errors around non-existent directories
+if exist([SaveDir 'relaxed'],'dir') == 0 || exist([SaveDir 'stretched'],'dir') == 0
+    system(['mkdir -p ' SaveDir 'relaxed']);
+    system(['mkdir -p ' SaveDir 'stretched']);
+elseif exist(SaveDir,'dir') ~= 7
+    error('SaveDir is expected to be a directory')
+elseif ~strcmp(SaveDir(end),'/')
+    SaveDir = [SaveDir '/'];
+end
+
 for Imidx = 1:Count-1
     II = SelectedIms{Imidx,2};
     if II.FrNum > 500
         Dir = [SaveDir 'stretched/'];
+        ThisImClass = 'stretched';
+        % These lines (and 2 in the else) are for file names as 1,2,3...
+%         FName = num2str(StretchedCount); 
+%         StretchedCount = StretchedCount + 1;
     else
         Dir = [SaveDir 'relaxed/'];
+        ThisImClass = 'relaxed';
+%         FName = num2str(RelaxedCount);
+%         RelaxedCount = RelaxedCount + 1;
     end
     FName = strjoin({II.CellType, II.Set, II.Num, num2str(II.FrNum)},'_');
-    imwrite(uint8(SelectedIms{Imidx,1}),[Dir FName '.pgm'])
-    [FID, msg] = fopen([Dir FName '.txt'],'w');
-    fprintf(FID,'CellType\t%s\tSet\t%s\tSetNum\t%s\tFrame\t%i\tRadius\t%g\tCentre(x)\t%g\tCentre(y)\t%g',II.CellType,II.Set,II.Num,II.FrNum,II.Radius,II.Centre(1),II.Centre(2));
-    fclose(FID);
+%     if strcmp(DummyClass,ThisImClass)
+        imwrite(uint8(SelectedIms{Imidx,1}),[Dir FName '.png'])
+%     else
+%         imwrite(zeros(II.ImH,II.ImW,'uint8'),[Dir FName '.png'])
+%     end
+%     [FID, msg] = fopen([Dir FName '.txt'],'w');
+%     fprintf(FID,'CellType\t%s\tSet\t%s\tSetNum\t%s\tFrame\t%i\tRadius\t%g\tCentre(x)\t%g\tCentre(y)\t%g',II.CellType,II.Set,II.Num,II.FrNum,II.Radius,II.Centre(1),II.Centre(2));
+%     fclose(FID);
     if ~strcmp(II.Num,LastNum)
         disp(['Started files for ' II.CellType ' ' II.Set ' ' II.Num])
     end
