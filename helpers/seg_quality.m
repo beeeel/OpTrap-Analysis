@@ -32,9 +32,9 @@ show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'non
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =805;                 % Frames to display
+frs =600:700;                 % Frames to display
 
-p_time = 0.25;              % Time to pause on each frame when showing as movie
+p_time = 0.1025;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
 flythrough = 1;             % Play as movie instead of requiring user input to step through
 run_unwrap = 0;             % Run unwrap cell before displaying data (refreshes content of unwrapped, fits, Ia)
@@ -49,12 +49,13 @@ FontSizes.TFontSize = 12;
 if ~isfield(info,'uOffset'); run_unwrap = 1; end
 if run_unwrap && meta.find_cell_v
     [UnwrapFits, unwrapped, Ia, FitEqn, offset] = unwrap_cell_v2(Imstack, [info.centres] , [info.radius],UnwrapOpts{:}); 
+    info = H_UpdateInfoUfits(info, UnwrapFits);
 elseif run_unwrap 
     [UnwrapFits, unwrapped, FitEqn, offset, FitErrs] = unwrap_cell_v4(Imstack, [info.centres] , repmat(100,1,size(Imstack{1},1)),UnwrapOpts{:});
     for frame = 1:meta.N_Frames; info(frame).uOffset = offset(:,frame); end
     info = H_UpdateInfoUfits(info, UnwrapFits);
 end
-
+%%
 AllPlots = {'uTaylorParameter','Taylor Parameter [unwrapping]','','';...
     'centres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.centres]'',frame)';...
     'mCentres', 'Centre co-ordinates', '[μm]','N_trackPlot(1:meta.N_Frames, [info.mCentres]'',frame)';...
