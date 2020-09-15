@@ -3,7 +3,7 @@ function [info, meta] = PostProcessCellDeform_v3(Imstack, varargin)
 %  Processing stack for OME/TIFF image sets for deformation. 
 % Input a cell array from bfopen or avi_to_imstack, and input arguments for
 % modules in name-value pairs, e.g.:
-%   PostProcessCellDeform_v2(Imstack, 'find_cell', {'Rs',[100, 200]})
+%   PostProcessCellDeform_v3(Imstack, 'find_cell', {'Rs',[100, 200]})
 % Outputs info struct array with measurements from each frame and meta
 % scalar struct with metadata and options
 % 
@@ -37,6 +37,7 @@ RunUnwrapCell();
 RunSegmentCell();
 
 meta.TotalRunTime = toc(StartTime);
+%% Function definitions begin here
 %% Get filepath from Imstack
     function FilePath = GetFilePath(Imstack)
         SplitPath = strsplit(Imstack{1}{1,2});
