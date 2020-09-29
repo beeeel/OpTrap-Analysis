@@ -1,24 +1,31 @@
 %% Take some images out to create training dataset
 % Output images directory
-SaveDir = '~/AI_Optrap/Samples/Set6/';
-% How many images to take from each dataset
-FramesPerSet = 100;
+SaveDir = '~/AI_Optrap/Samples/Set1/';
 % Dummy class - images in this class are all 0s. 
 % 'stretched' or 'relaxed'. Anything else will be ignored/treated as none
 DummyClass = 'none';
+% Output size expression to be evaluated within the deepest loop
+% OutSizeExp = '';
+% Augmentation
+% Random shift - up to 30 px in any direction, applied to every image
+% (doubles size of dataset)
+RandomShift = 30;
+
 
 % Which datasets to take images from
 Cells = {'LS174T', 'HL60', 'MV411'};
 DSets = {{'normoxia','hypoxia'},{'normoxia','with_drugs'},{'normoxia','with_drugs'}};
 Nums = {{1:20, 1:20},{1:30, 1:20},{1:30, 1:20}};
+% How many images to take from each dataset
+FramesPerSet = 10;
 
 % Calculate how many images there will be
 AllNums = [Nums{:}];
 NumSets = length([AllNums{:}]);
 NumIms = FramesPerSet * NumSets;
 
-SelectedIms = cell(NumIms, 2);
-Count = 1;
+SelectedIms = cell(NumIms * (1 + (RandomShift ~= 0)), 2);
+Count = 0;
 global Imstack info meta
 StartTime = tic;
 
@@ -37,6 +44,7 @@ for CTidx = 1:length(Cells)
             %             Offset = randi(BlockSize);
             %             for frame = 0:FramesPerSet-1
             for frame = 1:FramesPerSet
+                Count = Count + 1;
                 if frame <= FramesPerSet/2
                     Offset = 0;
                 elseif N_Frames == 1000
@@ -58,24 +66,29 @@ for CTidx = 1:length(Cells)
                 % Round up output size to nearest power of 2
                 %OutSize = repmat(2^ceil(log2(max(size(Imstack{1}{1,1})))),1,2);
                 % Output size = image size
-                OutSize = size(Imstack{1}{1,1});
+%                 OutSize = size(Imstack{1}{1,1});
+                % Output size = minimum of image size (square output)
+                OutSize = repmat(min(size(Imstack{1}{1,1})),1,2) - RandomShift;
                 % Output size = 512 * 512
                 %OutSize = min([512, 512],[ImInfo.ImH, ImInfo.ImW]);
                 % Output size = 256 * 256
 %                 OutSize = [256, 256];
                 
-                SelectedIms{Count,1} = repmat(uint8(mean(Imstack{1}{ImInfo.FrNum},'all')),OutSize(1),OutSize(2));
-                SelectedIms{Count,1}(1:OutSize(1), 1:OutSize(2)) = Imstack{1}{ImInfo.FrNum,1}... Need to index to take the centre of the image
-                    (floor((ImInfo.ImH-OutSize(1))/2)+1:floor((ImInfo.ImH+OutSize(1))/2),... 
-                    floor((ImInfo.ImW-OutSize(2))/2)+1:floor((ImInfo.ImW+OutSize(2))/2));
+                SelectedIms{Count,1} = CropAndShift(...
+                    Imstack{1}{ImInfo.FrNum}, OutSize, 0);
                 SelectedIms{Count,2} = ImInfo;
-                Count = Count + 1;
+                % If RandomShift is a variable with a value
+                if exist('RandomShift','var') == 1 && RandomShift
+                    SelectedIms{Count+NumIms,1} = CropAndShift(...
+                        Imstack{1}{ImInfo.FrNum}, OutSize, RandomShift);
+                    SelectedIms{Count+NumIms,2} = ImInfo;
+                end
             end
         end
     end
 end
 toc(StartTime)
-%% Augment
+%% Augment - WIP
 % Take a circular mask, interpolate the sample to create deformation, stick
 % back on top of the image
 % for Imidx = 1:NumIms
@@ -96,7 +109,7 @@ elseif ~strcmp(SaveDir(end),'/')
     SaveDir = [SaveDir '/'];
 end
 
-for Imidx = 1:Count-1
+for Imidx = 1:Count
     II = SelectedIms{Imidx,2};
     if II.FrNum > 500
         Dir = [SaveDir 'stretched/'];
@@ -125,3 +138,34 @@ for Imidx = 1:Count-1
     LastNum = II.Num;
 end
 
+function ImOut = CropAndShift(ImIn, OutSize, ShiftMag)
+    %% Crop and potentially shift (in x,y) an input image, returning a uint8 array
+    % Get image size and calculate range of indices to take
+    [ImH, ImW] = size(ImIn);
+    if sum(OutSize > [ImH, ImW]) > 0
+        fprintf('Output size: [%i, %i].\nInput size: [%i, %i].\n',...
+            OutSize(1), OutSize(2), ImH, ImW)
+        error('Requested output size larger than input size')
+    elseif sum(([ImH, ImW] - OutSize) < ShiftMag) > 0
+        warning('Shift requested is larger than difference of sizes. Actual shift may be less than expected')
+    end
+    Xidx = [floor((ImW-OutSize(2))/2)+1, floor((ImW+OutSize(2))/2)];
+    Yidx = [floor((ImH-OutSize(1))/2)+1, floor((ImH+OutSize(1))/2)];
+    % If a shift has been requested, calculate a shift in a random
+    % direction
+    if abs(ShiftMag) > 0
+        Theta = 2*pi*rand(1);
+        Xidx = Xidx + floor(ShiftMag * cos(Theta));
+        Yidx = Yidx + floor(ShiftMag * sin(Theta));
+        % Shift to ensure first index is within source image
+        Xidx = Xidx + (Xidx(1) < 1) * (1 - Xidx(1));
+        Yidx = Yidx + (Yidx(1) < 1) * (1 - Yidx(1));
+        % Shift to ensure last index is within source image
+        Xidx = Xidx + (Xidx(2) > ImW) * (ImW - Xidx(2));
+        Yidx = Yidx + (Yidx(2) > ImH) * (ImH - Yidx(2));
+    end
+    if Xidx(2) > ImW
+        disp('a');
+    end
+    ImOut = ImIn(Yidx(1):Yidx(2),Xidx(1):Xidx(2));
+end
