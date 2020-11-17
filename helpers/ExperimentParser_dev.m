@@ -4,7 +4,7 @@
 
 CellType = 'HL60';
 Set = 'normoxia';
-Num = '19';
+Num = '10';
 
 global Imstack info meta
 LoadImstackInfoMeta(CellType, Set, Num, false, '', 'find5',true)
@@ -28,7 +28,7 @@ MaxRunCount = 1000;
 
 % Get centres array and low-pass filter it
 Centres = [info.centres]';
-LPCentres = lowpass(Centres,1,100);
+LPCentres = lowpass(Centres,1,200);
 % Get number of frames from centres array
 N_Frames = size(Centres,1);
 % Elementwise difference (D(i) = x(i) - x(i-1)) thresholded relative to
@@ -113,7 +113,7 @@ meta.Experiment.BlocksY = {BlocksY};
 %%
 clf
 subplot(2,1,1)
-N_PlotBlocks(Centres, meta.N_Frames, CropFrames, BlocksX, BlocksY, STDFrames + CropFrames) %
+N_PlotBlocks(LPCentres, meta.N_Frames, CropFrames, BlocksX, BlocksY, STDFrames + CropFrames) %
 
 subplot(2,1,2)
 plot(CropFrames+(1:length(DiffCentres)),abs(DiffCentres).*[1, -1])
@@ -125,12 +125,12 @@ plot([0 0; length(DiffCentres).* [1 1] ],[1 -1; 1 -1] .* STDDiffCentres .* Thres
 function N_PlotBlocks(Centres, N_Frames, Xshift, BlocksX, BlocksY, EndOfSTD)
 % Plots centres and blocks on current axis
 hold on
-YShift = 100;
+YShift = 50;
 % Plot the blocks data
 Blocks = [BlocksX BlocksY];
 for i = 1:length(Blocks)
     X = Blocks(1,i);
-    H = 100;
+    H = 50;
     Y = (i > size(BlocksX,2)) * (-YShift - H) + YShift/2;
     W = diff(Blocks(:,i));
     rectangle('Position',[X Y W H],'FaceColor',[.5 .5 .5],'LineWidth',1,'EdgeColor',[1 1 1])
@@ -141,5 +141,5 @@ Y = normalize(Centres(Xshift:end-Xshift,:),'center') + [1 -1] .* YShift;
 plot(X, Y(:,1), X, Y(:,2))
 plot([1 1].* EndOfSTD, Y(EndOfSTD,:)','k.')
 
-legend('X centre','Y centre','Last frame used in \sigma calculation')
+legend('X centre','Y centre','Last frame used in \sigma calculation','Location','East')
 end
