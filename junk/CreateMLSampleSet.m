@@ -1,6 +1,6 @@
  %% Take some images out to create training dataset
 % Output images directory
-SaveDir = '~/AI_Optrap/Samples/Set1/';
+SaveDir = '~/AI_Optrap/Samples/Set2/';
 % Dummy class - images in this class are all 0s. 
 % 'stretched' or 'relaxed'. Anything else will be ignored/treated as none
 DummyClass = 'none';
@@ -10,11 +10,10 @@ DummyClass = 'none';
 %Augmentation:
 % Random shift - N px in random direction, applied to every image (doubles
 % size of dataset)
-RandomShift = 0;
+RandomShift = 20;
 % Stretch - Use interpolation to stretch fractionally. [1 2] would double
 % the width, for example. Only applied to "stretched" image class.
-StretchRatio = [1 1];
-
+StretchRatio = [1 1.1];
 
 % Which datasets to take images from
 Cells = {'LS174T', 'HL60', 'MV411'};
