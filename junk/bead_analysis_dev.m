@@ -122,3 +122,131 @@ for frame = Frs
     imagesc(data.Ims(:,:,frame))
     pause(0.25)
 end
+%% Load some confocal bead data
+fileName = 'laser-25-100kfr_few_px.czi';
+start = tic;
+Imstack = bfopen(['~/Documents/data/Zeiss/2020-11-10-2um-beads-repaired-XY-files/' fileName]);
+imTime = toc(start);
+Metastack = bfopen(['~/Documents/data/Zeiss/2020-11-10-2um-beads-broken-XT-files/' fileName]);
+metaTime = toc(start) - imTime;
+%%
+% Metadata handling
+omeMeta = Metastack{4};
+hashTable = Metastack{2};
+stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+stackSizeT = omeMeta.getPixelsSizeT(0).getValue(); % stack height, lines
+
+voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.METER); % in µm
+voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+voxelSizeTdouble = str2double(hashTable.get('Global Information|Image|Channel|LaserScanInfo|LineTime #1'));
+
+% Image processing
+if size(Imstack{1},1) == 1
+    Ims = Imstack{1}{1,1};
+else
+    warning('untested line of code ahead. Check Ims variable is what it should be');
+    Ims = cat(2,Imstack{1}{:,1});
+end
+
+% Crop to just the bead
+cropX = [50, 70];
+cropT = [1 8.5e4];
+ImsC = zeros(cropT(2)/2, cropX(2)-cropX(1)+1);
+ImsC(:,:,1) = Ims(cropT(1):2:cropT(2), cropX(1):cropX(2));
+ImsC(:,:,2) = Ims(cropT(1)+1:2:cropT(2), cropX(1):cropX(2));
+% Calculate centres in units of m (determined by unit set getting
+% voxelSizeX)
+ImsT = double(permute(ImsC,[2 1 3]));
+X = voxelSizeXdouble.*(1:size(ImsT,1))';
+Centres = sum(X.*ImsT)./sum(ImsT);
+centresIL(1:2:diff(cropT)+1) = Centres(:,:,1);
+centresIL(2:2:diff(cropT)+1) = Centres(:,:,2);
+
+% Calculate bead widths in units of um
+thresholded = abs(ImsT) > 50;
+% If D(i+1) > D(i) you're in a new block of changing position
+shiftedD = zeros(size(thresholded),'logical');
+shiftedD(2:end,:) = thresholded(1:end-1,:);
+beadStart = shiftedD < thresholded;
+% If D(i-1) > D(i) you're in a new block of equilibrium
+shiftedU = zeros(size(thresholded),'logical');
+shiftedU(1:end-1,:) = thresholded(2:end,:);
+beadEnd = shiftedU < thresholded;
+% max returns the first true from each column
+[~, beadsStartX]= max(beadStart);
+[~, beadsEndX] = max(flipud(beadEnd));
+% Blocks ready for output
+beadsX = [beadsStartX; beadsEndX];
+beadWidthsX = diff(beadsX);
+
+% Calculate stiffness in units N/m (or uN/um)
+Kb = 1.38064852e-23; % Boltzmann constant
+T = 273 + 20; % Assume trap at room temperature - maybe I should model this?
+% From Sarshar et al 2014 eq 4. Need to convert CofM from px to m, so this
+% gives stiffness in N/m.
+varCentres = var(Centres,0,2);
+varStart = var(beadsStartX,0,2);
+varEnd = var(beadsEndX,0,2);
+Stiffness = Kb .* T ./ sqrt(0.5 * (varCentres(1).^2 + varCentres(2).^2));
+StiffnessL = Kb .* T ./ sqrt(0.5 * (varStart(1).^2 + varStart(2).^2));
+StiffnessR = Kb .* T ./ sqrt(0.5 * (varEnd(1).^2 + varEnd(2).^2));
+
+% Plot stuff
+figure(1)
+clf
+m = 3;
+
+subplot(m,1,1) % Cropped bead images
+imagesc([0 voxelSizeTdouble*diff(cropT)],1e6.*[X(1) X(end)],Ims(cropT(1):cropT(2), cropX(1):cropX(2))')
+set(gca,'YDir','normal')
+xlabel('Time(s)')
+ylabel('Scan Axis (\mu m)')
+title('Cropped data (85,000 frames)')
+
+subplot(m,1,2) % Histogram of centres from two scan directions
+histogram(reshape(Centres(:,:,1),1,[],1))
+hold on
+histogram(reshape(Centres(:,:,2),1,[],1))
+ylabel('Count')
+xlabel('Position (\mu m)')
+title('Bead position distribution (bidirectional scan)')
+legend('Scan direction 1','Scan direction 2')
+
+subplot(m,1,3) % Centre position against time
+plot((cropT(1)-1:cropT(2)-1)*voxelSizeTdouble,1e6.*centresIL,'k.')
+xlabel('Time(s)')
+ylabel('Position (\mu m)')
+xlim(cropT*voxelSizeTdouble)
+title(['Bead positions (Trap stiffness ' num2str(mean(Stiffness)*1e6) 'pN/um)'])
+%%
+m = 2;
+figure(2)
+subplot(m,1,1)
+clf
+hold on
+plot((cropT(1)-1:cropT(2)-1)*voxelSizeTdouble,1e6.*voxelSizeXdouble.* reshape(beadsStartX,1,[],1))
+plot((cropT(1)-1:cropT(2)-1)*voxelSizeTdouble,1e6.*voxelSizeXdouble.* reshape(beadsEndX,1,[],1))
+plot((cropT(1)-1:cropT(2)-1)*voxelSizeTdouble,1e6.*reshape(Centres,1,[],1),'k.')
+xlabel('Time(s)')
+ylabel('Position (\mu m)')
+xlim(cropT*voxelSizeTdouble)
+title(['Bead positions (Trap stiffness ' num2str(mean(Stiffness)*1e6) 'pN/um)'])
+legend('LHS','RHS','Centre','Location','southeast')
+subplot(m,1,2)
+histogram(voxelSizeXdouble*1e6*beadWidthsX)
+xlim([0, 5])
+title(['Measured width of 2 \mu m bead (pixel size ' num2str(voxelSizeXdouble*1e6) '\mu m)'])
+
+%% 
+metaFileName = ['~/Documents/data/Zeiss/2020-11-10-2um-beads-broken-XT-files/' fileName(1:end-3) 'txt'];
+system(['touch ' metaFileName]);
+hashTable = Metastack{2};
+hashTableChar = char(hashTable.toString());
+% dlmwrite(metaFileName,hashTableChar,'delimiter','');
+keysCell = strsplit(hashTableChar(2:end-1),',')';
+for idx = 1:size(keysCell,1)
+    split = strsplit(keysCell{idx},'=');
+    keysCell{idx,1} = split{1};
+    keysCell{idx,2} = split{2};
+end
+ 
