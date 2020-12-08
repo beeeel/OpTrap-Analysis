@@ -6,8 +6,8 @@ public double mean;
 public double variance;
 public double xCenterOfMass;
 public double yCenterOfMass;
-public final int width;
-public final int height;
+public int width;
+public int height;
 public float[] pixels;
 
     public void SimpleImageMath(int width, int height) {
@@ -27,7 +27,7 @@ public float[] pixels;
         int i;
         double v, v2, sum2=0.0, x2sum=0.0, y2sum=0.0;
         for (int y=0; y<(height); y++) {
-            i = y*width + rx;
+            i = y*width;
             for (int x=0; x<(width); x++) {
                     v = pixels[i]+Double.MIN_VALUE - mean;
                     v2 = v*v;
