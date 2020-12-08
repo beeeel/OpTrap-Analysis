@@ -67,8 +67,7 @@ public class StaticImageMath {
         // do your calculations with pixels here
         double mean;
         double variance;
-        double xCenterOfMass;
-        double yCenterOfMass;
+        double[] CenterOfMass;
         int i, count = 0;
         double v, v2, sum = 0.0, sum2 = 0.0, x2sum=0.0, y2sum=0.0;
         
@@ -94,7 +93,8 @@ public class StaticImageMath {
                     i++;
             }
         }
-        xCenterOfMass = x2sum/sum2+0.5;
-        yCenterOfMass = y2sum/sum2+0.5;
+        CenterOfMass[0] = x2sum/sum2+0.5;
+        CenterOfMass[1] = y2sum/sum2+0.5;
+        return CentreOfMass;
     }
 }
