@@ -1,4 +1,4 @@
-package org.will.hardiman
+package org.will.hardiman;
 
 public class SimpleImageMath {
 
