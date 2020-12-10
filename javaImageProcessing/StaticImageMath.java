@@ -3,7 +3,7 @@ package org.will.hardiman;
 public class StaticImageMath {
 
     // Basically steal ImageJ's centroid calculation
-    double[] getCentroid(short[] pixels, int width, int height) {
+    static double[] getCentroid(short[] pixels, int width, int height) {
         // do your calculations with pixels here
         double mean;
         double variance;
