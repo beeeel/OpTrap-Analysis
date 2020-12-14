@@ -1,6 +1,6 @@
 package org.will.hardiman;
 
-public class SimpleImageMath {
+public class Simple_Image_Math {
 
 public double mean;
 public double variance;

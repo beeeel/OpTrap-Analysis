@@ -1,6 +1,6 @@
 package org.will.hardiman;
 
-public class StaticImageMath {
+public class Static_Image_Math {
 
     // Basically steal ImageJ's centroid calculation
     static double[] getCentroid(short[] pixels, int width, int height) {

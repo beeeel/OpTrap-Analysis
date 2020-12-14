@@ -1,9 +1,9 @@
 package org.will.hardiman;
 
-public class ShortMath {
+public class Short_Math {
 
     // Basically steal ImageJ's centroid calculation
-    static double[] getCentroid(short pixels, int width, int height) {
+    static double[] getShortCentroid(short pixels, int width, int height) {
         // do your calculations with pixels here
         double mean;
         double variance;
