@@ -1,9 +1,7 @@
-package org.will.hardiman;
+public class Static_Image_Math{
 
-public class Static_Image_Math {
-
-    // Basically steal ImageJ's centroid calculation
-    static double[] getCentroid(short[] pixels, int width, int height) {
+    // Basically steal ImageJ's centroid calculation but normalize and square
+    public static double[] getCentroid(short[] pixels, int width, int height) {
         // do your calculations with pixels here
         double mean;
         double variance;
