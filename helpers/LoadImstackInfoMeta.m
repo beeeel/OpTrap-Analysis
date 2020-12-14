@@ -69,6 +69,10 @@ if strcmp(CellType,'hela')
     InfoFile = {[InfosDir 'info-hela_ctrl_s_020_tr_70_' Num InfoSuffix '.mat']};
     DataFile = {'0610/Deformation','ctrl','020','70',0,Num};
     Loader = 'load_imstack';
+elseif strcmp(CellType, 'helaS3')
+    
+    infoFile = {[InfosDir 'info-hela_' Set Num InfoSuffix '.mat']};
+    DataFile = {'2020_11_19',
 elseif strcmp(Set,'Jenna')
     InfoFile = {strcat(InfosDir,'info_Jenna_test_no_erode',Num,InfoSuffix,'.mat')};
     DataFile = {[DataDir '1119_Jenna/191119_thp1_ctrl_s_010_tr_50_',Num,'_MMStack.ome.tif']};
