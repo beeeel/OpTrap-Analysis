@@ -23,7 +23,7 @@ LoadImstackInfoMeta(CellType,Set,Num);
 % The mask overlay can either be the initial circular mask from
 % find_circle, or the final mask from segment_cell. Atop this can overlay
 % the fitted ellipse from regionprops or ellipseDetection.
-%
+%fffff
 % The time to pause on each frame can be set, as can save options to create
 % a .gif or .avi from the slideshow. If flythrough is set to 0, you need to
 % press enter on the command window to advance each frame.
@@ -32,7 +32,7 @@ show_fit = 'unwrap';   % 'regionProps' or 'ellipseDetection' or 'unwrap' or 'non
 show_mask = 'none';      % 'initial' or 'segment' or 'none' - Segmented mask from seg_cell, or initial circular mask from find_cell
 n_plots = 6;                % Number of plots - 6 includes ellipse fitting results
 pt_mode = 'data';           % Analysis or data or unwrap - do you want to look at the data, or analyse why it isn't working, or just show unwrapped data
-frs =600:700;                 % Frames to display
+frs =100:200;                 % Frames to display
 
 p_time = 0.1025;              % Time to pause on each frame when showing as movie
 makevid = 0;                % Set to 1 to make animated gif or 2 to make avi
