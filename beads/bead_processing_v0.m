@@ -44,20 +44,21 @@ for fileIdx = 8%1:length(dirList)
     xCentresM = xCentres(cropT(1):cropT(2)) .* mPerPx;
     yCentresM = yCentres(cropT(1):cropT(2)) .* mPerPx;
     
-    % Conditional drift removal (only use for calibration sets!)
+    % Conditional drift removal (demean only when pOrder = 0)
     if fitPoly(fileIdx)
         dims = [1, 3, 2];
+        pOrder = fitPolyOrder*fitPoly(fileIdx);
         [~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
-            permute(xCentresM, dims), fitPolyOrder, 1, length(xCentresM));
+            permute(xCentresM, dims), pOrder, 1, length(xCentresM));
         [~, yCentresM, ~] = func_thermal_rm(1:length(yCentresM), ...
-            permute(yCentresM, dims), fitPolyOrder, 1, length(yCentresM));
+            permute(yCentresM, dims), pOrder, 1, length(yCentresM));
         xCentresM = ipermute(xCentresM, dims);
         yCentresM = ipermute(yCentresM, dims);
     end
     
     % Calculate the stiffnesses and put into output array
     xStiff = calcStiffness(xCentresM);
-    Stiff = calcStiffness(yCentresM);
+    yStiff = calcStiffness(yCentresM);
     stiffXY(:, fileIdx) = [xStiff, yStiff];
     
     % Compare MATLAB calculated centres with live (Java) calculated centres
@@ -76,6 +77,8 @@ for fileIdx = 8%1:length(dirList)
         sld = uislider(fh, 'Position', [100, 50, 600, 40], ...
             'ValueChangedFcn', @(sld, event) changeIm(sld, Imstack, ax, imCentres, xyCentres),...
             'Limits', [1 length(Imstack{1})], 'MinorTicks', 1:length(Imstack{1}));
+        input('Enter to close figure window')
+        close(fh)
     end
     
     % Plot the processed data
@@ -87,16 +90,19 @@ for fileIdx = 8%1:length(dirList)
         % Histogram of xCentres and yCentres in units um
         subplot(3,1,1)
         hold on
-        histogram(xCentresM.*1e6)
-        histogram(yCentresM.*1e6)
+        histogram(xCentresM.*1e6,'Normalization','probability')
+        histogram(yCentresM.*1e6,'Normalization','probability')
+        xlim([-1 1] * 0.05)
         xlabel('Centre position (\mu m)')
-        ylabel('Bin count')
+        ylabel('Bin probability')
         title(['Histogram of centres, trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m'])
         legend('X','Y')
         
         % Scatterplot of each centre in units um
         subplot(3,1,2)
         plot(xCentresM.*1e6,yCentresM.*1e6,'.')
+        xlim([-1 1] * 0.15)
+        ylim([-1 1] * 0.15)
         title(['Scatterplot of centres, ' num2str(diff(cropT)+1) ' frames'])
         xlabel('X Centre position (\mu m)')
         ylabel('Y Centre position (\mu m)')
@@ -108,11 +114,13 @@ for fileIdx = 8%1:length(dirList)
         xlabel('Time (s)')
         ylabel('X centre (\mu m)')
         title('X centre position time trace')
+        ylim([-1 1]*0.15)
         subplot(3,2,6)
         plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM.*1e6,'.')
         xlabel('Time (s)')
         ylabel('Y centre (\mu m)')
         title('Y centre position time trace')
+        ylim([-1 1]*0.15)
         drawnow
     end
     
@@ -139,20 +147,9 @@ bar(laserPowers, stiffXY(1,1:length(laserPowers))./stiffXY(2,1:length(laserPower
 title('Ratio $\frac{k_x}{k_y}$','Interpreter','latex','Fontsize',20)
 xlabel('Laser power setting (%)')
 ylabel('Ratio')
-%% Show calculated centres with image
-frames = 1:15;
+%%
 
-imCentres = imCentreOfMass(cat(3,Imstack{1}{frames,1}));
-figure(4)
-fh.Name = fName;
-clf
-hold on
-plot(0.07.*xCentres(1:1e4:max(frames)*1e4),0.07.*yCentres(1:1e4:max(frames)*1e4),'k.')
-plot(0.07.*imCentres(1,:), 0.07.*imCentres(2,:), 'rx')
-axis equal
 
-figure(5)
-fh.Name = fName;
 for frame = 1%:16
 clf
 hold on
@@ -184,6 +181,7 @@ cla(ax);
 imagesc(ax, ims{1}{fr,1});
 plot(ax, imCentres(1, fr), imCentres(2, fr), 'kx');
 plot(ax, xyCentres(1, fr), xyCentres(2, fr), 'k.');
+axis(ax, 'image');
 legend(ax, 'MATLAB calculated centre','Live calculated centre')
 diffCentres = imCentres - xyCentres(:, 1:length(imCentres));
 title(ax,['Frame ' num2str(fr) ' x_{diff} = ' num2str(diffCentres(1,fr)) ...
