@@ -166,7 +166,11 @@ if length(cell) ~= length(struct)
     str = [str repmat('[1 5e5], ', 1, length(struct))];
     str = [str(1:end-2) ' };'];
     disp(str);
-    error('CropTs is empty, copy the above line into the script');
+    str = 'fitPoly = [';
+    str = [str repmat('0 ', 1, length(struct))];
+    str = [str '];'];
+    disp(str);
+    error('CropTs is the wrong size, copy the above lines into the script');
 end
 end
 
