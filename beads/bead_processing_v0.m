@@ -2,9 +2,10 @@
 % Experiment parameters
 mPerPx = 0.07e-6;
 laserPowers = 30:5:60;
-cropTs = {[1 5e5], [1 5e5], [1 5e5], [1e5 3.2e5], [1.4e5 4.4e5], [1.7e5 5e5], [1 0.9e5], [1.6e5 2.8e5] };
+ignoreDirs = {'cell_and_bead'}; % Directories to ignore
 
 % Processing parameters
+cropTs = {[1 5e5], [1 5e5], [1 5e5], [1 5e5] };
 fitPoly = [0, 0, 0, 0, 0, 0, 0, 1]; % Fit a polynomial to remove drift. Only do this for calibration sets!
 fitPolyOrder = 1;                   % Order of polynomial to be fitted
 
@@ -17,6 +18,9 @@ compCentres = false; % Show the Imstack with live calculated and offline calcula
 dirList = dir;
 dirList = dirList([dirList.isdir]);
 dirList = dirList(3:end);
+for d = 1:length(ignoreDirs)
+    dirList = dirList(~strcmp({dirList.name},ignoreDirs{d}));
+end
 % Check cropTs has been made with the right number of elements. Throws an
 % error and gives an empty list if not.
 checkCropTs(cropTs, dirList);
@@ -53,7 +57,7 @@ for fileIdx = 8%1:length(dirList)
     
     % Calculate the stiffnesses and put into output array
     xStiff = calcStiffness(xCentresM);
-    yStiff = calcStiffness(yCentresM);
+    Stiff = calcStiffness(yCentresM);
     stiffXY(:, fileIdx) = [xStiff, yStiff];
     
     % Compare MATLAB calculated centres with live (Java) calculated centres
