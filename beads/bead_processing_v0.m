@@ -44,17 +44,15 @@ for fileIdx = 8%1:length(dirList)
     xCentresM = xCentres(cropT(1):cropT(2)) .* mPerPx;
     yCentresM = yCentres(cropT(1):cropT(2)) .* mPerPx;
     
-    % Conditional drift removal (demean only when pOrder = 0)
-    if fitPoly(fileIdx)
-        dims = [1, 3, 2];
-        pOrder = fitPolyOrder*fitPoly(fileIdx);
-        [~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
-            permute(xCentresM, dims), pOrder, 1, length(xCentresM));
-        [~, yCentresM, ~] = func_thermal_rm(1:length(yCentresM), ...
-            permute(yCentresM, dims), pOrder, 1, length(yCentresM));
-        xCentresM = ipermute(xCentresM, dims);
-        yCentresM = ipermute(yCentresM, dims);
-    end
+    % Conditional drift removal only demeans when pOrder = 0
+    dims = [1, 3, 2];
+    pOrder = fitPolyOrder*fitPoly(fileIdx);
+    [~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
+        permute(xCentresM, dims), pOrder, 1, length(xCentresM));
+    [~, yCentresM, ~] = func_thermal_rm(1:length(yCentresM), ...
+        permute(yCentresM, dims), pOrder, 1, length(yCentresM));
+    xCentresM = ipermute(xCentresM, dims);
+    yCentresM = ipermute(yCentresM, dims);
     
     % Calculate the stiffnesses and put into output array
     xStiff = calcStiffness(xCentresM);
@@ -148,7 +146,6 @@ title('Ratio $\frac{k_x}{k_y}$','Interpreter','latex','Fontsize',20)
 xlabel('Laser power setting (%)')
 ylabel('Ratio')
 %%
-
 
 for frame = 1%:16
 clf
