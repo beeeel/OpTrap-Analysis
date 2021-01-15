@@ -1,7 +1,7 @@
 %% Process multiple sets of bead data sequentially
 % Experiment parameters
-mPerPx = 0.07e-6;
-laserPowers = 30:5:60;
+mPerPx = 0.07e-6;           % Camera pixel size calibration
+laserPowers = 30:5:60;      % Laser power in % for the datasets used
 ignoreDirs = {'cell_and_bead'}; % Directories to ignore
 
 % Processing parameters
@@ -13,6 +13,7 @@ fitPolyOrder = 1;                   % Order of polynomial to be fitted
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
+setLims = false;     % Set axis limits on plots
 
 % Get all the children directories in a struct
 dirList = dir;
@@ -90,7 +91,9 @@ for fileIdx = 8%1:length(dirList)
         hold on
         histogram(xCentresM.*1e6,'Normalization','probability')
         histogram(yCentresM.*1e6,'Normalization','probability')
-        xlim([-1 1] * 0.05)
+        if setLims
+            xlim([-1 1] * 0.05)
+        end
         xlabel('Centre position (\mu m)')
         ylabel('Bin probability')
         title(['Histogram of centres, trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m'])
@@ -99,8 +102,10 @@ for fileIdx = 8%1:length(dirList)
         % Scatterplot of each centre in units um
         subplot(3,1,2)
         plot(xCentresM.*1e6,yCentresM.*1e6,'.')
-        xlim([-1 1] * 0.15)
-        ylim([-1 1] * 0.15)
+        if setLims
+            xlim([-1 1] * 0.15)
+            ylim([-1 1] * 0.15)
+        end
         title(['Scatterplot of centres, ' num2str(diff(cropT)+1) ' frames'])
         xlabel('X Centre position (\mu m)')
         ylabel('Y Centre position (\mu m)')
@@ -112,13 +117,17 @@ for fileIdx = 8%1:length(dirList)
         xlabel('Time (s)')
         ylabel('X centre (\mu m)')
         title('X centre position time trace')
-        ylim([-1 1]*0.15)
+        if setLims
+            ylim([-1 1]*0.15)
+        end
         subplot(3,2,6)
         plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM.*1e6,'.')
         xlabel('Time (s)')
         ylabel('Y centre (\mu m)')
         title('Y centre position time trace')
-        ylim([-1 1]*0.15)
+        if setLims
+            ylim([-1 1]*0.15)
+        end
         drawnow
     end
     
