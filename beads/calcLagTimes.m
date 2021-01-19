@@ -1,5 +1,6 @@
 function lT = calcLagTimes(nP, varargin)
 %% Calculate lag times to use with allanvar
+% lT = calcLagTimes(nPoints, [n])
 
 if nargin == 1
     n = 128;
