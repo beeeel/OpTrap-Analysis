@@ -2,11 +2,12 @@
 % Experiment parameters
 mPerPx = 0.07e-6;           % Camera pixel size calibration
 laserPowers = 30:5:60;      % Laser power in % for the datasets used
-ignoreDirs = {'cell_and_bead'}; % Directories to ignore
+ignoreDirs = {'hela_s3_w_bead_1','hela_s3_w_bead_2',...
+    'hela_s3_w_bead_3','hela_s3_w_bead_z_3'}; % Directories to ignore
 
 % Processing parameters
-cropTs = {[1 5e5], [1 5e5], [1 5e5], [1 5e5] };
-fitPoly = [0, 0, 0, 0, 0, 0, 0, 1]; % Fit a polynomial to remove drift. Only do this for calibration sets!
+cropTs = {[1 10e5], [1 20e5], [1 20e5], [1 20e5], [1 10e5] };
+fitPoly = [0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
 fitPolyOrder = 1;                   % Order of polynomial to be fitted
 
 % Plotting parameters
@@ -154,8 +155,23 @@ bar(laserPowers, stiffXY(1,1:length(laserPowers))./stiffXY(2,1:length(laserPower
 title('Ratio $\frac{k_x}{k_y}$','Interpreter','latex','Fontsize',20)
 xlabel('Laser power setting (%)')
 ylabel('Ratio')
+%% Try high-pass filtering position
+fpass = 0.5; % Pass frequency
+fs = length(xCentres)./ (1e-3 * (max(timeVec) - min(timeVec))); % Sampling frequency in Hz
+cropT = cropTs{fileIdx};
+[aVarX, Tau, xCentresHP] = func_bead_hp_allan_var(xCentres, timeVec, fpass, cropT, 1, fName, true);
+[aVarY, ~, yCentresHP] = func_bead_hp_allan_var(yCentres, timeVec, fpass, cropT, 1, fName, true);
+%% Look at mean-square displacement (for cell-bead expts)
+idx = [1 2e6];
+msd = msdanalyzer(1, 'um', 'ms');
+msd = msd.addAll({[timeVec(idx(1):idx(2))' 1e6.*xCentresM(idx(1):idx(2))']});
+tic
+msd = msd.computeMSD;
+toc
+fh = figure;
+fh.Name = num2str(diff(idx)+1);
+msd.plotMSD
 %%
-
 for frame = 1%:16
 clf
 hold on
