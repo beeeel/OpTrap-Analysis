@@ -10,7 +10,8 @@ cropTs = {[1 10e5], [1 20e5], [1 20e5], [1 20e5], [1 10e5] };
 fitPoly = [0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
-fpass = 0;              % Pass frequency
+fpass = 0.5;              % Pass frequency
+msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 
 
 % Plotting parameters
@@ -31,11 +32,11 @@ end
 checkCropTs(cropTs, dirList);
 
 % Preallocate 
-data = struct([]);
 out = {};
 
 for fileIdx = 2%1:8%length(dirList)
     % Load all the data and the metadata
+    data = struct([]);
     data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
     data.fName = dirList(fileIdx).name;
     data = bead_loadData(data);
@@ -44,7 +45,7 @@ for fileIdx = 2%1:8%length(dirList)
     data.opts.cropT = cropTs{fileIdx};
     data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
     data.mPerPx = mPerPx;
-    data = bead_preProcessCentres(data, mPerPx);
+    data = bead_preProcessCentres(data);
     %%
     
     % Calculate the stiffnesses and put into data
@@ -74,9 +75,15 @@ for fileIdx = 2%1:8%length(dirList)
     
     if fpass > 0
         data = bead_hp_allan_var(data, 'xCentresPx', ...
-            fpass, doPlots, true);
+            fpass, 5e3, doPlots, true);
         data = bead_hp_allan_var(data, 'yCentresPx', ...
-            fpass, doPlots, true);
+            fpass, 5e3, doPlots, true);
+    end
+    
+    % Look at mean-square displacement (for cell-bead expts)
+    if msdOffset
+        data = bead_normMSD(data, 'xCentresM', msdOffset, 6e4);
+%         data = bead_normMSD(data, 'yCentresM', msdOffset);
     end
     
     out{fileIdx} = data; %#ok<SAGROW>
