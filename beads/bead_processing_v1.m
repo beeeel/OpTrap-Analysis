@@ -2,19 +2,18 @@
 % Experiment parameters
 mPerPx = 0.07e-6;           % Camera pixel size calibration
 laserPowers = 30:5:60;      % Laser power in % for the datasets used
-ignoreDirs = {'hela_s3_w_bead_1','hela_s3_w_bead_2',...
-    'hela_s3_w_bead_3','hela_s3_w_bead_z_3'}; % Directories to ignore
+ignoreDirs = {}; % Directories to ignore
 
 % Processing parameters
-cropTs = {[1 10e5], [1 20e5], [1 20e5], [1 20e5], [1 10e5] };
-fitPoly = [0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
+cropTs = {[1 6e4], [3e4 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4] };
+fitPoly = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 
-
 % Plotting parameters
+saveFigs = true;
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
@@ -47,7 +46,11 @@ for fileIdx = 1:8%length(dirList)
     data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
     data.mPerPx = mPerPx;
     data = bead_preProcessCentres(data);
+    data = bead_fft_scaled(data, doPlots);
     
+    if saveFigs
+        saveas(gcf, [data.fName '_fft.png'])
+    end
     %% Process data
     % Calculate the stiffnesses and put into data
     if calcStiff
@@ -64,7 +67,9 @@ for fileIdx = 1:8%length(dirList)
     % Plot the processed data
     if doPlots
         fh = bead_plotRawData(data, setLims); %#ok<*UNRCH>
-        fh.Name = data.fName;
+        if saveFigs
+            saveas(fh, [data.fName '_raw.png'])
+        end
     end
     
     % Open the Imstack file using ImageJ (kinda redundant since I have
@@ -79,18 +84,24 @@ for fileIdx = 1:8%length(dirList)
     if fpass > 0
         data = bead_hp_allan_var(data, 'xCentresPx', ...
             fpass, 5e3, doPlots);
-        data = bead_hp_allan_var(data, 'yCentresPx', ...
-            fpass, 5e3, doPlots);
+%         data = bead_hp_allan_var(data, 'yCentresPx', ...
+%             fpass, 1, doPlots);
     end
     
     % Look at mean-square displacement (for cell-bead expts)
     if msdOffset
         data = bead_normMSD_polyfit(data, 'xCentresPx', msdOffset, 6e4);
+        if saveFigs
+            saveas(gcf, [data.fName '_MSD.png'])
+        end
 %         data = bead_normMSD(data, 'yCentresM', msdOffset);
     end
     
     out{fileIdx} = data; %#ok<SAGROW>
 end
+%%
+
+%%
 
 function checkCropTs(cell, struct)
 if length(cell) ~= length(struct)
