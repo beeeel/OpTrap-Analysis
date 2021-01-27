@@ -1,5 +1,5 @@
 function bead_plotCompareCentres(data, varargin)
-%% plotCompareCentres(Imstack, xCentres, yCentres, [step])
+%% plotCompareCentres(data, [step])
 % Shows images from Imstack, centres from [xCentres yCentres]
 % overlaid along with calculated centres using normalize-square CofM
 % algorithm in MATLAB. Step is used to select correct frames from centres
