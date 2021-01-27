@@ -24,6 +24,7 @@ else
     error('How many nargins did you use? Should be 1 to 3!')
 end
 
+fh.Name = data.fName;
 clf
 
 % Histogram of xCentres and yCentres in units um
