@@ -10,7 +10,7 @@ cropTs = {[1 10e5], [1 20e5], [1 20e5], [1 20e5], [1 10e5] };
 fitPoly = [0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
-fpass = 0.5;              % Pass frequency
+fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 
 
@@ -34,7 +34,8 @@ checkCropTs(cropTs, dirList);
 % Preallocate 
 out = {};
 
-for fileIdx = 2%1:8%length(dirList)
+for fileIdx = 1:8%length(dirList)
+    %% Load and pre-process
     % Load all the data and the metadata
     data = struct([]);
     data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
@@ -46,8 +47,8 @@ for fileIdx = 2%1:8%length(dirList)
     data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
     data.mPerPx = mPerPx;
     data = bead_preProcessCentres(data);
-    %%
     
+    %% Process data
     % Calculate the stiffnesses and put into data
     if calcStiff
         xStiff = calcStiffness(data.pro.xCentresM);
@@ -62,7 +63,7 @@ for fileIdx = 2%1:8%length(dirList)
     
     % Plot the processed data
     if doPlots
-        fh = bead_plotRawData(data, setLims, fileIdx); %#ok<*UNRCH>
+        fh = bead_plotRawData(data, setLims); %#ok<*UNRCH>
         fh.Name = data.fName;
     end
     
@@ -73,16 +74,18 @@ for fileIdx = 2%1:8%length(dirList)
         system(['imagej ' dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif']);
     end
     
+    % High-pass filter and calculate Allan variance if pass frequency is
+    % positive
     if fpass > 0
         data = bead_hp_allan_var(data, 'xCentresPx', ...
-            fpass, 5e3, doPlots, true);
+            fpass, 5e3, doPlots);
         data = bead_hp_allan_var(data, 'yCentresPx', ...
-            fpass, 5e3, doPlots, true);
+            fpass, 5e3, doPlots);
     end
     
     % Look at mean-square displacement (for cell-bead expts)
     if msdOffset
-        data = bead_normMSD(data, 'xCentresM', msdOffset, 6e4);
+        data = bead_normMSD_polyfit(data, 'xCentresPx', msdOffset, 6e4);
 %         data = bead_normMSD(data, 'yCentresM', msdOffset);
     end
     
