@@ -2,8 +2,8 @@ function fh = bead_plotRawData(data, varargin)
 %% figureHandle = plotRawBeadData(data, [setLims, figNum])
 % Do histograms and scatterplots for 2D position/time data
 
-xCentresM = data.pro.xCentresM;
-yCentresM = data.pro.yCentresM;
+xCentresM = data.raw.xCentresPx * data.mPerPx;
+yCentresM = data.raw.yCentresPx * data.mPerPx;
 timeVec = data.raw.timeVecMs;
 cropT = data.opts.cropT;      
 
@@ -36,8 +36,9 @@ if setLims
     xlim([-1 1] * 0.05)
 end
 xlabel('Centre position (\mu m)')
-ylabel('Bin probability')
-title(['Histogram of centres, trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m'])
+ylabel('Probability')
+order = num2str(data.opts.pOrder);
+title({['Histogram of centres, unfiltered'], [ 'trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m']})
 legend('X','Y')
 
 % Scatterplot of each centre in units um
@@ -48,24 +49,24 @@ if setLims
     ylim([-1 1] * 0.15)
 end
 title(['Scatterplot of centres, ' num2str(length(xCentresM)) ' frames'])
-xlabel('X Centre position (\mu m)')
-ylabel('Y Centre position (\mu m)')
+xlabel('X (\mu m)')
+ylabel('Y (\mu m)')
 axis equal
 
 % Time traces of X and Y in units um
 subplot(3,2,5)
 plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM.*1e6,'.')
 xlabel('Time (s)')
-ylabel('X centre (\mu m)')
-title('X centre position time trace')
+ylabel('X (\mu m)')
+title('X time trace')
 if setLims
     ylim([-1 1]*0.15)
 end
 subplot(3,2,6)
 plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM.*1e6,'.')
 xlabel('Time (s)')
-ylabel('Y centre (\mu m)')
-title('Y centre position time trace')
+ylabel('Y (\mu m)')
+title('Y time trace')
 if setLims
     ylim([-1 1]*0.15)
 end
