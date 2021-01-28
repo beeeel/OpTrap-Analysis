@@ -1,7 +1,7 @@
 %% Process multiple sets of bead data sequentially
 % Experiment parameters
 mPerPx = 0.07e-6;           % Camera pixel size calibration
-laserPowers = 30:5:60;      % Laser power in % for the datasets used
+laserPowers = 0;      % Laser power in % for the datasets used
 ignoreDirs = {}; % Directories to ignore
 
 % Processing parameters
@@ -11,7 +11,11 @@ fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
-freshStart = false;
+doFFT = true;
+
+% Data file parameters
+forceRun = false;       % Try to take data from file and reuse as much as possible
+saveData = true;        % Save data to file
 
 % Plotting parameters
 saveFigs = false;
@@ -31,17 +35,13 @@ end
 % error and gives an empty list if not.
 checkCropTs(cropTs, dirList);
 
-% Preallocate 
-if freshStart 
-    out = {};
-end
-
 for fileIdx = 18:26%length(dirList)
     %% Load and pre-process
-    % Load all the data and the metadata
-    if freshStart || ~isstruct(out{fileIdx})
+    % Either create a new struct or load one named dataFile
+    dataFile = [dirList(fileIdx).name '_processed.mat'];
+    if forceRun || ~exist(dataFile, 'file')
         data = struct([]);
-        data.forceRun = freshStart;
+        data.forceRun = forceRun;
         
         % Set names and load data
         data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
@@ -53,16 +53,11 @@ for fileIdx = 18:26%length(dirList)
         data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
         data.mPerPx = mPerPx;
     else
-        data = out{fileIdx};
-        data.forceRun = false;
+        data = load(dataFile, 'data');
+        data.forceRun = forceRun;
     end
         
     data = bead_preProcessCentres(data);
-    data = bead_fft_scaled(data, doPlots);
-    
-    if saveFigs
-        saveas(gcf, [data.fName '_fft.png'])
-    end
     %% Process data
     % Calculate the stiffnesses and put into data
     if calcStiff
@@ -71,9 +66,12 @@ for fileIdx = 18:26%length(dirList)
         data.pro.stiffXY(:, fileIdx) = [xStiff, yStiff];
     end
     
-    % Compare MATLAB calculated centres with live (Java) calculated centres
-    if compCentres
-        bead_plotCompareCentres(data)
+    % Calculate frequency spectrum in physical units
+    if doFFT
+        data = bead_fft_scaled(data, doPlots);
+        if saveFigs
+            saveas(gcf, [data.fName '_fft.png'])
+        end
     end
     
     % Plot the processed data
@@ -84,11 +82,19 @@ for fileIdx = 18:26%length(dirList)
         end
     end
     
+    % Compare MATLAB calculated centres with live (Java) calculated centres
+    if compCentres
+        bead_plotCompareCentres(data)
+        %% Could check for before/after images and display
+    end
+    
     % Open the Imstack file using ImageJ (kinda redundant since I have
     % compCentres)
     if showStack
+        %% Could check for before/after images and display
         disp('MATLAB is locked until you close imagej')
-        system(['imagej ' dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif']);
+        % System can be called with an & in there to run in background
+        system(['imagej ' data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif&']);
     end
     
     % High-pass filter and calculate Allan variance if pass frequency is
@@ -102,14 +108,17 @@ for fileIdx = 18:26%length(dirList)
     
     % Look at mean-square displacement (for cell-bead expts)
     if msdOffset
-        data = bead_normMSD_polyfit(data, 'xCentresPx', msdOffset, 6e4);
+        data = bead_normMSD_polyfit(data, 'xCentresM', msdOffset, 6e4);
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
 %         data = bead_normMSD(data, 'yCentresM', msdOffset);
     end
     
-    out{fileIdx} = data; %#ok<SAGROW>
+    % Save if requested
+    if saveData
+        save(dataFile, 'data')
+    end
 end
 %%
 
