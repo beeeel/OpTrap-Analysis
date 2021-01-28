@@ -11,6 +11,7 @@ fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
+msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
 doFFT = true;
 
 % Data file parameters
@@ -35,16 +36,16 @@ end
 % error and gives an empty list if not.
 checkCropTs(cropTs, dirList);
 
-for fileIdx = 18:26%length(dirList)
+for fileIdx = 27:35%length(dirList)
     %% Load and pre-process
     % Either create a new struct or load one named dataFile
     dataFile = [dirList(fileIdx).name '_processed.mat'];
     if forceRun || ~exist(dataFile, 'file')
         data = struct([]);
-        data.forceRun = forceRun;
+        data(1).opts.forceRun = forceRun;
         
         % Set names and load data
-        data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
+        data.dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
         data.fName = dirList(fileIdx).name;
         data = bead_loadData(data);
         
@@ -54,9 +55,10 @@ for fileIdx = 18:26%length(dirList)
         data.mPerPx = mPerPx;
     else
         data = load(dataFile, 'data');
-        data.forceRun = forceRun;
+        data.opts.forceRun = forceRun;
     end
-        
+    
+    % Apply scale and do polyfit
     data = bead_preProcessCentres(data);
     %% Process data
     % Calculate the stiffnesses and put into data
@@ -85,21 +87,22 @@ for fileIdx = 18:26%length(dirList)
     % Compare MATLAB calculated centres with live (Java) calculated centres
     if compCentres
         bead_plotCompareCentres(data)
-        %% Could check for before/after images and display
     end
     
-    % Open the Imstack file using ImageJ (kinda redundant since I have
-    % compCentres)
+    % Open the Imstack file using ImageJ
     if showStack
-        %% Could check for before/after images and display
-        disp('MATLAB is locked until you close imagej')
         % System can be called with an & in there to run in background
-        system(['imagej ' data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif&']);
+        command = ['imagej ' data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif '];
+        if isfield(data, 'ImstackFullFoV')
+            command = [command data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif '];
+        end
+        system([command '&']);
     end
     
     % High-pass filter and calculate Allan variance if pass frequency is
     % positive
     if fpass > 0
+        %% Need to adapt to run on both dims and use subplots/etc
         data = bead_hp_allan_var(data, 'xCentresPx', ...
             fpass, 5e3, doPlots);
 %         data = bead_hp_allan_var(data, 'yCentresPx', ...
@@ -108,11 +111,10 @@ for fileIdx = 18:26%length(dirList)
     
     % Look at mean-square displacement (for cell-bead expts)
     if msdOffset
-        data = bead_normMSD_polyfit(data, 'xCentresM', msdOffset, 6e4);
+        data = bead_normMSD_polyfit(data, msdDim, msdOffset, 6e4);
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
-%         data = bead_normMSD(data, 'yCentresM', msdOffset);
     end
     
     % Save if requested
