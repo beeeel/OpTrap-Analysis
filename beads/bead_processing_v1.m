@@ -6,14 +6,15 @@ ignoreDirs = {}; % Directories to ignore
 
 % Processing parameters
 cropTs = {[1 6e4], [3e4 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4] };
-fitPoly = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]; % Fit a polynomial to remove drift. Only do this for calibration sets!
+fitPoly = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]; % Fit a polynomial to remove drift
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
+freshStart = false;
 
 % Plotting parameters
-saveFigs = true;
+saveFigs = false;
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
@@ -31,20 +32,31 @@ end
 checkCropTs(cropTs, dirList);
 
 % Preallocate 
-out = {};
+if freshStart 
+    out = {};
+end
 
-for fileIdx = 1:8%length(dirList)
+for fileIdx = 18:26%length(dirList)
     %% Load and pre-process
     % Load all the data and the metadata
-    data = struct([]);
-    data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
-    data.fName = dirList(fileIdx).name;
-    data = bead_loadData(data);
-    
-    % Apply calibration and crop time
-    data.opts.cropT = cropTs{fileIdx};
-    data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
-    data.mPerPx = mPerPx;
+    if freshStart || ~isstruct(out{fileIdx})
+        data = struct([]);
+        data.forceRun = freshStart;
+        
+        % Set names and load data
+        data(1).dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
+        data.fName = dirList(fileIdx).name;
+        data = bead_loadData(data);
+        
+        % Apply calibration and crop time
+        data.opts.cropT = cropTs{fileIdx};
+        data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
+        data.mPerPx = mPerPx;
+    else
+        data = out{fileIdx};
+        data.forceRun = false;
+    end
+        
     data = bead_preProcessCentres(data);
     data = bead_fft_scaled(data, doPlots);
     
@@ -66,7 +78,7 @@ for fileIdx = 1:8%length(dirList)
     
     % Plot the processed data
     if doPlots
-        fh = bead_plotRawData(data, setLims); %#ok<*UNRCH>
+        fh = bead_plotProData(data, setLims); %#ok<*UNRCH>
         if saveFigs
             saveas(fh, [data.fName '_raw.png'])
         end
@@ -99,8 +111,6 @@ for fileIdx = 1:8%length(dirList)
     
     out{fileIdx} = data; %#ok<SAGROW>
 end
-%%
-
 %%
 
 function checkCropTs(cell, struct)
