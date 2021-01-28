@@ -7,9 +7,9 @@ n_points = diff(data.opts.cropT)+1;
 
 for direction = 'xy'
     % Get the FFT
-    X = fft(data.pro.([ direction 'CentresM']));
+    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx']));
     P = abs(X/n_points);
-    P = P(1:end/2+1);
+    P = P(1:floor(end/2)+1);
     P(2:end-1) = 2*P(2:end-1);
     
     data.pro.([direction 'fftM']) = P;
