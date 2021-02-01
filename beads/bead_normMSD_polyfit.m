@@ -26,6 +26,7 @@ if strcmp(direction, 'x') || strcmp(direction, 'y')
     legCell = repmat(direction,nPerDir,1);
 else
     centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
+    timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
     offset = [offset (offset + data.nPoints)];
     legCell = [repmat('X',nPerDir,1) repmat('Y',nPerDir,1)];
 end
@@ -36,7 +37,6 @@ dims = [1, 3, 2];
 if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [direction(1) 'msdObj']))
     % Prepare data to go into msdanalyzer
     tracks = cell(length(offset),1);
-    timeVec = data.raw.timeVecMs;
     
     for idx = 1:length(offset)
         % Crop data, then fit polynomial of order set by processing script
