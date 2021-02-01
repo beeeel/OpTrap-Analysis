@@ -29,7 +29,7 @@ if doPlots
     
     title('X centres frequency spectrum')
     xlabel('Frequency (Hz)')
-    ylabel('Intensity (nm)')
+    ylabel('Amplitude (nm)')
     
     subplot(2,1,2)
     plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM)
@@ -37,6 +37,6 @@ if doPlots
     
     title('Y centres frequency spectrum')
     xlabel('Frequency (Hz)')
-    ylabel('Intensity (nm)')
+    ylabel('Amplitude (nm)')
     drawnow
 end
