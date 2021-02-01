@@ -23,12 +23,12 @@ end
 nPerDir = length(offset);
 if strcmp(direction, 'x') || strcmp(direction, 'y')
     centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
-    legCell = repmat(direction,nPerDir,1);
+    legCell = repmat({direction},nPerDir,1);
 else
     centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
     timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
     offset = [offset (offset + data.nPoints)];
-    legCell = [repmat('X',nPerDir,1) repmat('Y',nPerDir,1)];
+    legCell = [repmat({'X'},nPerDir,1) repmat({'Y'},nPerDir,1)];
 end
 
 % Dimension order for polynomial fitting
