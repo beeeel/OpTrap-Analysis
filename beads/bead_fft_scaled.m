@@ -3,11 +3,12 @@ function data = bead_fft_scaled(data, doPlots)
 % Calculate Fourier transform of centres data in both directions, store
 % one-sided spectra in data struct along with frequency vector in Hz
 
-n_points = diff(data.opts.cropT)+1;
+cropT = data.opts.cropT;
+n_points = diff(cropT)+1;
 
 for direction = 'xy'
     % Get the FFT
-    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx']));
+    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx'])(cropT(1):cropT(2)));
     P = abs(X/n_points);
     P = P(1:floor(end/2)+1);
     P(2:end-1) = 2*P(2:end-1);
