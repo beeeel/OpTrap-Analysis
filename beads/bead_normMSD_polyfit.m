@@ -98,7 +98,7 @@ if doPlots
     
     xlabel('Delay (s)')
     ylabel('Normalized MSD')
-    title({'Normalized mean square displacement', ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+    title({'Normalized mean square displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
     legend(legCell, 'Location','best')
     % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
 end
