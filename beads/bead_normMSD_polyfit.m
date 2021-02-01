@@ -4,6 +4,19 @@ function data = bead_normMSD_polyfit(data, direction, offset, varargin)
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work
 
+% Parse the inputs - needs to be after centres is defined (above)
+doPlots = true;
+if nargin == 3
+    num_t = data.nPoints;
+elseif nargin >= 4
+    num_t = varargin{1};
+    if nargin == 5
+        doPlots = varargin{2};
+    end
+else
+    error('Wrong number of input arguments')
+end
+
 % A little bit hacky - if both directions are wanted, stick them together
 % and replicate offset array. This means offset is the same for both
 % dimensions
@@ -17,19 +30,6 @@ else
     legCell = [repmat('X',nPerDir,1) repmat('Y',nPerDir,1)];
 end
 
-% Parse the inputs - needs to be after centres is defined (above)
-doPlots = true;
-if nargin == 3
-    num_t = length(centres);
-elseif nargin >= 4
-    num_t = varargin{1};
-    if nargin == 5
-        doPlots = varargin{2};
-    end
-else
-    error('Wrong number of input arguments')
-end
-
 % Dimension order for polynomial fitting
 dims = [1, 3, 2];
 
@@ -40,13 +40,13 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     
     for idx = 1:length(offset)
         % Crop data, then fit polynomial of order set by processing script
-        centres = centres(offset(idx) : offset(idx) + num_t - 1);
-        [~, centres, ~] = func_thermal_rm(1:length(centres), ...
-            permute(centres, dims), data.opts.pOrder, 1, length(centres));
-        centres = ipermute(centres, dims);
+        centresCrop = centres(offset(idx) : offset(idx) + num_t - 1);
+        [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
+            permute(centresCrop, dims), data.opts.pOrder, 1, length(centresCrop));
+        centresCrop = ipermute(centresCrop, dims);
         
         tracks{idx} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
-            1e6 .* centres'];
+            1e6 .* centresCrop'];
     end
     
     % Make an msdanalyzer and use it
