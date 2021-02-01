@@ -28,7 +28,7 @@ else
     centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
     timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
     offset = [offset (offset + data.nPoints)];
-    legCell = [repmat({'X'},nPerDir,1) repmat({'Y'},nPerDir,1)];
+    legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
 end
 
 % Dimension order for polynomial fitting
@@ -89,16 +89,41 @@ if doPlots
     clf
     hold on
     
-    loglog(dTs, MSDnorm,'LineWidth',2)
-    
-    fh.Children.XAxis.Scale = 'log';
-    fh.Children.YAxis.Scale = 'log';
-    
-    xlim([1e-3 tracks{1}(end/2,1)])
-    
-    xlabel('Delay (s)')
-    ylabel('Normalized MSD')
-    title({'Normalized mean square displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-    legend(legCell, 'Location','best')
+    if strcmp( direction(1) , 'a')
+        legCell = {[]};
+        for Idx = 1:length(tracks)/2
+            legCell{Idx} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
+        end
+        
+        subplot(2,1,1);
+        
+        loglog(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
+        xlim([1e-3 diff(tracks{1}([1 end/2],1))])
+        xlabel('Delay (s)')
+        ylabel('Normalized MSD')
+        title({'Normalized mean square X displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        legend(legCell,'Location','best')
+        
+        subplot(2,1,2);
+
+        loglog(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), 'LineWidth',2);
+        xlim([1e-3 diff(tracks{1}([1 end/2],1))])
+        xlabel('Delay (s)')
+        ylabel('Normalized MSD')
+        title({'Normalized mean square Y displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        legend(legCell,'Location','best')
+    else
+        loglog(dTs, MSDnorm,'LineWidth',2)
+        
+        fh.Children.XAxis.Scale = 'log';
+        fh.Children.YAxis.Scale = 'log';
+        
+        xlim([1e-3 tracks{1}(end/2,1)])
+        
+        xlabel('Delay (s)')
+        ylabel('Normalized MSD')
+        title({'Normalized mean square displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        legend(legCell, 'Location','best')
+    end
     % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
 end
