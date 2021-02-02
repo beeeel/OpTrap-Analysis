@@ -77,8 +77,8 @@ elseif doPlots
     
     % Extract the saved data to be used for plots below
     MSDnorm = data.pro.([savedDirection 'MSDnorm']);
-    dTs = MSDnorm(:,1);
-    MSDnorm = MSDnorm(:,2);
+    dTs = MSDnorm(:,1:end/2);
+    MSDnorm = MSDnorm(:,1+end/2:end);
     tracks = data.pro.([savedDirection 'msdObj']).tracks;
 end
 
