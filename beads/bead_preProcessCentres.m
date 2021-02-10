@@ -7,8 +7,8 @@ else
     mPerPx = 0.07e-6;
 end
 
-xCentresM = data.raw.xCentresPx(data.opts.cropT(1):data.opts.cropT(2)) .* mPerPx;
-yCentresM = data.raw.yCentresPx(data.opts.cropT(1):data.opts.cropT(2)) .* mPerPx;
+xCentresM = data.raw.xCentresPx(:,data.opts.cropT(1):data.opts.cropT(2)) .* mPerPx;
+yCentresM = data.raw.yCentresPx(:,data.opts.cropT(1):data.opts.cropT(2)) .* mPerPx;
 
 % Conditional drift removal only demeans when pOrder = 0
 dims = [1, 3, 2];
