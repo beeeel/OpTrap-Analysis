@@ -10,14 +10,14 @@ cropT = data.opts.cropT;
 xStiff = calcStiffness(xCentresM);
 yStiff = calcStiffness(yCentresM);
     
-if nargin >= 2
+argN = 1;
+if nargin >= 2 && ~ isempty(varargin{argN})
     % help give better errors when misused!
-    argN = 1;
     setLims = varargin{argN};
     validateattributes(setLims,{'numeric'},{'numel',2},...
         'bead_plotProData','setLims',nargin+argN-length(varargin));
-    else
-        setLims = [];
+else
+    setLims = [];
 end
 
 if nargin < 3
