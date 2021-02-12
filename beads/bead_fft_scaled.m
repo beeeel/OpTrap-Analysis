@@ -1,7 +1,18 @@
-function data = bead_fft_scaled(data, doPlots)
-%% data = bead_fft_scaled(data, doPlots)
+function data = bead_fft_scaled(data, doPlots, varargin)
+%% data = bead_fft_scaled(data, doPlots, [setLims])
 % Calculate Fourier transform of centres data in both directions, store
 % one-sided spectra in data struct along with frequency vector in Hz
+
+argN = 1;
+if nargin >= 2 && ~ isempty(varargin{argN})
+    % help give better errors when misused!
+    setLims = varargin{argN};
+    validateattributes(setLims,{'numeric'},{'numel',2},...
+        'bead_fft_scaled','setLims',nargin+argN-length(varargin));
+else
+    setLims = [];
+end
+
 
 cropT = data.opts.cropT;
 n_points = diff(cropT)+1;
@@ -27,7 +38,7 @@ if doPlots
     if size(data.pro.xfftM,1) == 1
         subplot(2,1,1)
         plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM)
-        ylim([0 1])
+        ylim(setLims)
         
         title('X centres frequency spectrum')
         xlabel('Frequency (Hz)')
@@ -35,7 +46,7 @@ if doPlots
         
         subplot(2,1,2)
         plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM)
-        ylim([0 1])
+        ylim(setLims)
         
         title('Y centres frequency spectrum')
         xlabel('Frequency (Hz)')
@@ -47,7 +58,7 @@ if doPlots
             subplot(2,n_obj,obj)
             hold on
             plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM(obj,:))
-            ylim([0 1])
+            ylim(setLims)
             
             title(['X centres frequency spectrum for ' LR{obj} ' bead'])
             xlabel('Frequency (Hz)')
@@ -56,7 +67,7 @@ if doPlots
             subplot(2,n_obj,n_obj + obj)
             hold on
             plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM(obj,:))
-            ylim([0 1])
+            ylim(setLims)
             
             title(['Y centres frequency spectrum for ' LR{obj} ' bead'])
             xlabel('Frequency (Hz)')

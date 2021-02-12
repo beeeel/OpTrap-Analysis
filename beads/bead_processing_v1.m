@@ -12,18 +12,19 @@ calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
-doFFT = true;
+doFFT = true;           % Calculate FFT and maybe plot
 
 % Data file parameters
 forceRun = false;       % Try to take data from file and reuse as much as possible
-saveData = true;        % Save data to file
+saveData = false;        % Save data to file
 
 % Plotting parameters
 saveFigs = false;
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
-setLims = false;     % Set axis limits on plots
+setLims = [-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
+fftYlim = [0 10];    % Set limits in units amplitude for FFT plots, empty for auto limit
 
 % Get all the children directories in a struct
 dirList = dir;
@@ -74,11 +75,16 @@ for fileIdx = 27:35%length(dirList)
         if saveFigs
             saveas(fh, [data.fName '_pro.png'])
         end
+                
+        fh = bead_plotDCData(data, [0 0.1]);
+        if saveFigs
+            saveas(fh, [data.fName '_DC.png'])
+        end
     end
     
     % Calculate frequency spectrum in physical units
     if doFFT
-        data = bead_fft_scaled(data, doPlots);
+        data = bead_fft_scaled(data, doPlots, fftYlim);
         if saveFigs
             saveas(gcf, [data.fName '_fft.png'])
         end
