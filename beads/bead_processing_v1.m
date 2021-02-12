@@ -68,19 +68,19 @@ for fileIdx = 27:35%length(dirList)
         data.pro.stiffXY(:, fileIdx) = [xStiff, yStiff];
     end
     
+    % Plot the processed data
+    if doPlots
+        fh = bead_plotProData(data, setLims); %#ok<*UNRCH>
+        if saveFigs
+            saveas(fh, [data.fName '_pro.png'])
+        end
+    end
+    
     % Calculate frequency spectrum in physical units
     if doFFT
         data = bead_fft_scaled(data, doPlots);
         if saveFigs
             saveas(gcf, [data.fName '_fft.png'])
-        end
-    end
-    
-    % Plot the processed data
-    if doPlots
-        fh = bead_plotProData(data, setLims); %#ok<*UNRCH>
-        if saveFigs
-            saveas(fh, [data.fName '_raw.png'])
         end
     end
     
@@ -121,7 +121,7 @@ for fileIdx = 27:35%length(dirList)
     if saveData
         save(dataFile, 'data')
     end
-end
+
 %%
 
 function checkCropTs(cell, struct)
