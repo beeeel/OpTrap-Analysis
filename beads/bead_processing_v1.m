@@ -121,7 +121,7 @@ for fileIdx = 27:35%length(dirList)
     if saveData
         save(dataFile, 'data')
     end
-
+end
 %%
 
 function checkCropTs(cell, struct)
