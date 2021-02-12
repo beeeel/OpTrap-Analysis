@@ -25,6 +25,7 @@ doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
 setLims = [-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
 fftYlim = [0 10];    % Set limits in units amplitude for FFT plots, empty for auto limit
+setDCLims = [0 0.1];  % Set limits in units pixel brightness for DC plots, empty for auto limit
 
 % Get all the children directories in a struct
 dirList = dir;
@@ -75,10 +76,13 @@ for fileIdx = 27:35%length(dirList)
         if saveFigs
             saveas(fh, [data.fName '_pro.png'])
         end
-                
-        fh = bead_plotDCData(data, [0 0.1]);
-        if saveFigs
-            saveas(fh, [data.fName '_DC.png'])
+        
+        % If there's DC data, plot it
+        if isfield(data.raw,'dcAvg')
+            fh = bead_plotDCData(data, setDCLims);
+            if saveFigs
+                saveas(fh, [data.fName '_DC.png'])
+            end
         end
     end
     
