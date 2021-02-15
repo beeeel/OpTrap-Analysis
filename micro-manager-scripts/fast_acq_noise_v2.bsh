@@ -1,0 +1,193 @@
+/**
+ * Using sequence acquisition and real-time processing to track the location of a particle
+ */
+// Write the save path here, be careful the folder doesn't already have data in it!
+folderPath = "E:/Will/data/2021_02_15/fast_acq_noise_28/";
+// Find and enter bead location in px
+//                { X  , Y   };
+Centre = new int[]{ 905, 429 };
+int n = 1e4; // number of frames
+Size = new int[]{ 660, 290}; // Image size in px - choosing more than 64 rows will slow acquisition
+float expMs = 1;		// Exposure time (ms)
+
+// START YOUR ENGINES! (jk)
+startTime = System.nanoTime();
+
+// Need this for getMean and getTwoCentroids
+import Static_Image_Math;
+
+// Define two functions for saving the data
+byte[] doubleToByteArray( double[] i, int len )
+{ // Converts double array to byte array. Needs to be given the length of the array
+ ByteArrayOutputStream bos = new ByteArrayOutputStream();
+ DataOutputStream dos = new DataOutputStream(bos);
+ for (int idx = 0; idx < len; idx++){
+ 	dos.writeDouble(i[idx]);
+ }
+ dos.flush();
+ return bos.toByteArray();
+}
+
+void writeDoubleArrayToFile(double[] array, int len, String path)
+{ // Writes double array to file as byte array. Needs to be given the length of the array
+	file = new File(path);
+	fos = new FileOutputStream(file);
+	if (!file.exists()){
+		file.createNewFile();
+	}
+	bytesArray = doubleToByteArray(array, len);
+	fos.write(bytesArray);
+	fos.flush();
+	fos.close();
+}
+// Check the folder exists and is empty
+folder = new File(folderPath);
+if (folder.isDirectory())
+{
+} 
+else if (folder.exists()) 
+{
+	throw new Exception("Path " + folderPath + " is a file, not a folder");
+} else {
+	folder.mkdir();
+}
+
+// Allocate some variables
+Xls = new double[n];
+Yls = new double[n];
+Xrs = new double[n];
+Yrs = new double[n];
+Is = new double[n];
+Times = new double[n];
+int i = 0, iSave = 0;
+double firstTime = 0, lastTime = 0;
+java.awt.Rectangle ROI = new Rectangle(Centre[0]-Size[0]/2, Centre[1]-Size[1]/2, Size[0], Size[1]);
+java.awt.Rectangle ROI2 = new Rectangle(0, 0, 1920, 1080);
+
+// Reset the ROI to full frame if necessary
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+if ((width != 1920) || (height != 1080))
+{
+	mm.setROI(ROI2);
+}
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("Initial w = " + width + " h = " + height);
+
+// Prepare coordinated builder and datastore
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store = mm.data().createRAMDatastore(); // ROI Images
+store1 = mm.data().createRAMDatastore(); // full FOV images
+
+// Get one image at full size
+print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img1 = mmc.popNextTaggedImage();
+// Create display windows for the stores
+mm.displays().createDisplay(store);
+mm.displays().createDisplay(store1);
+// Store the image
+image1 = mm.data().convertTaggedImage(img1,builder.time(0).build(), null);
+store1.putImage(image1);
+
+// Set the ROI and check it has been set
+mm.setROI(ROI);
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("Main acq w = " + width + " h = " + height);
+
+// Set exposure
+mmc.setExposure(expMs);
+
+// Variables to be used in the processing loop
+img = 0;
+centres = new double[4];
+pixels = new int[Size[0]*Size[1]];
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+
+// Start acquiring and process frames as they arrive
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+startTime = System.nanoTime();
+mmc.startSequenceAcquisition(n, 0.0, true);
+while (!mmc.isSequenceRunning()){
+	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
+} // There have been weird bugs with it not getting any images, this didn't really help
+print("Started acquisition at " + (System.nanoTime() - startTime)/1e6 + "ms");
+
+while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
+   if (mmc.getRemainingImageCount() > 0 && i < n) 
+   {
+   	if (i == 0 ||((mmc.getRemainingImageCount() + i + 100) >= n )) 
+   	{
+   		img = mmc.popNextTaggedImage();
+   		image = mm.data().convertTaggedImage(img,
+         	builder.time(0).build(), null);
+      	pixels = image.getRawPixels();
+      	iSave = i;
+      	if (i == 0) {firstTime = img.tags.getDouble("ElapsedTime-ms");};
+   	}
+   	else {
+   		// The rest of the time, just get the pixel data
+			pixels = mmc.popNextImage();
+   	}   	
+   	// store
+		Is[i] = Static_Image_Math.getMean(pixels, width, height);
+		centres = Static_Image_Math.getTwoCentroids(pixels, width, height);
+		Xls[i] = centres[0];
+		Yls[i] = centres[1];
+		Xrs[i] = centres[2];
+		Yrs[i] = centres[3];
+		i++;
+		if ((i % 1e3) == 0) {
+			print("Processed frame " + i);
+		}
+   }
+}
+lastTime = img.tags.getDouble("ElapsedTime-ms");
+
+frameTime = (lastTime - firstTime)/(iSave);
+for (int i = 0; i < n; i++)
+{
+	Times[i] = i * frameTime;
+}
+print("Final time: " + (int)(1e-3*Times[n-1]) + "s, [X Y I] = [" + (int)Xs[n-1] + " " + (int)Ys[n-1] + " " + (int)Is[n-1] + "]" );
+
+// Reset the ROI to full frame
+mm.setROI(ROI2);
+
+// Get an after image
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img1 = mmc.popNextTaggedImage();
+image1 = mm.data().convertTaggedImage(img1,builder.time(1).build(), null);
+store1.putImage(image1);
+
+// Finish up - stop the acquisition and save all the data
+print("Completed acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
+mmc.stopSequenceAcquisition();
+
+writeDoubleArrayToFile(Xls, n, folderPath + "Xl.dat");
+writeDoubleArrayToFile(Yls, n, folderPath + "Yl.dat");
+writeDoubleArrayToFile(Xrs, n, folderPath + "Xr.dat");
+writeDoubleArrayToFile(Yrs, n, folderPath + "Yr.dat");
+
+writeDoubleArrayToFile(Is, n, folderPath + "I.dat");
+writeDoubleArrayToFile(Times, n, folderPath + "T.dat");
+
+print("Saved everything at " + (System.nanoTime() - startTime)/1e9 + "s");
