@@ -56,7 +56,9 @@ for fileIdx = 27:35%length(dirList)
         data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
         data.mPerPx = mPerPx;
     else
-        data = load(dataFile, 'data');
+        s = load(dataFile, 'data');
+        data = s.data;
+        clear s
         data.opts.forceRun = forceRun;
     end
     
@@ -67,7 +69,7 @@ for fileIdx = 27:35%length(dirList)
     if calcStiff
         xStiff = calcStiffness(data.pro.xCentresM);
         yStiff = calcStiffness(data.pro.yCentresM);
-        data.pro.stiffXY(:, fileIdx) = [xStiff, yStiff];
+        data.pro.stiffXY = [xStiff, yStiff];
     end
     
     % Plot the processed data
