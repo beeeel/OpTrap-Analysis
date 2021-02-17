@@ -1,0 +1,182 @@
+/**
+ * Using sequence acquisition and real-time processing to track the location of a particle
+ */
+// Write the save path here, be careful the folder doesn't already have data in it!
+folderPath = "E:/Will/data/2021_02_09/drift_5um_2/";
+// Find and enter bead location in px
+//                { X  , Y   };
+Centre = new int[]{ 1212, 638 };
+int n = 60e4; // number of frames
+Size = new int[]{ 120, 120}; // Image size in px - choosing more than 64 rows will slow acquisition
+int saveInterval = 25e3; // How often to save an image (in frames)
+float expMs = 1;		// Exposure time (ms)
+
+// Import processor for finding CofM
+import Static_Image_Math;
+
+// Define two functions for saving the data
+byte[] doubleToByteArray( double[] i, int len )
+{ // Converts double array to byte array. Needs to be given the length of the array
+ ByteArrayOutputStream bos = new ByteArrayOutputStream();
+ DataOutputStream dos = new DataOutputStream(bos);
+ for (int idx = 0; idx < len; idx++){
+ 	dos.writeDouble(i[idx]);
+ }
+ dos.flush();
+ return bos.toByteArray();
+}
+
+void writeDoubleArrayToFile(double[] array, int len, String path)
+{ // Writes double array to file as byte array. Needs to be given the length of the array
+file = new File(path);
+fos = new FileOutputStream(file);
+if (!file.exists()){
+	file.createNewFile();
+}
+bytesArray = doubleToByteArray(array, len);
+fos.write(bytesArray);
+fos.flush();
+fos.close();
+}
+// Check the folder exists and is empty
+imageFolder = "images_and_metadata";
+folder = new File(folderPath);
+if (folder.isDirectory()){
+	subFolder = new File(folderPath + imageFolder);
+	if (subFolder.isDirectory()){
+		throw new Exception("Path " + folderPath + imageFolder + " already exists. Pick a new path");
+	}
+} else if (folder.exists()) {
+	throw new Exception("Path " + folderPath + " is a file, not a folder");
+} else {
+	folder.mkdir();
+}
+// Allocate some variables
+//double XSum, YSum, PSum;
+XCentres = new double[n];
+YCentres = new double[n];
+Times = new double[n];
+int i = 0;
+int iSave = 0;
+double firstTime = 0, lastTime = 0;
+java.awt.Rectangle ROI = new Rectangle(Centre[0]-Size[0]/2, Centre[1]-Size[1]/2, Size[0], Size[1]);
+// Check saveInterval is sensible compared to n
+if (saveInterval >= n){
+	print("number of frames, n = " + n + " saveInterval = " + saveInterval);
+	throw new Exception("saveInterval must be less than number of frames otherwise timing calculation doesn't work");
+}
+
+// Start acquiring and process frames as they arrive
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+
+// Get one image at full size
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store1 = mm.data().createRAMDatastore();
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img = mmc.popNextTaggedImage();
+image = mm.data().convertTaggedImage(img,builder.time(0).build(), null);
+mm.displays().createDisplay(store1);
+store1.putImage(image);
+
+// Set the ROI and check it has been set
+mm.setROI(ROI);
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("w = " + width + " h = " + height);
+
+// Set exposure
+mmc.setExposure(expMs);
+
+// Variables to be used in the processing loop
+img = 0;
+pixels = new short[Size[0]*Size[1]];
+centre = new double[2];
+
+// Create a Datastore for the images to be stored in, in RAM.
+store = mm.data().createRAMDatastore();
+saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
+// Create a display to show images as they are acquired.
+mm.displays().createDisplay(store);
+// Set up a Coords.CoordsBuilder for applying coordinates to tagged images.
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+// Start acquiring and process frames as they arrive
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+startTime = System.nanoTime();
+mmc.startSequenceAcquisition(n, 0.0, true);
+while (!mmc.isSequenceRunning()){
+	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
+} // There have been weird bugs with it not getting any images, maybe this will help?
+print("Started acquition at " + (System.nanoTime() - startTime)/1e6 + "ms");
+
+while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
+   if (mmc.getRemainingImageCount() > 0 && i < n) 
+   {
+   	
+   	// Get the next frame
+   	if (i%saveInterval == 0)
+   	{ // Every [saveInterval] frames, get the metadata and display the image
+   		img = mmc.popNextTaggedImage();
+   		image = mm.data().convertTaggedImage(img,
+         	builder.time(iSave).build(), null);
+      	store.putImage(image);
+      	pixels = image.getRawPixels();
+      	iSave++;
+      	if (i == 0) {firstTime = img.tags.getDouble("ElapsedTime-ms");}
+   	} else
+   	{ // The rest of the time, just get the pixel data
+			pixels = mmc.popNextImage();
+   	}
+   	
+   	// Calculate centre of mass
+		centre = Static_Image_Math.getCentroid(pixels, width, height);
+		XCentres[i] = centre[0];
+		YCentres[i] = centre[1];
+		if (i%saveInterval == 0) // Every [saveInterval] frames, print this frame's info
+		{
+			print("i " + i + " X = " + XCentres[i] + " Y = " + YCentres[i]);
+			print("In buffer: " + mmc.getRemainingImageCount());
+			print("Total acquired: " + (i + mmc.getRemainingImageCount()));
+			print("T = " + (System.nanoTime() - startTime)/1e9 + "s");
+			print("");
+		}
+		i++;
+   }
+}
+lastTime = img.tags.getDouble("ElapsedTime-ms");
+if (iSave > 1) {
+	frameTime = (lastTime - firstTime)/((iSave-1)*saveInterval);
+	for (int i = 0; i < n; i++){
+		Times[i] = i * frameTime;}
+}
+// Finish up - stop the acquisition and save all the data
+print("Completed acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
+mmc.stopSequenceAcquisition();
+writeDoubleArrayToFile(XCentres, n, folderPath + "XCentres.dat");
+writeDoubleArrayToFile(YCentres, n, folderPath + "YCentres.dat");
+writeDoubleArrayToFile(Times, n, folderPath + "Times.dat");
+
+// Reset the ROI to full frame
+java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+mm.setROI(ROI);
+
+// Get another frame of full ROI
+mmc.stopSequenceAcquisition();
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img = mmc.popNextTaggedImage();
+image = mm.data().convertTaggedImage(img,
+	builder.time(1).build(), null);
+store1.putImage(image);
+
+store.save(saveMode, folderPath+imageFolder);
+store1.save(saveMode, folderPath+"full_"+imageFolder);
+print("Saved at " + (System.nanoTime() - startTime)/1e9 + "s");

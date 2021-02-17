@@ -1,0 +1,117 @@
+/**
+ * Using sequence acquisition and real-time processing to track the location of a particle
+ */
+// Write the save path here, be careful the folder doesn't already have data in it!
+folderPath = "E:/Will/data/2021_02_15/fast_acq_pics_only_14/";
+// Find and enter bead location in px
+//                { X  , Y   };
+Centre = new int[]{ 580, 440 }; //649
+int n = 10e3; // number of frames
+Size = new int[]{ 64, 64}; // Image size in px - choosing more than 64 rows will slow acquisition
+float expMs = 0.8;		// Exposure time (ms)
+
+// START YOUR ENGINES! (jk)
+startTime = System.nanoTime();
+
+// Check the folder exists and is empty
+folder = new File(folderPath);
+if (folder.isDirectory()){
+	subFolder = new File(folderPath);
+	if (subFolder.isDirectory()){
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}	}
+} else if (folder.exists()) {
+	throw new Exception("Path " + folderPath + " is a file, not a folder");
+} else {
+	folder.mkdir();
+}
+
+// Allocate some variables
+int i = 0;
+java.awt.Rectangle ROI = new Rectangle(Centre[0]-Size[0]/2, Centre[1]-Size[1]/2, Size[0], Size[1]);
+
+// Prepare coordinated builder and datastore
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store = mm.data().createRAMDatastore(); // ROI Images
+store1 = mm.data().createRAMDatastore(); // full FOV images
+
+// Get one image at full size
+print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img1 = mmc.popNextTaggedImage();
+image1 = mm.data().convertTaggedImage(img1,builder.time(0).build(), null);
+//mm.displays().createDisplay(store1);
+store1.putImage(image1);
+
+// Set the ROI and check it has been set
+mm.setROI(ROI);
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("w = " + width + " h = " + height);
+
+// Set exposure
+mmc.setExposure(expMs);
+
+// Variables to be used in the processing loop
+img = 0;
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+int iSave = 0;
+
+// Start acquiring and process frames as they arrive
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(n, 0.0, true);
+while (!mmc.isSequenceRunning()){
+	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
+} // There have been weird bugs with it not getting any images, maybe this will help?
+print("Started acquition at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
+   if (mmc.getRemainingImageCount() > 0 && i < n) 
+   {
+   	img = mmc.popNextTaggedImage();
+   	image = mm.data().convertTaggedImage(img, builder.time(i).build(), null);
+      store.putImage(image);
+      print("Stored image " + i);
+		i++;
+   }
+}
+
+// Ensure the acquisition has ended
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+// Reset the ROI to full frame
+java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+mm.setROI(ROI);
+// Get an after image
+mmc.startSequenceAcquisition(1, 0.0, true);
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
+img1 = mmc.popNextTaggedImage();
+image1 = mm.data().convertTaggedImage(img1,builder.time(1).build(), null);
+store1.putImage(image1);
+
+// Finish up - stop the acquisition and save all the data
+print("Completed acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
+mmc.stopSequenceAcquisition();
+
+// Save images
+saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
+store.save(saveMode, folderPath+"ROI");
+store1.save(saveMode, folderPath+"full");
+
+print("Saved everything at " + (System.nanoTime() - startTime)/1e9 + "s");
