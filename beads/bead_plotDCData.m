@@ -27,14 +27,14 @@ if isfield(data.raw, 'dcAvg') && (min(size(data.raw.dcAvg)==size(data.raw.timeVe
     DC = data.raw.dcAvg(cropT(1):cropT(2));
     
     subplot(2,1,1)
-    plot(1e-3*timeVec(cropT(1):cropT(2)), DC,'.')
+    plot(1e-3*timeVec, DC,'.')
     
     xlabel('Time (s)')
     ylabel('Intensity (Arb. U.)')
     title('Mean brightness of ROI')
     
     subplot(2,1,2)
-    fft_scaled(1e-3*timeVec(cropT(1):cropT(2)), DC, true, gca);
+    fft_scaled(1e-3*timeVec, DC, true, gca);
     ylabel('Amplitude (Arb. U.)')
     if ~isempty(fftLims)
         ylim(fftLims)
