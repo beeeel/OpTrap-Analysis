@@ -9,8 +9,10 @@ function centres = imCentreOfMass(ims,varargin)
 validateattributes(ims, {'numeric'},{'nonempty','real'},'imCentreOfMass','ims',1)
 [imH, imW, nIms] = size(ims);
 
+ims = double(ims);
+
 if nargin == 1
-    method = 'norm-square';
+    method = 'simple';
 elseif nargin == 2
     method = varargin{1};
 else
@@ -21,6 +23,13 @@ end
 
 switch method
     case 'simple'
+        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
+        % Calculate centre of mass - sum weighted by pixel location, normalized to
+        % image total.
+        centres = squeeze([sum(ims.*X,[1 2]) sum(ims.*Y,[1 2])]./sum(ims,[1 2]));
+    case 'square'
+        % Square every pixel first
+        ims = ims.^2;
         [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
