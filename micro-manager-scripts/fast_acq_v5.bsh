@@ -107,7 +107,6 @@ mmc.startSequenceAcquisition(1, 0.0, true);
 java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
 img = mmc.popNextTaggedImage();
 image = mm.data().convertTaggedImage(img,builder.time(0).build(), null);
-mm.displays().createDisplay(store1);
 store1.putImage(image);
 
 // Set the ROI and check it has been set
@@ -159,6 +158,8 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
 		centre = Static_Image_Math.getCentroidBasic(pixels, width, height);
 		XCentres[i] = centre[0];
 		YCentres[i] = centre[1];
+		Is[i] = Static_Image_Math.getMean(pixels, width, height);
+		
 		if (i%saveInterval == 0) // Every [saveInterval] frames, print this frame's info
 		{
 			print("i " + i + " X = " + XCentres[i] + " Y = " + YCentres[i]);
@@ -200,6 +201,7 @@ mmc.stopSequenceAcquisition();
 // Save data
 writeDoubleArrayToFile(XCentres, n, folderPath + "XCentres.dat");
 writeDoubleArrayToFile(YCentres, n, folderPath + "YCentres.dat");
+writeDoubleArrayToFile(Is, n, folderPath + "I.dat");
 writeDoubleArrayToFile(Times, n, folderPath + "Times.dat");
 
 // Save images
@@ -207,3 +209,4 @@ store.save(saveMode, folderPath+imageFolder);
 store1.save(saveMode, folderPath+"full_"+imageFolder);
 
 print("Saved at " + (System.nanoTime() - startTime)/1e9 + "s");
+mm.live().setLiveMode(true);
