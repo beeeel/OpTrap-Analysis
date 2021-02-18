@@ -11,7 +11,11 @@ Size = new int[]{ 120, 120}; // Image size in px - choosing more than 64 rows wi
 int saveInterval = 25e3; // How often to save an image (in frames)
 float expMs = 1;		// Exposure time (ms)
 
-// Import processor for finding CofM
+// START YOUR ENGINES! (jk)
+startTime = System.nanoTime();
+mm.live().setLiveMode(false);
+
+// Need this for getMean
 import Static_Image_Math;
 
 // Define two functions for saving the data
@@ -38,6 +42,7 @@ fos.write(bytesArray);
 fos.flush();
 fos.close();
 }
+
 // Check the folder exists and is empty
 imageFolder = "images_and_metadata";
 folder = new File(folderPath);
@@ -51,31 +56,53 @@ if (folder.isDirectory()){
 } else {
 	folder.mkdir();
 }
-// Allocate some variables
-//double XSum, YSum, PSum;
-XCentres = new double[n];
-YCentres = new double[n];
-Times = new double[n];
-int i = 0;
-int iSave = 0;
-double firstTime = 0, lastTime = 0;
-java.awt.Rectangle ROI = new Rectangle(Centre[0]-Size[0]/2, Centre[1]-Size[1]/2, Size[0], Size[1]);
+
 // Check saveInterval is sensible compared to n
 if (saveInterval >= n){
 	print("number of frames, n = " + n + " saveInterval = " + saveInterval);
 	throw new Exception("saveInterval must be less than number of frames otherwise timing calculation doesn't work");
 }
 
-// Start acquiring and process frames as they arrive
+// Allocate some variables
+XCentres = new double[n];
+YCentres = new double[n];
+Is = new double[n];
+Times = new double[n];
+int i = 0;
+int iSave = 0;
+double firstTime = 0, lastTime = 0;
+java.awt.Rectangle ROI = new Rectangle(Centre[0]-Size[0]/2, Centre[1]-Size[1]/2, Size[0], Size[1]);
+java.awt.Rectangle ROI2 = new Rectangle(0, 0, 1920, 1080);
+
+// Reset the ROI to full frame if necessary
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+if ((width != 1920) || (height != 1080))
+{
+	mm.setROI(ROI2);
+}
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("Initial w = " + width + " h = " + height);
+
+// Prepare coordinated builder and datastore
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store = mm.data().createRAMDatastore();	// ROI Images
+store1 = mm.data().createRAMDatastore(); // full FOV images
+saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
+
+// Create a display to show images as they are acquired.
+mm.displays().createDisplay(store);
+mm.displays().createDisplay(store1);
+
+// Get one image at full size
+print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
 if (mmc.isSequenceRunning())
 {
 	print("Stopping previous acquisition");
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
 
-// Get one image at full size
-builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
-store1 = mm.data().createRAMDatastore();
 mmc.startSequenceAcquisition(1, 0.0, true);
 java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
 img = mmc.popNextTaggedImage();
@@ -94,28 +121,20 @@ mmc.setExposure(expMs);
 
 // Variables to be used in the processing loop
 img = 0;
-pixels = new short[Size[0]*Size[1]];
+pixels = new int[Size[0]*Size[1]];
 centre = new double[2];
 
-// Create a Datastore for the images to be stored in, in RAM.
-store = mm.data().createRAMDatastore();
-saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
-// Create a display to show images as they are acquired.
-mm.displays().createDisplay(store);
-// Set up a Coords.CoordsBuilder for applying coordinates to tagged images.
-builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
 // Start acquiring and process frames as they arrive
 if (mmc.isSequenceRunning())
 {
 	print("Stopping previous acquisition");
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
-startTime = System.nanoTime();
 mmc.startSequenceAcquisition(n, 0.0, true);
 while (!mmc.isSequenceRunning()){
 	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
 } // There have been weird bugs with it not getting any images, maybe this will help?
-print("Started acquition at " + (System.nanoTime() - startTime)/1e6 + "ms");
+print("Started acquition at " + (System.nanoTime() - startTime)/1e9 + "s");
 
 while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
    if (mmc.getRemainingImageCount() > 0 && i < n) 
@@ -137,7 +156,7 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
    	}
    	
    	// Calculate centre of mass
-		centre = Static_Image_Math.getCentroid(pixels, width, height);
+		centre = Static_Image_Math.getCentroidBasic(pixels, width, height);
 		XCentres[i] = centre[0];
 		YCentres[i] = centre[1];
 		if (i%saveInterval == 0) // Every [saveInterval] frames, print this frame's info
@@ -157,19 +176,16 @@ if (iSave > 1) {
 	for (int i = 0; i < n; i++){
 		Times[i] = i * frameTime;}
 }
-// Finish up - stop the acquisition and save all the data
-print("Completed acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
-mmc.stopSequenceAcquisition();
-writeDoubleArrayToFile(XCentres, n, folderPath + "XCentres.dat");
-writeDoubleArrayToFile(YCentres, n, folderPath + "YCentres.dat");
-writeDoubleArrayToFile(Times, n, folderPath + "Times.dat");
 
 // Reset the ROI to full frame
-java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
-mm.setROI(ROI);
+mm.setROI(ROI2);
 
-// Get another frame of full ROI
-mmc.stopSequenceAcquisition();
+// Get an after image
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
 mmc.startSequenceAcquisition(1, 0.0, true);
 java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
 img = mmc.popNextTaggedImage();
@@ -177,6 +193,17 @@ image = mm.data().convertTaggedImage(img,
 	builder.time(1).build(), null);
 store1.putImage(image);
 
+// Finish up - stop the acquisition and save all the data
+print("Completed acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
+mmc.stopSequenceAcquisition();
+
+// Save data
+writeDoubleArrayToFile(XCentres, n, folderPath + "XCentres.dat");
+writeDoubleArrayToFile(YCentres, n, folderPath + "YCentres.dat");
+writeDoubleArrayToFile(Times, n, folderPath + "Times.dat");
+
+// Save images
 store.save(saveMode, folderPath+imageFolder);
 store1.save(saveMode, folderPath+"full_"+imageFolder);
+
 print("Saved at " + (System.nanoTime() - startTime)/1e9 + "s");
