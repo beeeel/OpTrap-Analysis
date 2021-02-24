@@ -1,8 +1,8 @@
 function [w, X] = fft_scaled(t, x, varargin)
-%% [w, X] = fft_scaled(t, x, varargin)
+%% [w, X] = fft_scaled(t, x, [doPlots, ax, fn])
 % Calculate Fourier transform of xf, return one-sided spectra in m and
-% frequency vector in Hz. Assumes x in m and t in s. Plots X in m and w in
-% Hz.
+% frequency vector in Hz. Assumes x in m and t in s. [Optional] Plots X in
+% m and w in Hz, [optional] on axis ax. 
 
 doPlots = true;
 fn = '';
@@ -24,7 +24,7 @@ n_points = length(x);
 
 % Get the FFT
 X = fft(x);
-X = abs(eval([fn '(X/n_points)']));
+X = eval([fn '(X/n_points)']);
 X = X(1:floor(end/2)+1);
 X(2:end-1) = 2*X(2:end-1);
 
@@ -32,7 +32,7 @@ X(2:end-1) = 2*X(2:end-1);
 w = (0:ceil((n_points-1)/2))./diff(t([1 end]));
 
 if doPlots
-    plot(ax, w, X)
+    plot(ax, w, abs(X))
     
     title('Frequency spectrum')
     xlabel('Frequency (Hz)')
