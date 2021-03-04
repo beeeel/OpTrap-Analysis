@@ -12,7 +12,7 @@ if nargin >= 3
 end
 if nargin >= 4
     ax = varargin{2};
-else
+elseif doPlots
     figure
     ax = axes;
 end
@@ -20,13 +20,13 @@ if nargin >= 5
     fn = varargin{3};
 end
 
-n_points = length(x);
+n_points = size(x,2);
 
 % Get the FFT
-X = fft(x);
+X = fft(x, [], 2);
 X = eval([fn '(X/n_points)']);
-X = X(1:floor(end/2)+1);
-X(2:end-1) = 2*X(2:end-1);
+X = X(:,1:floor(end/2)+1);
+X(:,2:end-1) = 2*X(:,2:end-1);
 
 % Frequency in index (k+1) is k cycles per whole dataset, so convert to Hz
 w = (0:ceil((n_points-1)/2))./diff(t([1 end]));
