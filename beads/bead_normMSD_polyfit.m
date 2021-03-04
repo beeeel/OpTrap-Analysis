@@ -21,14 +21,28 @@ end
 % and replicate offset array. This means offset is the same for both
 % dimensions
 nPerDir = length(offset);
-if strcmp(direction, 'x') || strcmp(direction, 'y')
-    centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
-    legCell = repmat({direction},nPerDir,1);
+if ~isfield(data.opts,'fpass')
+    % If data has not been highpass filtered, use raw
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
+        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
+        offset = [offset (offset + data.nPoints)];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
 else
-    centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
-    timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-    offset = [offset (offset + data.nPoints)];
-    legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    % Else use highpass
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.pro.([direction 'CentresHP']);
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.pro.xCentresHP data.pro.yCentresHP];
+        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
+        offset = [offset (offset + data.nPoints)];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
 end
 
 % Dimension order for polynomial fitting
