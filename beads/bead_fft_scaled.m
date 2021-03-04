@@ -4,7 +4,7 @@ function data = bead_fft_scaled(data, doPlots, varargin)
 % one-sided spectra in data struct along with frequency vector in Hz
 
 argN = 1;
-if nargin >= 2 && ~ isempty(varargin{argN})
+if nargin > 2 && ~ isempty(varargin{argN})
     % help give better errors when misused!
     setLims = varargin{argN};
     validateattributes(setLims,{'numeric'},{'numel',2},...
@@ -38,7 +38,9 @@ if doPlots
     if size(data.pro.xfftM,1) == 1
         subplot(2,1,1)
         plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM)
-        ylim(setLims)
+        if ~isempty(setLims)
+            ylim(setLims)
+        end
         
         title('X centres frequency spectrum')
         xlabel('Frequency (Hz)')
@@ -46,7 +48,9 @@ if doPlots
         
         subplot(2,1,2)
         plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM)
-        ylim(setLims)
+        if ~isempty(setLims)
+            ylim(setLims)
+        end
         
         title('Y centres frequency spectrum')
         xlabel('Frequency (Hz)')
@@ -58,7 +62,9 @@ if doPlots
             subplot(2,n_obj,obj)
             hold on
             plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM(obj,:))
-            ylim(setLims)
+            if ~isempty(setLims)
+                ylim(setLims)
+            end
             
             title(['X centres frequency spectrum for ' LR{obj} ' bead'])
             xlabel('Frequency (Hz)')
@@ -67,7 +73,9 @@ if doPlots
             subplot(2,n_obj,n_obj + obj)
             hold on
             plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM(obj,:))
-            ylim(setLims)
+            if ~isempty(setLims)
+                ylim(setLims)
+            end
             
             title(['Y centres frequency spectrum for ' LR{obj} ' bead'])
             xlabel('Frequency (Hz)')
