@@ -2,16 +2,17 @@
  * Using sequence acquisition and real-time processing to track the location of a particle
  */
 // Write the save path here, be careful the folder doesn't already have data in it!
-folderPath = "E:/Will/data/2021_02_15/fast_acq_noise_25/";
+folderPath = "E:/Will/data/2021_02_18/fast_acq_noise_10/";
 // Find and enter bead location in px
 //                { X  , Y   };
-Centre = new int[]{ 580, 440 }; //649
+Centre = new int[]{ 853, 313 }; //649
 int n = 10e3; // number of frames
 Size = new int[]{ 64, 64}; // Image size in px - choosing more than 64 rows will slow acquisition
 float expMs = 0.8;		// Exposure time (ms)
 
 // START YOUR ENGINES! (jk)
 startTime = System.nanoTime();
+mm.live().setLiveMode(false);
 
 // Need this for getMean
 import Static_Image_Math;
@@ -47,11 +48,8 @@ folder = new File(folderPath);
 if (folder.isDirectory()){
 	subFolder = new File(folderPath + imageFolder);
 	if (subFolder.isDirectory()){
-if (mmc.isSequenceRunning())
-{
-	print("Stopping previous acquisition");
-	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
-}	}
+		throw new Exception("Path " + folderPath + imageFolder + " already exists. Pick a new path");
+	}
 } else if (folder.exists()) {
 	throw new Exception("Path " + folderPath + " is a file, not a folder");
 } else {
@@ -59,7 +57,6 @@ if (mmc.isSequenceRunning())
 }
 
 // Allocate some variables
-//double XSum, YSum, PSum;
 Xs = new double[n];
 Ys = new double[n];
 Is = new double[n];
@@ -92,6 +89,7 @@ if (mmc.isSequenceRunning())
 	print("Stopping previous acquisition");
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
+
 mmc.startSequenceAcquisition(1, 0.0, true);
 java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
 img1 = mmc.popNextTaggedImage();
@@ -110,10 +108,10 @@ mmc.setExposure(expMs);
 
 // Variables to be used in the processing loop
 img = 0;
+pixels = new int[Size[0]*Size[1]];
 centres = new double[2];
-pixels = new int[64*64];
 builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
-int iSave = 0;
+int iSave = 0, nSave = 0;
 
 // Start acquiring and process frames as they arrive
 if (mmc.isSequenceRunning())
@@ -130,26 +128,25 @@ print("Started acquition at " + (System.nanoTime() - startTime)/1e9 + "s");
 while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
    if (mmc.getRemainingImageCount() > 0 && i < n) 
    {
-   	// Get times for first and (one of final 100) images, save first image
-   	if (i == 0 || ((mmc.getRemainingImageCount() + i + 100) >= n )) 
+   	   	// Get the first and last images
+   	if (i == 0 || i == (n - 1))
    	{
    		img = mmc.popNextTaggedImage();
    		image = mm.data().convertTaggedImage(img,
-         	builder.time(1).build(), null);
+         	builder.time(nSave).build(), null);
+         store.putImage(image);
       	pixels = image.getRawPixels();
       	iSave = i;
-      	if (i == 0) 
-      	{
-      		firstTime = img.tags.getDouble("ElapsedTime-ms");
-      		store.putImage(image);
-      	};
+      	nSave ++;
+      	if (i == 0) {firstTime = img.tags.getDouble("ElapsedTime-ms");};
    	}
-   	else {
+   	else 
+   	{
    		// The rest of the time, just get the pixel data
 			pixels = mmc.popNextImage();
    	}   	
    	// Process image
-		centres = Static_Image_Math.getCentroid(pixels, width, height);
+		centres = Static_Image_Math.getCentroidBasic(pixels, width, height);
 		Is[i] = Static_Image_Math.getMean(pixels, width, height);
 		Xs[i] = centres[0];
 		Ys[i] = centres[1];
