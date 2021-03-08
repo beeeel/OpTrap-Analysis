@@ -8,8 +8,9 @@ function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot)
 
 
 centreVec = data.raw.(field);
+centreVec = [centreVec(end:-1:1) centreVec centreVec(end:-1:1)];
 timeVec = data.raw.timeVecMs;
-cropT = data.opts.cropT;
+cropT = data.opts.cropT + length(data.raw.timeVecMs);
 fName = data.fName;
 
 % Outputs
@@ -94,7 +95,7 @@ function N_input_validator()
 validateattributes(centreVec, {'numeric'},{'vector','real','finite'},...
     'func_bead_hp_allan_var','centreVec')
 validateattributes(timeVec, {'numeric'},...
-    {'nonnegative','increasing','vector','real','finite','size',size(centreVec)},...
+    {'nonnegative','increasing','vector','real','finite'},...,'size',size(centreVec)},...
     'func_bead_hp_allan_var','timeVec')
 validateattributes(fpasses, {'numeric'},{'vector','real','finite', 'positive','<',fs},...
     'func_bead_hp_allan_var','fpasses')
