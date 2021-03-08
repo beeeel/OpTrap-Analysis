@@ -16,6 +16,8 @@ elseif nargin >= 4
 else
     error('Wrong number of input arguments')
 end
+% Hacky af: set num_t to min of actual num_t and previous value
+num_t = min(num_t, size(data.pro.xCentresHP,2));
 
 % A little bit hacky - if both directions are wanted, stick them together
 % and replicate offset array. This means offset is the same for both
@@ -34,13 +36,20 @@ if ~isfield(data.opts,'fpass')
     end
 else
     % Else use highpass
+    cropT = data.opts.cropT;
+    cropTHPval = data.opts.cropTHPval;
+    cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
+
+    tmp = data.raw.timeVecMs(cropT(1):cropT(2));
+    tmp = tmp(cropTHP(1):cropTHP(2));
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
         centres = data.pro.([direction 'CentresHP']);
+        timeVec = tmp;
         legCell = repmat({direction},nPerDir,1);
     else
         centres = [data.pro.xCentresHP data.pro.yCentresHP];
-        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-        offset = [offset (offset + data.nPoints)];
+        timeVec = [tmp tmp];
+        offset = [offset (offset + size(data.pro.xCentresHP,2))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
 end
