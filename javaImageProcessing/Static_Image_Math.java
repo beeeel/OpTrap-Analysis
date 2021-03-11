@@ -276,6 +276,46 @@ public static double[] getTwoCentroidsBasic(short[] pixels, int width, int heigh
         CenterOfMass[3] = ysumr/sumr+0.5;
         return CenterOfMass;
     }
+
+// Calculate centroids for part of image by basic centre of brightness measure
+public static double[] getTwoCentroidsBasicROI(short[] pixels, int width, int height, int subWidth) {
+        // Finds centroid for object based brightness
+        // Get one centroid for left half of image and one for right half
+        double mean;
+        double[] CenterOfMass = {0, 0, 0, 0};
+        int i, countl = 0, countr = 0;
+        double vl, suml = 0.0, xsuml=0.0, ysuml=0.0;
+        double vr, sumr = 0.0, xsumr=0.0, ysumr=0.0;
+      
+        for (int y=0; y<(height); y++) {
+		i = y*width;
+		for (int x=0; x<(subWidth); x++) {
+			
+			vl = pixels[i]+Double.MIN_VALUE;
+			suml += vl;
+			xsuml += x*vl;
+			ysuml += y*vl;
+			
+			i++;
+		}
+		i = y*width + (width-subwidth);
+		for (int x=(width-subWidth); x<(width); x++) {
+			
+			vr = pixels[i]+Double.MIN_VALUE;
+			sumr += vr;
+			xsumr += x*vr;
+			ysumr += y*vr;
+
+			i++;
+		}
+	}                                   
+	
+        CenterOfMass[0] = xsuml/suml+0.5;
+        CenterOfMass[1] = ysuml/suml+0.5;
+        CenterOfMass[2] = xsumr/sumr+0.5;
+        CenterOfMass[3] = ysumr/sumr+0.5;
+        return CenterOfMass;
+    }
 }
 
 //        for (int y=0; y<(height); y++) {
