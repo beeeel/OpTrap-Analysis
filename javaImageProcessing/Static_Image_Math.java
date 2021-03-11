@@ -298,7 +298,7 @@ public static double[] getTwoCentroidsBasicROI(short[] pixels, int width, int he
 			
 			i++;
 		}
-		i = y*width + (width-subwidth);
+		i = y*width + (width-subWidth);
 		for (int x=(width-subWidth); x<(width); x++) {
 			
 			vr = pixels[i]+Double.MIN_VALUE;
