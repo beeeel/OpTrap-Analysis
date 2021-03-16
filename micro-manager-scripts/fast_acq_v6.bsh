@@ -1,21 +1,21 @@
 /**
  * Using sequence acquisition and real-time processing to track the location of a particle
  */
+// Set and rep number to go in save file names
+int set = 3;
+String rep = "03";
 // Write the save path here, be careful the folder doesn't already have data in it!
-int set = 1;
-int rep = "01"
-
-folderPath = "E:/Will/data/2021_03_11/hela_S3_5um2_"+set+"_"+rep+"/";
+folderPath = "E:/Will/data/2021_03_16/hela_S3_5um2_"+set+"_"+rep+"/";
 
 // Record stage location in units of 0.1um here (10,000 x mm)
-XPosns = new int[]{};
-YPosns = new int[]{};
-// Find and enter bead location in px
-XCorners = new int[]{};
-YCorners = new int[]{};
+XPosns = new int[]{0, -3108,-2001};
+YPosns = new int[]{0, 65035, 69821};
+// Find and enter ROI corner locations in px
+XCorners = new int[]{560, 465, 496};
+YCorners = new int[]{460, 465, 355};
 // Enter ROI sizes in px - choosing more than 64 rows will slow acquisition
-XSizes = new int[]{};
-YSizes = new int[]{};
+XSizes = new int[]{416, 495, 424}; // Columns
+YSizes = new int[]{136, 147, 118}; // Rows
 
 // Acquisition parameters
 int n = 10e4; // number of frames
@@ -28,16 +28,27 @@ int subWidth = 90; // Number of px on each side to calculate CofM
 Corner = new int[]{ XCorners[set-1], YCorners[set-1] };
 Size = new int[]{ XSizes[set-1], YSizes[set-1]}; 
 
-// Prepare move command - this may be excessive as I have since discovered the axis direction reversal
-pmX = XPosns[set-1] > 0 ? "-" : ""; // X axis is reversed on stage display
+// Function to send commands down USB bridge to serial
+String 	sendASICommand(String command)
+{
+String 	port = "COM3";
+mmc.setSerialPortCommand(port, command, "\r");
+String 	asiReturn = mmc.getSerialPortAnswer(port, "\n");
+asiReturn	= asiReturn.replaceAll("\r", "\r\n"); //reformat multiline responses for display
+return asiReturn;
+}
+
+// Prepare move command 
+pmX = XPosns[set-1] < 0 ? "-" : "";
 pmY = YPosns[set-1] < 0 ? "-" : "";
-X = (XPosns[set-1] > 0? -1*XPosns[set-1] : XPosns[set-1]);
+X = (XPosns[set-1] < 0? -1*XPosns[set-1] : XPosns[set-1]);
 Y = (YPosns[set-1] < 0? -1*YPosns[set-1] : YPosns[set-1]);
 // The full command, print to output before sending to stage
 com = "M X="+ pmX + X + " Y=" + pmY + Y;
 print(com);
 print(sendASICommand(com));
 
+java.util.concurrent.TimeUnit.MILLISECONDS.sleep(2000);
 
 // START YOUR ENGINES! (jk)
 startTime = System.nanoTime();
