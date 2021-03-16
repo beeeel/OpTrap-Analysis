@@ -8,7 +8,17 @@ asiReturn	= asiReturn.replaceAll("\r", "\r\n"); //reformat multiline responses f
 return asiReturn;
 }
 // Trap at 747 618
-Xarr = new double[] {-0.017, -0.038,   -0.18};
-Yarr = new double[] {-0.003, 0.289, -0.189};
-n_cell = 1;
-print(sendASICommand("M X=" + 1e4*Xarr[n_cell] + "Y=" + 1e4*Yarr[n_cell]));
+Xarr = new int[] {0, 152782, -72230, -73117};
+Yarr = new int[] {0, -3090, 1704, -3324};
+n_cell =1;
+
+// WARNING: X AXIS REVERSED????!?!?!!?!?!! WTF?!?!?
+pmX = Xarr[n_cell] < 0 ? "-" : "";
+pmY = Yarr[n_cell] < 0 ? "-" : "";
+
+X = (Xarr[n_cell] < 0? -1*Xarr[n_cell] : Xarr[n_cell]);
+Y = (Yarr[n_cell] < 0? -1*Yarr[n_cell] : Yarr[n_cell]);
+
+com = "M X="+ pmX + X + " Y=" + pmY + Y;
+print(com);
+print(sendASICommand(com));
