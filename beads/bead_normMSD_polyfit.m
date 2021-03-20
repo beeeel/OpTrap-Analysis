@@ -16,12 +16,11 @@ elseif nargin >= 4
 else
     error('Wrong number of input arguments')
 end
-% Hacky af: set num_t to min of actual num_t and previous value
-num_t = min(num_t, size(data.pro.xCentresHP,2));
 
 % A little bit hacky - if both directions are wanted, stick them together
 % and replicate offset array. This means offset is the same for both
 % dimensions
+
 nPerDir = length(offset);
 if ~isfield(data.opts,'fpass')
     % If data has not been highpass filtered, use raw
@@ -34,7 +33,10 @@ if ~isfield(data.opts,'fpass')
         offset = [offset (offset + data.nPoints)];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
+    filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
 else
+    % Hacky af: set num_t to min of actual num_t and previous value
+    num_t = min(num_t, size(data.pro.xCentresHP,2));
     % Else use highpass
     cropT = data.opts.cropT;
     cropTHPval = data.opts.cropTHPval;
@@ -52,6 +54,7 @@ else
         offset = [offset (offset + size(data.pro.xCentresHP,2))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
+    filtStr = ['after ' num2str(data.opts.fpass) 'Hz highpass filtering '];
 end
 
 % Dimension order for polynomial fitting
@@ -124,7 +127,7 @@ if doPlots
         xlim([1e-3 diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
         ylabel('Normalized MSD')
-        title({'Normalized mean square X displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
         legend(legCell,'Location','best')
         
         subplot(2,1,2);
@@ -133,7 +136,7 @@ if doPlots
         xlim([1e-3 diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
         ylabel('Normalized MSD')
-        title({'Normalized mean square Y displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
         legend(legCell,'Location','best')
     else
         loglog(dTs, MSDnorm,'LineWidth',2)
@@ -145,7 +148,7 @@ if doPlots
         
         xlabel('Delay (s)')
         ylabel('Normalized MSD')
-        title({'Normalized mean square displacement',['after polynomial order ' num2str(data.opts.pOrder) ' fitting'], ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
         legend(legCell, 'Location','best')
     end
     % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
