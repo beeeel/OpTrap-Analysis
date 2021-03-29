@@ -2,7 +2,7 @@
 % Experiment parameters
 mPerPx = 0.07e-6;           % Camera pixel size calibration
 laserPowers = 0;      % Laser power in % for the datasets used
-ignoreDirs = {}; % Directories to ignore
+ignoreDirs = {}; % Directories to ignore (ones without data)
 
 % Processing parameters
 cropTs = {[1 6e4], [3e4 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4] };
@@ -10,6 +10,7 @@ fitPoly = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
+cropTHPval = 1;       % Frames to crop after HP filter
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
 doFFT = true;           % Calculate FFT and maybe plot
@@ -17,6 +18,7 @@ doFFT = true;           % Calculate FFT and maybe plot
 % Data file parameters
 forceRun = false;       % Try to take data from file and reuse as much as possible
 saveData = false;        % Save data to file
+dataSuff = '_120k_28min';       % Suffix for filename when saving/loading
 
 % Plotting parameters
 saveFigs = false;
@@ -38,10 +40,13 @@ end
 % error and gives an empty list if not.
 checkCropTs(cropTs, dirList);
 
+out = struct();
+out(1).stiff = nan;
+%
 for fileIdx = 27:35%length(dirList)
     %% Load and pre-process
     % Either create a new struct or load one named dataFile
-    dataFile = [dirList(fileIdx).name '_processed.mat'];
+    dataFile = [dirList(fileIdx).name '_processed' dataSuff '.mat'];
     if forceRun || ~exist(dataFile, 'file')
         data = struct([]);
         data(1).opts.forceRun = forceRun;
@@ -56,9 +61,9 @@ for fileIdx = 27:35%length(dirList)
         data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
         data.mPerPx = mPerPx;
     else
-        s = load(dataFile, 'data');
-        data = s.data;
-        clear s
+        tmp = load(dataFile, 'data');
+        data = tmp.data;
+        clear tmp
         data.opts.forceRun = forceRun;
     end
     
@@ -70,6 +75,7 @@ for fileIdx = 27:35%length(dirList)
         xStiff = calcStiffness(data.pro.xCentresM);
         yStiff = calcStiffness(data.pro.yCentresM);
         data.pro.stiffXY = [xStiff, yStiff];
+        out(fileIdx).stiff = data.pro.stiffXY;
     end
     
     % Plot the processed data
@@ -114,16 +120,29 @@ for fileIdx = 27:35%length(dirList)
     % High-pass filter and calculate Allan variance if pass frequency is
     % positive
     if fpass > 0
+        data.opts.fpass = fpass;
+        data.opts.cropTHPval = cropTHPval;
         %% Need to adapt to run on both dims and use subplots/etc
         data = bead_hp_allan_var(data, 'xCentresPx', ...
-            fpass, 5e3, doPlots);
-%         data = bead_hp_allan_var(data, 'yCentresPx', ...
-%             fpass, 1, doPlots);
+            fpass, cropTHPval, false);
+        data = bead_hp_allan_var(data, 'yCentresPx', ...
+            fpass, cropTHPval, false);
+        fh = bead_plotHPData(data, setLims);
+        
+        if saveFigs
+            saveas(fh, [data.fName '_HP.png'])
+        end
+        
+        xStiff = calcStiffness(data.pro.xCentresHP);
+        yStiff = calcStiffness(data.pro.yCentresHP);
+        data.pro.stiffXYHP = [xStiff, yStiff];
+        out(fileIdx).stiffHP = data.pro.stiffXYHP;
+
     end
     
     % Look at mean-square displacement (for cell-bead expts)
-    if msdOffset
-        data = bead_normMSD_polyfit(data, msdDim, msdOffset, 6e4);
+    if ~isempty(msdOffset)
+        data = bead_normMSD_polyfit(data, msdDim, msdOffset, 12e4);
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
