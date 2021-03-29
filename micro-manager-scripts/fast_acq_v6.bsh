@@ -2,53 +2,23 @@
  * Using sequence acquisition and real-time processing to track the location of a particle
  */
 // Set and rep number to go in save file names
-int set = 3;
+int set = 1;
 String rep = "03";
 // Write the save path here, be careful the folder doesn't already have data in it!
-folderPath = "E:/Will/data/2021_03_16/hela_S3_5um2_"+set+"_"+rep+"/";
-
-// Record stage location in units of 0.1um here (10,000 x mm)
-XPosns = new int[]{0, -3108,-2001};
-YPosns = new int[]{0, 65035, 69821};
-// Find and enter ROI corner locations in px
-XCorners = new int[]{560, 465, 496};
-YCorners = new int[]{460, 465, 355};
-// Enter ROI sizes in px - choosing more than 64 rows will slow acquisition
-XSizes = new int[]{416, 495, 424}; // Columns
-YSizes = new int[]{136, 147, 118}; // Rows
+folderPath = "E:/Will/data/2021_03_29/cell_5um_"+set+"_"+rep+"/";
 
 // Acquisition parameters
 int n = 10e4; // number of frames
 int saveInterval = 1e4; // How often to save an image (in frames)
 float expMs = 0.9;		// Exposure time (ms)
-int subWidth = 90; // Number of px on each side to calculate CofM
+int subWidth = 110; // Number of px on each side to calculate CofM
 
-
-// Get values for this acquisition
-Corner = new int[]{ XCorners[set-1], YCorners[set-1] };
-Size = new int[]{ XSizes[set-1], YSizes[set-1]}; 
-
-// Function to send commands down USB bridge to serial
-String 	sendASICommand(String command)
-{
-String 	port = "COM3";
-mmc.setSerialPortCommand(port, command, "\r");
-String 	asiReturn = mmc.getSerialPortAnswer(port, "\n");
-asiReturn	= asiReturn.replaceAll("\r", "\r\n"); //reformat multiline responses for display
-return asiReturn;
-}
-
-// Prepare move command 
-pmX = XPosns[set-1] < 0 ? "-" : "";
-pmY = YPosns[set-1] < 0 ? "-" : "";
-X = (XPosns[set-1] < 0? -1*XPosns[set-1] : XPosns[set-1]);
-Y = (YPosns[set-1] < 0? -1*YPosns[set-1] : YPosns[set-1]);
-// The full command, print to output before sending to stage
-com = "M X="+ pmX + X + " Y=" + pmY + Y;
-print(com);
-print(sendASICommand(com));
-
-java.util.concurrent.TimeUnit.MILLISECONDS.sleep(2000);
+// Go to the correct position
+//import org.micromanager.MultiStagePosition;
+//positionList = mm.positions().getPositionList();
+//position = positionList.getPosition(set - 1);
+//MultiStagePosition.goToPosition(position, mm.core());
+//mm.core().waitForDevice(mm.core().getXYStageDevice());
 
 // START YOUR ENGINES! (jk)
 startTime = System.nanoTime();
@@ -112,15 +82,13 @@ Times = new double[n];
 int i = 0;
 int iSave = 0;
 double firstTime = 0, lastTime = 0;
-java.awt.Rectangle ROI = new Rectangle(Corner[0], Corner[1], Size[0], Size[1]);
-java.awt.Rectangle ROI2 = new Rectangle(0, 0, 1920, 1080);
 
 // Reset the ROI to full frame if necessary
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
 if ((width != 1920) || (height != 1080))
 {
-	mm.setROI(ROI2);
+	mm.clearROI();
 }
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
@@ -132,10 +100,6 @@ store = mm.data().createRAMDatastore();	// ROI Images
 store1 = mm.data().createRAMDatastore(); // full FOV images
 saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
 
-// Create a display to show images as they are acquired.
-mm.displays().createDisplay(store);
-mm.displays().createDisplay(store1);
-
 // Get one image at full size
 print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
 if (mmc.isSequenceRunning())
@@ -143,25 +107,26 @@ if (mmc.isSequenceRunning())
 	print("Stopping previous acquisition");
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
-
-mmc.startSequenceAcquisition(1, 0.0, true);
-java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
-img = mmc.popNextTaggedImage();
-image = mm.data().convertTaggedImage(img,builder.time(0).build(), null);
+images = mm.live().snap(false);
+image = images.get(0);
 store1.putImage(image);
 
 // Set the ROI and check it has been set
-mm.setROI(ROI);
+mm.setROI();
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
 print("w = " + width + " h = " + height);
+
+// Create a display to show images as they are acquired.
+mm.displays().createDisplay(store1);
+mm.displays().createDisplay(store);
 
 // Set exposure
 mmc.setExposure(expMs);
 
 // Variables to be used in the processing loop
 img = 0;
-pixels = new int[Size[0]*Size[1]];
+pixels = new int[width*height];
 centre = new double[2];
 
 // Start acquiring and process frames as they arrive
@@ -223,7 +188,7 @@ if (iSave > 1) {
 
 print("Completed main acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
 // Reset the ROI to full frame
-mm.setROI(ROI2);
+mm.clearROI();
 print("Set ROI at " + (System.nanoTime() - startTime)/1e9 + "s");
 // Get an after image
 if (mmc.isSequenceRunning())
@@ -231,16 +196,13 @@ if (mmc.isSequenceRunning())
 	print("Stopping previous acquisition");
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
-mmc.startSequenceAcquisition(1, 0.0, true);
-java.util.concurrent.TimeUnit.MILLISECONDS.sleep(100);
-img = mmc.popNextTaggedImage();
-image = mm.data().convertTaggedImage(img,
-	builder.time(1).build(), null);
+images = mm.live().snap(false);
+image = images.get(0);
+image = image.copyAtCoords(builder.time(1).build());
 store1.putImage(image);
 
 // Finish up - stop the acquisition and save all the data
 print("Completed all acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
-mmc.stopSequenceAcquisition();
 
 // Save data arrays
 writeDoubleArrayToFile(Xls, n, folderPath + "Xl.dat");
@@ -255,4 +217,8 @@ store.save(saveMode, folderPath+imageFolder);
 store1.save(saveMode, folderPath+"full_"+imageFolder);
 
 print("Saved at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+mm.displays().closeDisplaysFor(store);
+mm.displays().closeDisplaysFor(store1);
+
 mm.live().setLiveMode(true);
