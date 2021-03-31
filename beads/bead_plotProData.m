@@ -28,6 +28,8 @@ else
     error('How many nargins did you use? Should be 1 to 3!')
 end
 
+cmaps = {'spring','winter','cool'};
+
 fh.Name = data.fName;
 clf
 
@@ -48,7 +50,7 @@ if size(xCentresM, 1) == 1
     
     % Scatterplot of each centre in units um
     subplot(3,1,2)
-    plot(xCentresM.*1e6,yCentresM.*1e6,'.')
+    scatter(xCentresM.*1e6,yCentresM.*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
     if ~isempty(setLims)
         xlim(setLims)
         ylim(setLims)
@@ -57,6 +59,8 @@ if size(xCentresM, 1) == 1
     xlabel('X (\mu m)')
     ylabel('Y (\mu m)')
     axis equal
+    colorbar
+    colormap(cmaps{1})
     
     % Time traces of X and Y in units um
     subplot(3,2,5)
@@ -89,12 +93,14 @@ else
         ylabel('Probability')
         order = num2str(data.opts.pOrder);
         title({['Histogram of centres, polynomial order ' order ' filtered ']});%, [ 'trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m']})
+        warning('off','MATLAB:legend:IgnoringExtraEntries')
         legend('X left','Y left','X right','Y right')
+        warning('on','MATLAB:legend:IgnoringExtraEntries')
         
         % Scatterplot of each centre in units um
         subplot(3,1,2)
         hold on
-        plot(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,'.')
+        scatter(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
         if ~isempty(setLims)
             xlim(setLims)
             ylim(setLims)
@@ -103,6 +109,8 @@ else
         xlabel('X (\mu m)')
         ylabel('Y (\mu m)')
         axis equal
+        colorbar
+        colormap(cmaps{1})
         
         % Time traces of X and Y in units um
         subplot(3,2,5)
