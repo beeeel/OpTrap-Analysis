@@ -67,12 +67,16 @@ if exist([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default
     data.Imstack  = bfopen([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif']);
     metadata = fileread([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default_metadata.txt']);
     data.metadata = jsondecode(metadata);
+elseif exist([data.dirPath '/ROI/ROI_MMStack_Default.ome.tif'], 'file')
+    data.Imstack  = bfopen([data.dirPath '/ROI/ROI_MMStack_Default.ome.tif']);
 else
     warning('Could not find ROI images or metadata')
 end
 
 if exist([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif'], 'file')
     data.ImstackFullFoV  = bfopen([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif']);
+elseif exist([data.dirPath '/full/full_MMStack_Default.ome.tif'], 'file')
+    data.ImstackFullFoV  = bfopen([data.dirPath '/full/full_MMStack_Default.ome.tif']);
 else
     warning('Could not find full FoV images')
 end
