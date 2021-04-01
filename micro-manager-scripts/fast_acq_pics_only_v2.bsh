@@ -1,0 +1,184 @@
+/**
+ * Using sequence acquisition and to collect images quickly 
+ */
+// Write the save path here, be careful the folder doesn't already have data in it!
+folderPath = "E:/Will/data/2021_04_01/fast_acq_pics_only_13/";
+// Select ROI on screen before running
+int n = 10e4; // number of frames
+float expMs = 1;		// Exposure time (ms)
+
+// Import processing functions and define saving function
+import Static_Image_Math;
+void writeDoubleArrayToFile(double[] array, int len, String path)
+{ // Writes double array to file as byte array. Needs to be given the length of the array
+file = new File(path);
+fos = new FileOutputStream(file);
+if (!file.exists()){
+	file.createNewFileCentres();
+}
+bytesArray = doubleToByteArray(array, len);
+fos.write(bytesArray);
+fos.flush();
+fos.close();
+}
+byte[] doubleToByteArray( double[] i, int len )
+{ // Converts double array to byte array. Needs to be given the length of the array
+ ByteArrayOutputStream bos = new ByteArrayOutputStream();
+ DataOutputStream dos = new DataOutputStream(bos);
+ for (int idx = 0; idx < len; idx++){
+ 	dos.writeDouble(i[idx]);
+ }
+ dos.flush();
+ return bos.toByteArray();
+}
+
+// START YOUR ENGINES! (jk)
+startTime = System.nanoTime();
+mm.live().setLiveMode(false);
+
+// Check the folder exists and is empty
+folder = new File(folderPath);
+if (folder.isDirectory()){
+	subFolder = new File(folderPath + imageFolder);
+	if (subFolder.isDirectory()){
+		throw new Exception("Path " + folderPath + imageFolder + " already exists. Pick a new path");
+	}
+} else if (folder.exists()) {
+	throw new Exception("Path " + folderPath + " is a file, not a folder");
+} else {
+	folder.mkdir();
+}
+
+// Prepare coordinated builder and datastore
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store = mm.data().createRAMDatastore(); // ROI Images
+store1 = mm.data().createRAMDatastore(); // full FOV images
+
+// Get one image at full size
+print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+images = mm.live().snap(false);
+image = images.get(0);
+store1.putImage(image);
+
+// Set the ROI and check it has been set
+mm.setROI();
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("w = " + width + " h = " + height);
+
+// Set exposure
+mmc.setExposure(expMs);
+
+// Variables to be used in the processing loop
+pix = new short[width*height];
+img = 0;
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+int iSave = 0, i = 0;
+centres = new double[2];
+double firstTime = 0, lastTime = 0;
+// Variables for output
+Xbs = new double[n];
+Ybs = new double[n];
+Xvs = new double[n];
+Yvs = new double[n];
+Xss = new double[n];
+Yss = new double[n];
+Is = new double[n];
+Times = new double[n];
+
+// Start acquiring and process frames as they arrive
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(n, 0.0, true);
+while (!mmc.isSequenceRunning()){
+	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
+} // There have been weird bugs with it not getting any images, maybe this will help?
+print("Started acquition at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
+   if (mmc.getRemainingImageCount() > 0 && i < n) 
+   {
+   	img = mmc.popNextTaggedImage();
+   	iSave = i;
+   	if (i == 0)
+   	{
+   		firstTime = img.tags.getDouble("ElapsedTime-ms");
+   	}
+   	if ((i%1e3) == 0)
+   	{
+   		image = mm.data().convertTaggedImage(img, builder.time(i).build(), null);
+      	store.putImage(image);
+   	}
+      centres = Static_Image_Math.getCentroid(img.pix, width, height);
+      Xvs[i] = centres[0];
+      Yvs[i] = centres[1];
+      centres = Static_Image_Math.getCentroidBasic(img.pix, width, height);
+      Xbs[i] = centres[0];
+      Ybs[i] = centres[1];
+      centres = Static_Image_Math.getCentroidBasicSq(img.pix, width, height);
+      Xss[i] = centres[0];
+      Yss[i] = centres[1];
+      Is[i] = Static_Image_Math.getMean(img.pix, width, height);
+      if ((i % 1e4) == 0)
+      {
+      	print("Stored image " + i + " at time " + (System.nanoTime() - startTime)/1e9 + "s");
+      	print("    Xv = " + Xvs[i] + " Xb = " + Xbs[i] + " Xs = " + Xss[i] + " I = " + Is[i]);
+      	print("    Yv = " + Yvs[i] + " Yb = " + Ybs[i] + " Ys = " + Yss[i]);
+      }
+		i++;
+   }
+}
+
+lastTime = img.tags.getDouble("ElapsedTime-ms");
+if (iSave > 1) {
+	frameTime = (lastTime - firstTime)/(iSave);
+	for (int i = 0; i < n; i++){
+		Times[i] = i * frameTime;}
+}
+else {
+	print("There's going to be junk in the time data");
+}
+
+// Ensure the acquisition has ended
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+// Reset the ROI to full frame
+mm.clearROI();
+// Get an after image
+images = mm.live().snap(false);
+image = images.get(0);
+image = image.copyAtCoords(builder.time(1).build());
+store1.putImage(image);
+
+// Finish up - stop the acquisition and save all the data
+print("Completed acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
+mmc.stopSequenceAcquisition();
+mm.live().setLiveMode(true);
+
+// Save images
+saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
+store.save(saveMode, folderPath+"ROI");
+store1.save(saveMode, folderPath+"full");
+
+// Save processed data
+writeDoubleArrayToFile(Xvs, n, folderPath + "Xv.dat");
+writeDoubleArrayToFile(Yvs, n, folderPath + "Yv.dat");
+writeDoubleArrayToFile(Xbs, n, folderPath + "Xb.dat");
+writeDoubleArrayToFile(Ybs, n, folderPath + "Yb.dat");
+writeDoubleArrayToFile(Xss, n, folderPath + "Xs.dat");
+writeDoubleArrayToFile(Yss, n, folderPath + "Ys.dat");
+writeDoubleArrayToFile(Times, n, folderPath + "T.dat");
+writeDoubleArrayToFile(Is, n, folderPath + "I.dat");
+
+print("Saved everything at " + (System.nanoTime() - startTime)/1e9 + "s");
