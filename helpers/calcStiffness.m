@@ -1,4 +1,5 @@
 function stiffness = calcStiffness(centresVector, varargin)
+% stiffness = calcStiffness(centresVector, [conversion (m/[unit])] )
 %% Calculate trap stiffness from centres vector
 % Either supply centresVec in units m, or conversion factor in m/[unit]
 
