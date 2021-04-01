@@ -2,23 +2,53 @@ function data = bead_loadData(data)
 %% data = loadBeadData(data)
 % Load centres, times, images and metadata for a given dataset
 
-if exist([data.dirPath '/XCentres.dat'],'file')
-    data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/XCentres.dat']);
-    data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/YCentres.dat']);
-elseif exist([data.dirPath '/X.dat'], 'file')
-    data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/X.dat']);
-    data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/Y.dat']);
-elseif exist([data.dirPath '/Xl.dat'], 'file')
-    data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/Xl.dat']);
-    data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/Yl.dat']);
-    data.raw.xCentresPx(2,:) = byteStreamToDouble([data.dirPath '/Xr.dat']);
-    data.raw.yCentresPx(2,:) = byteStreamToDouble([data.dirPath '/Yr.dat']);
-else
-    disp(['File ' data.dirPath '/XCentres.dat does not exist'])
-    disp(['File ' data.dirPath '/X.dat does not exist'])
-    disp(['File ' data.dirPath '/Xl.dat does not exist'])
+% % Old method - manually look for data
+% if exist([data.dirPath '/XCentres.dat'],'file')
+%     data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/XCentres.dat']);
+%     data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/YCentres.dat']);
+% elseif exist([data.dirPath '/X.dat'], 'file')
+%     data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/X.dat']);
+%     data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/Y.dat']);
+% elseif exist([data.dirPath '/Xl.dat'], 'file')
+%     data.raw.xCentresPx = byteStreamToDouble([data.dirPath '/Xl.dat']);
+%     data.raw.yCentresPx = byteStreamToDouble([data.dirPath '/Yl.dat']);
+%     data.raw.xCentresPx(2,:) = byteStreamToDouble([data.dirPath '/Xr.dat']);
+%     data.raw.yCentresPx(2,:) = byteStreamToDouble([data.dirPath '/Yr.dat']);
+% else
+%     disp(['File ' data.dirPath '/XCentres.dat does not exist'])
+%     disp(['File ' data.dirPath '/X.dat does not exist'])
+%     disp(['File ' data.dirPath '/Xl.dat does not exist'])
+%     error('Could not find any centres data');
+% end
+
+% New method: Find anything with a suffix and then record it and what
+% suffix
+if ~isfield(data, 'raw') 
+    data.raw.suffixes = {};
+elseif ~isfield(data.raw, 'suffixes')
+    data.raw.suffixes = {};
+end
+idx = 1;
+errMsg = '';
+
+for suff = {'Centres', '', 'l', 'r', 'b', 's', 'v'}
+    fNameX = [data.dirPath '/X' suff{:} '.dat'];
+    fNameY = [data.dirPath '/Y' suff{:} '.dat'];
+    if exist(fNameX, 'file')
+        data.raw.xCentresPx(idx,:) = byteStreamToDouble(fNameX);
+        data.raw.yCentresPx(idx,:) = byteStreamToDouble(fNameY);
+        data.raw.suffixes = [data.raw.suffixes, suff];
+        idx = idx + 1;
+    else
+        errMsg = [errMsg 'File ' fNameX ' does not exist\n'];
+    end
+end
+
+if idx == 1
+    fprintf(errMsg);
     error('Could not find any centres data');
 end
+
 if exist([data.dirPath '/I.dat'], 'file')
     data.raw.dcAvg = byteStreamToDouble([data.dirPath '/I.dat']);
 end
