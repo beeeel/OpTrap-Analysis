@@ -1,4 +1,5 @@
 function centres = imCentreOfMass(ims,varargin)
+% centres = imCentreOfMass(ims, [method, n])
 %% Find centre of mass of each frame in input image array
 % Input ims - numeric array of size [X, Y, Z]. Calculates centre of mass
 % for each plane z = 1:Z. Second input method (optional) - 'norm-square'
@@ -13,7 +14,7 @@ ims = double(ims);
 
 if nargin == 1
     method = 'simple';
-elseif nargin == 2
+elseif nargin == 2 || nargin == 3
     method = varargin{1};
 else
     disp('Input arguments:')
@@ -43,4 +44,19 @@ switch method
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
         centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
+    case 'norm-n'
+        if nargin == 3
+            n = varargin{2};
+            validateattributes(n, {'numeric'},{'integer','positive'},'imCentreOfMass','n',2)
+        else
+            error('When using norm-n, you need another input argument for n')
+        end
+        ims = double(ims);
+        imsVec = reshape(ims,[],1,nIms);
+        imsVecNorm = imsVec - double(mean(ims, [1 2]));
+        imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
+        % Calculate centre of mass - sum weighted by pixel location, normalized to
+        % image total.
+        centres = squeeze([sum(imsMatNorm.^n.*X,[1 2]) sum(imsMatNorm.^n.*Y,[1 2])]./sum(imsMatNorm.^n,[1 2]));
 end
