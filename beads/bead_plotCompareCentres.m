@@ -19,32 +19,37 @@ else
 end
 % Get two centres arrays
 imCentres = imCentreOfMass(cat(3,Imstack{1}{:,1}));
-xyCentres = [xCentres(1:step:end); yCentres(1:step:end)];
+xyCentres = cat(3,xCentres(:,1:step:end), yCentres(:,1:step:end));
 times = timeVecMs(1:step:end);
 % Create a UIFigure with axes holding plots and plot the first
 % image
 fh = uifigure('Name','Image with both calculated centres',...
     'Position',[680 160 980 800]);
+colormap(fh, 'gray');
 ax = axes(fh);
 hold(ax,'on')
-changeIm(struct('Value',1), Imstack, ax, imCentres, xyCentres, times);
+changeIm(struct('Value',1), Imstack, ax, imCentres, xyCentres, times, data.raw.suffixes);
 % Create a slider for user control of which image is showing
 sld = uislider(fh, 'Position', [100, 50, 600, 40], ...
-    'ValueChangedFcn', @(sld, event) changeIm(sld, Imstack, ax, imCentres, xyCentres, times),...
+    'ValueChangedFcn', @(sld, event) changeIm(sld, Imstack, ax, imCentres, xyCentres, times, data.raw.suffixes),...
     'Limits', [1 size(Imstack{1},1)], 'MinorTicks', 1:size(Imstack{1},1));
 input('Enter to close figure window')
 close(fh)
 end
 
-function changeIm(sld, ims, ax, imCentres, xyCentres, times) 
+function changeIm(sld, ims, ax, imCentres, xyCentres, times, suffixes) 
 fr = round(sld.Value);
 cla(ax);
 imagesc(ax, ims{1}{fr,1});
-plot(ax, imCentres(1, fr), imCentres(2, fr), 'kx');
-plot(ax, xyCentres(1, fr), xyCentres(2, fr), 'k.');
+plot(ax, imCentres(1, fr), imCentres(2, fr), 'yx','MarkerSize',6);
+legCell = {'MATLAB calculated centre'};
+for idx = 1:size(xyCentres,1)
+    plot(ax, xyCentres(idx, fr, 1), xyCentres(idx, fr, 2),'.','MarkerSize',12);
+    legCell{end+1} = ['Live: ' suffixes{idx}];
+end
 axis(ax, 'image');
-legend(ax, 'MATLAB calculated centre','Live calculated centre')
-diffCentres = imCentres - xyCentres(:, 1:length(imCentres));
+legend(ax, legCell)
+diffCentres = imCentres - xyCentres(1, 1:length(imCentres),:);
 title(ax,{['Frame ' num2str(fr) ' x_{diff} = ' num2str(diffCentres(1,fr)) ...
     ' y_{diff} = ' num2str(diffCentres(2,fr))], ['t = ' num2str(times(fr)/1e3) 's']});
 end
