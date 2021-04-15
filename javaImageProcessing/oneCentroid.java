@@ -1,4 +1,4 @@
-public class Static_Image_Math{
+public class oneCentroid{
 
 // Centroid by weighted variance
 public static double[] getCentroid(short[] pixels, int width, int height, short thresh) {
