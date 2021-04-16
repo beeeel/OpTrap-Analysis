@@ -22,19 +22,7 @@ end
 % dimensions
 
 nPerDir = length(offset);
-if ~isfield(data.opts,'fpass')
-    % If data has not been highpass filtered, use raw
-    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
-        legCell = repmat({direction},nPerDir,1);
-    else
-        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
-        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-        offset = [offset (offset + data.nPoints)];
-        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
-    end
-    filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
-else
+if isfield(data.opts,'fpass') 
     % Hacky af: set num_t to min of actual num_t and previous value
     num_t = min(num_t, size(data.pro.xCentresHP,2));
     % Else use highpass
@@ -55,6 +43,32 @@ else
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['after ' num2str(data.opts.fpass) 'Hz highpass filtering '];
+elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') && min(isfield(data.pro,{'xCentresM','yCentresM'})))
+    % If data has not been highpass filtered, use raw
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.pro.([direction 'CentresM']);
+        timeVec = data.raw.timeVecMs;
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.pro.xCentresM data.pro.yCentresM];
+        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
+        offset = [offset (offset + data.nPoints)];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
+    filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
+else
+    % If data has not been highpass filtered, use raw
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
+        timeVec = data.raw.timeVecMs;
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
+        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
+        offset = [offset (offset + data.nPoints)];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
+    filtStr = ['unfiltered'];
 end
 
 % Dimension order for polynomial fitting
