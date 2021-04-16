@@ -57,7 +57,7 @@ if doPlots
         ylabel('Amplitude (nm)')
     else
         n_obj = size(data.pro.xfftM,1);
-        LR = {'left','right'};
+        LR = data.raw.suffixes;
         for obj = 1:n_obj
             subplot(2,n_obj,obj)
             hold on
