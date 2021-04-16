@@ -1,4 +1,4 @@
-public class Static_Image_Math{
+public class twoCentroids{
 
 // Calculate centroids by weighted variance measure
 public static double[] getTwoCentroids(short[] pixels, int width, int height, int subWidth, short thresh) 
