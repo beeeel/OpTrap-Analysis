@@ -31,7 +31,7 @@ end
 idx = 1;
 errMsg = '';
 
-for suff = {'Centres', '', 'l', 'r', 'b', 's', 'v'}
+for suff = {'Centres', '', 'l', 'r', 'b', 's', 'v', 'lq'}
     fNameX = [data.dirPath '/X' suff{:} '.dat'];
     fNameY = [data.dirPath '/Y' suff{:} '.dat'];
     if exist(fNameX, 'file')
