@@ -19,6 +19,8 @@ else
 end
 % Get two centres arrays
 imCentres = imCentreOfMass(cat(3,Imstack{1}{:,1}));
+imCentres2 = imCentreOfMass(cat(3,Imstack{1}{:,1}),'dark-norm-square');
+imCentres = [imCentres; imCentres2];
 xyCentres = cat(3,xCentres(:,1:step:end), yCentres(:,1:step:end));
 times = timeVecMs(1:step:end);
 % Create a UIFigure with axes holding plots and plot the first
@@ -42,7 +44,8 @@ fr = round(sld.Value);
 cla(ax);
 imagesc(ax, ims{1}{fr,1});
 plot(ax, imCentres(1, fr), imCentres(2, fr), 'yx','MarkerSize',6);
-legCell = {'MATLAB calculated centre'};
+plot(ax, imCentres(3, fr), imCentres(4, fr), 'gx','MarkerSize',6);
+legCell = {'MATLAB simple centre','MATLAB dark centre'};
 for idx = 1:size(xyCentres,1)
     plot(ax, xyCentres(idx, fr, 1), xyCentres(idx, fr, 2),'.','MarkerSize',12);
     legCell{end+1} = ['Live: ' suffixes{idx}];
