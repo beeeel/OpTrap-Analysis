@@ -1,19 +1,27 @@
 function data = bead_normMSD_polyfit(data, direction, offset, varargin)
-%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots])
+%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow])
 % Take data object and use x, y or both from raw data, returning calculated
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work
 
-% Parse the inputs - needs to be after centres is defined (above)
+% Parse the inputs
 doPlots = true;
+useRaw = false;
+centresRow = 1;
 if nargin == 3
     num_t = data.nPoints;
 elseif nargin >= 4
     num_t = varargin{1};
-    if nargin == 5
-        doPlots = varargin{2};
-    end
-else
+end
+if nargin >= 5
+    doPlots = varargin{2};
+end
+if nargin >= 6
+    useRaw = varargin{3};
+end
+if nargin == 7 
+    centresRow = varargin{4};
+elseif nargin > 7
     error('Wrong number of input arguments')
 end
 
@@ -22,7 +30,20 @@ end
 % dimensions
 
 nPerDir = length(offset);
-if isfield(data.opts,'fpass') 
+if useRaw
+    % If data has not been highpass filtered, use raw
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
+        timeVec = data.raw.timeVecMs;
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
+        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
+        offset = [offset (offset + data.nPoints)];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
+    filtStr = ['unfiltered'];
+elseif isfield(data.opts,'fpass') 
     % Hacky af: set num_t to min of actual num_t and previous value
     num_t = min(num_t, size(data.pro.xCentresHP,2));
     % Else use highpass
@@ -56,20 +77,10 @@ elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') &&
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
-else
-    % If data has not been highpass filtered, use raw
-    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
-        timeVec = data.raw.timeVecMs;
-        legCell = repmat({direction},nPerDir,1);
-    else
-        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
-        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-        offset = [offset (offset + data.nPoints)];
-        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
-    end
-    filtStr = ['unfiltered'];
 end
+
+% Select the row that was asked for
+centres = centres(centresRow,:);
 
 % Dimension order for polynomial fitting
 dims = [1, 3, 2];
@@ -77,13 +88,15 @@ dims = [1, 3, 2];
 if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [direction(1) 'msdObj']))
     % Prepare data to go into msdanalyzer
     tracks = cell(length(offset),1);
-    
     for idx = 1:length(offset)
-        % Crop data, then fit polynomial of order set by processing script
+        % Crop data, then demean. (Don't fit poly because either this has
+        % already been done, or it's not wanted)
         centresCrop = centres(offset(idx) : offset(idx) + num_t - 1);
-        [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
-            permute(centresCrop, dims), data.opts.pOrder, 1, length(centresCrop));
-        centresCrop = ipermute(centresCrop, dims);
+        centresCrop = centresCrop - mean(centresCrop,2);
+%         
+%         [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
+%             permute(centresCrop, dims), data.opts.pOrder*(~useRaw), 1, length(centresCrop));
+%         centresCrop = ipermute(centresCrop, dims);
         
         tracks{idx} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
             1e6 .* centresCrop'];
