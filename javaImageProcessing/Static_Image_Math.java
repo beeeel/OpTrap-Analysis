@@ -110,7 +110,7 @@ public static double[] getDarkCentroid(short[] pixels, int width, int height) {
         for (int x=0; x<(width); x++) {
                 v = pixels[i]+Double.MIN_VALUE - mean;
                 v2 = v*v;
-                if (v < mean){
+                if (v < 0){
                     sum2 += v2;
                     x2sum += x*v2;
                     y2sum += y*v2;
