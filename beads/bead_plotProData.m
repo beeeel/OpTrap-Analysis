@@ -82,10 +82,10 @@ if size(xCentresM, 1) == 1
 else
     for obj = 1:size(xCentresM,1)
         % Histogram of xCentres and yCentres in units um
-        subplot(3,1,1)
+        subplot( 3, size(xCentresM,1), obj)
         hold on
-        histogram(xCentresM(obj,:).*1e6,'Normalization','probability')
-        histogram(yCentresM(obj,:).*1e6,'Normalization','probability')
+        histogram(xCentresM(obj,:).*1e6,30,'Normalization','probability')
+        histogram(yCentresM(obj,:).*1e6,30,'Normalization','probability')
         if ~isempty(setLims)
             xlim(setLims)
         end
@@ -93,12 +93,12 @@ else
         ylabel('Probability')
         order = num2str(data.opts.pOrder);
         title({['Histogram of centres, polynomial order ' order ' filtered ']});%, [ 'trap stiffness kx = ' num2str(xStiff./1e-6) ' pN/\mu m, ky = ' num2str(yStiff./1e-6) ' pN/\mu m']})
-        warning('off','MATLAB:legend:IgnoringExtraEntries')
+        warning('off','MATLAB:legend:IgnoringExtraEntries')% Probably not needed
         legend('X left','Y left','X right','Y right')
-        warning('on','MATLAB:legend:IgnoringExtraEntries')
+        warning('on','MATLAB:legend:IgnoringExtraEntries')% Probably not needed
         
         % Scatterplot of each centre in units um
-        subplot(3,1,2)
+        subplot( 3, size(xCentresM,1), size(xCentresM,1) + obj)
         hold on
         scatter(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
         if ~isempty(setLims)
@@ -109,13 +109,12 @@ else
         xlabel('X (\mu m)')
         ylabel('Y (\mu m)')
         axis equal
-        colorbar
-        colormap(cmaps{1})
+        if obj == 1; colorbar; end
         
         % Time traces of X and Y in units um
         subplot(3,2,5)
         hold on
-        plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM(obj,:).*1e6,'.')
+        plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM(obj,:).*1e6,'.','MarkerSize',3)
         xlabel('Time (s)')
         ylabel('X (\mu m)')
         title('X time trace')
@@ -125,7 +124,7 @@ else
         
         subplot(3,2,6)
         hold on
-        plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM(obj,:).*1e6,'.')
+        plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM(obj,:).*1e6,'.','MarkerSize',3)
         xlabel('Time (s)')
         ylabel('Y (\mu m)')
         title('Y time trace')
