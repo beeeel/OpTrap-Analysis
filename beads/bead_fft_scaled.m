@@ -40,6 +40,8 @@ if doPlots
         plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM)
         if ~isempty(setLims)
             ylim(setLims)
+        else
+            xlim([10 fh.Children(1).XLim(2)])
         end
         
         title('X centres frequency spectrum')
@@ -64,7 +66,10 @@ if doPlots
             plot(data.pro.fftFreqHz, 1e9 * data.pro.xfftM(obj,:))
             if ~isempty(setLims)
                 ylim(setLims)
+            else
+                xlim([10 fh.Children(1).XLim(2)])
             end
+            
             
             title(['X centres frequency spectrum for ' LR{obj} ' bead'])
             xlabel('Frequency (Hz)')
@@ -75,6 +80,8 @@ if doPlots
             plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM(obj,:))
             if ~isempty(setLims)
                 ylim(setLims)
+            else
+                xlim([10 fh.Children(1).XLim(2)])
             end
             
             title(['Y centres frequency spectrum for ' LR{obj} ' bead'])
