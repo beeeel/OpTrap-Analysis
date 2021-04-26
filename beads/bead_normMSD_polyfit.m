@@ -8,21 +8,22 @@ function data = bead_normMSD_polyfit(data, direction, offset, varargin)
 doPlots = true;
 useRaw = false;
 centresRow = 1;
-if nargin == 3
-    num_t = data.nPoints;
-elseif nargin >= 4
+num_t = data.nPoints;
+if nargin >= 4 && ~isempty(varargin{1})
     num_t = varargin{1};
 end
-if nargin >= 5
+if nargin >= 5 && ~isempty(varargin{2})
     doPlots = varargin{2};
 end
-if nargin >= 6
+if nargin >= 6 && ~isempty(varargin{3})
     useRaw = varargin{3};
 end
-if nargin == 7 
+if nargin == 7 && ~isempty(varargin{4})
     centresRow = varargin{4};
-elseif nargin > 7
-    error('Wrong number of input arguments')
+end
+if nargin > 7
+    warning('Wrong number of input arguments')
+    warning(['Ignoring ' num2str(nargin-7) ' arguments'])
 end
 
 % A little bit hacky - if both directions are wanted, stick them together
@@ -79,19 +80,21 @@ elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') &&
     filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
 end
 
-% Select the row that was asked for
-centres = centres(centresRow,:);
 
-% Dimension order for polynomial fitting
-dims = [1, 3, 2];
 
 if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [direction(1) 'msdObj']))
+    
+    % % Dimension order for polynomial fitting
+    % dims = [1, 3, 2];
+    
+    % Store which row of centres we're using
+    data.opts.msdSuffix = data.raw.suffixes(centresRow);
     % Prepare data to go into msdanalyzer
     tracks = cell(length(offset),1);
     for idx = 1:length(offset)
         % Crop data, then demean. (Don't fit poly because either this has
         % already been done, or it's not wanted)
-        centresCrop = centres(offset(idx) : offset(idx) + num_t - 1);
+        centresCrop = centres(centresRow, offset(idx) : offset(idx) + num_t - 1);
         centresCrop = centresCrop - mean(centresCrop,2);
 %         
 %         [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
@@ -103,7 +106,7 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     end
     
     % Make an msdanalyzer and use it
-    msd = msdanalyzer(1, 'um', 's');
+    msd = msdanalyzer(1, 'um', 's','log');
     msd = msd.addAll(tracks);
     msd = msd.computeMSD;
     
