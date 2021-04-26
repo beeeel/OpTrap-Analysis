@@ -31,12 +31,21 @@ end
 idx = 1;
 errMsg = '';
 
-for suff = {'Centres', '', 'l', 'r', 'b', 's', 'v', 'lq'}
+for suff = {'Centres', '', 'simple', 'quart', 'l', 'r', 'b', 's', 'v', 'lq', 'rq'}
     fNameX = [data.dirPath '/X' suff{:} '.dat'];
     fNameY = [data.dirPath '/Y' suff{:} '.dat'];
-    if exist(fNameX, 'file')
-        data.raw.xCentresPx(idx,:) = byteStreamToDouble(fNameX);
-        data.raw.yCentresPx(idx,:) = byteStreamToDouble(fNameY);
+    if exist(fNameX, 'file') && exist(fNameY, 'file')
+        % Screen for NaNs
+        tmp = byteStreamToDouble(fNameX);
+        warnNaN(tmp, fNameX);
+        tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
+        data.raw.xCentresPx(idx,:) = tmp;
+        
+        tmp = byteStreamToDouble(fNameY);
+        warnNaN(tmp, fNameY);
+        tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
+        data.raw.yCentresPx(idx,:) = tmp;
+        
         data.raw.suffixes = [data.raw.suffixes, suff];
         idx = idx + 1;
     else
@@ -82,3 +91,9 @@ else
 end
 
 data.nPoints = length(data.raw.xCentresPx);
+
+function warnNaN(arr, name)
+nNans = sum(isnan(arr));
+if nNans
+    warning(['Loaded and replaced ' num2str(nNans) ' from ' name])
+end
