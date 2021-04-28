@@ -33,19 +33,19 @@ switch method
     case 'simple'
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
-        Lcentres = squeeze([sum(ims(1:subWidth).*X,[1 2]) sum(ims(1:subWidth).*Y,[1 2])]...
-            ./sum(ims(1:subWidth),[1 2]));
-        Rcentres = squeeze([sum(ims(end-subWidth+1:end).*X,[1 2]) sum(ims(end-subWidth+1:end).*Y,[1 2])]...
-            ./sum(ims(end-subWidth+1:end),[1 2]));
+        Lcentres = squeeze([sum(ims(:,1:subWidth,:).*X,[1 2]) sum(ims(:,1:subWidth,:).*Y,[1 2])]...
+            ./sum(ims(:,1:subWidth,:),[1 2]));
+        Rcentres = squeeze([sum(ims(:,end-subWidth+1:end,:).*X,[1 2]) sum(ims(:,end-subWidth+1:end,:).*Y,[1 2])]...
+            ./sum(ims(:,end-subWidth+1:end,:),[1 2]));
     case 'square'
         % Square every pixel first
         ims = ims.^2;
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
-        Lcentres = squeeze([sum(ims(1:subWidth).*X,[1 2]) sum(ims(1:subWidth).*Y,[1 2])]...
-            ./sum(ims(1:subWidth),[1 2]));
-        Rcentres = squeeze([sum(ims(end-subWidth+1:end).*X,[1 2]) sum(ims(end-subWidth+1:end).*Y,[1 2])]...
-            ./sum(ims(end-subWidth+1:end),[1 2]));
+        Lcentres = squeeze([sum(ims(:,1:subWidth,:).*X,[1 2]) sum(ims(:,1:subWidth,:).*Y,[1 2])]...
+            ./sum(ims(:,1:subWidth,:),[1 2]));
+        Rcentres = squeeze([sum(ims(:,end-subWidth+1:end,:).*X,[1 2]) sum(ims(:,end-subWidth+1:end,:).*Y,[1 2])]...
+            ./sum(ims(:,end-subWidth+1:end,:),[1 2]));
     case 'norm-square'
         ims = double(ims);
         imsVec = reshape(ims,[],1,nIms);
@@ -53,13 +53,13 @@ switch method
         imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
-        Lcentres = squeeze([sum(imsMatNorm(1:subWidth).^2.*X,[1 2]) sum(imsMatNorm(1:subWidth).^2.*Y,[1 2])]...
-            ./sum(imsMatNorm(1:subWidth).^2,[1 2]));
-        Rcentres = squeeze([sum(imsMatNorm(end-subWidth+1:end).^2.*X,[1 2]) sum(imsMatNorm(end-subWidth+1:end).^2.*Y,[1 2])]...
-            ./sum(imsMatNorm(end-subWidth+1:end).^2,[1 2]));
+        Lcentres = squeeze([sum(imsMatNorm(:,1:subWidth,:).^2.*X,[1 2]) sum(imsMatNorm(:,1:subWidth,:).^2.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,1:subWidth,:).^2,[1 2]));
+        Rcentres = squeeze([sum(imsMatNorm(:,end-subWidth+1:end,:).^2.*X,[1 2]) sum(imsMatNorm(:,end-subWidth+1:end,:).^2.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,end-subWidth+1:end,:).^2,[1 2]));
     case 'norm-n'
-        if nargin == 3
-            n = varargin{2};
+        if nargin == 4
+            n = varargin{3};
             validateattributes(n, {'numeric'},{'integer','positive'},'imCentreOfMass','n',2)
         else
             error('When using norm-n, you need another input argument for n')
@@ -70,10 +70,10 @@ switch method
         imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
-        Lcentres = squeeze([sum(imsMatNorm(1:subWidth).^n.*X,[1 2]) sum(imsMatNorm(1:subWidth).^n.*Y,[1 2])]...
-            ./sum(imsMatNorm(1:subWidth).^n,[1 2]));
-        Rcentres = squeeze([sum(imsMatNorm(end-subWidth+1:end).^n.*X,[1 2]) sum(imsMatNorm(end-subWidth+1:end).^n.*Y,[1 2])]...
-            ./sum(imsMatNorm(end-subWidth+1:end).^n,[1 2]));
+        Lcentres = squeeze([sum(imsMatNorm(:,1:subWidth,:).^n.*X,[1 2]) sum(imsMatNorm(:,1:subWidth,:).^n.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,1:subWidth,:).^n,[1 2]));
+        Rcentres = squeeze([sum(imsMatNorm(:,end-subWidth+1:end,:).^n.*X,[1 2]) sum(imsMatNorm(:,end-subWidth+1:end,:).^n.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,end-subWidth+1:end,:).^n,[1 2]));
     case 'dark-norm-square'
         ims = double(ims);
         imsVec = reshape(ims,[],1,nIms);
@@ -82,9 +82,10 @@ switch method
         imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
         % Calculate centre of mass - sum weighted by pixel location, normalized to
         % image total.
-        Lcentres = squeeze([sum(imsMatNorm(1:subWidth).^2.*X,[1 2]) sum(imsMatNorm(1:subWidth).^2.*Y,[1 2])]...
-            ./sum(imsMatNorm(1:subWidth).^2,[1 2]));
-        Rcentres = squeeze([sum(imsMatNorm(end-subWidth+1:end).^2.*X,[1 2]) sum(imsMatNorm(end-subWidth+1:end).^2.*Y,[1 2])]...
-            ./sum(imsMatNorm(end-subWidth+1:end).^2,[1 2]));
+        Lcentres = squeeze([sum(imsMatNorm(:,1:subWidth,:).^2.*X,[1 2]) sum(imsMatNorm(:,1:subWidth,:).^2.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,1:subWidth,:).^2,[1 2]));
+        Rcentres = squeeze([sum(imsMatNorm(:,end-subWidth+1:end,:).^2.*X,[1 2]) sum(imsMatNorm(:,end-subWidth+1:end,:).^2.*Y,[1 2])]...
+            ./sum(imsMatNorm(:,end-subWidth+1:end,:).^2,[1 2]));
 end
+Rcentres = Rcentres + [imW - subWidth; 0];
 centres = [Lcentres; Rcentres];
