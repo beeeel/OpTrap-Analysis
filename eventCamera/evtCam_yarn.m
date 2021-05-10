@@ -4,7 +4,7 @@ subDir = 'Tanias_data/';
 
 sigma = 500;
 idxPreExp = '1:numel(cdEvents.x)';
-idxPostExp = '1:10:numel(xGauss)';
+idxPostExp = '1:80:numel(xGauss)';
 %% Prep 
 gaussSz = 2*ceil(2*sigma)+1;
 gauss = 1:gaussSz;
