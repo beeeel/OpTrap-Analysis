@@ -187,7 +187,7 @@ tmp = cdEvents.ts(idx);
 tGauss = conv(tmp(cdEvents.p(idx) > 0), gauss, 'valid')./sum(gauss);
 % tGauss = conv(tmp, gauss, 'valid')./sum(gauss);
 tGauss = tGauss - min(tGauss);
-
+clear tmp
 % xGauss = conv(cdEvents.x(1:4:end), gauss, 'valid')./sum(gauss);
 % yGauss = conv(cdEvents.y(1:4:end), gauss, 'valid')./sum(gauss);
 % tGauss = conv(cdEvents.ts(1:4:end), gauss, 'valid')./sum(gauss);
@@ -277,7 +277,7 @@ xlabel('Y (px)')
 %% Regularize time data for reasons
 nTimes = 1e5;
 
-sigma = range(cdEvents.ts)./nTimes;
+sigma = 5*range(cdEvents.ts)./nTimes;
 
 gaussWdth = 2*ceil(2*sigma)+1;
 
@@ -292,47 +292,70 @@ tIdxs2 = zeros(length(times),1);
 
 residuals = zeros(length(times),1);
 residuals2 = zeros(length(times),1);
-%% Get indexes for raw data
+% Get indexes for raw data
 %     % create matrix of abs differences, find minimum  to choose as index
 %     % take those indexes out of xGauss yGauss (tGauss??) and MSD with log
 %     % spacing
 
-idx = 99577;
+idx = 0;
 idxs = 1:2e4;
-while idxs(end) < nEvents && idx <= length(times)
+
+while idx < length(times)
+    idx = idx + 1;
 
     % You can go your own waaaayyy
     [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
 
-    error('You didn''t read this comment')
     % Needs better check for idxs going beyond max
-    while residuals(idx) == abs(cdEvents.ts(idxs(end)) - times(idx)) && idxs(end) < nEvents 
+    while idxs(end) < nEvents  && residuals(idx) == abs(cdEvents.ts(idxs(end)) - times(idx))
+        idxs = idxs + min(15e3,nEvents-idxs(end));
         [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
-        idxs = idxs + 15e3;
     end
-    tIdxs(idx) = tIdxs(idx) + idxs(1);
-    idx = idx + 1;
+    tIdxs(idx) = tIdxs(idx) + idxs(1) - 1;
 end
-
-idx = 1;
+disp('timed')
+idx = 0;
 idxs = 1:2e4;
-while idxs(end) < nEvents && idx <= length(times2)
+while idx < length(times2)
+    idx = idx + 1;
+    
     % You can go your own waaaayyy
     [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
-%     disp(idx)
-    while residuals2(idx) == abs(cdEvents.ts(idxs(end)) - times2(idx)) && idxs(end) < nEvents 
-        idxs = idxs + 15e3;
+
+    while idxs(end) < nEvents && residuals2(idx) == abs(cdEvents.ts(idxs(end)) - times2(idx))
+        idxs = idxs + min(15e3,nEvents-idxs(end));
         [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
     end
-    tIdxs2(idx) = tIdxs2(idx) + idxs(1);
-    idx = idx + 1;
+    tIdxs2(idx) = tIdxs2(idx) + idxs(1) - 1;
 end
-
-%%
-eventsGrouped = {};
+disp('time2''d')
+%
+eventsGrouped = cell(length(tIdxs),1);
 for idx = 1:length(tIdxs)
+    idxs = tIdxs(idx):tIdxs2(idx);
+%     eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs) cdEvents.p(idxs)];
+    eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs)];
 end
-%% Apply filter in parallel
-xGauss = zeros(length(times),1);
-yGauss = zeros(length(times),1);
-tGauss = zeros(length(times),1);
+disp('grouped')
+% Apply filter in parallel
+xGauss = zeros(length(tIdxs),1);
+yGauss = zeros(length(tIdxs),1);
+tGauss = zeros(length(tIdxs),1);
+
+parfor idx = 1:length(tIdxs)
+    data = eventsGrouped{idx};
+    
+    mu = (times2(idx) + times(idx))*0.5;
+    gauss = (1/sqrt(2*pi*sigma.^2)) * exp(- (data(:,1) - mu).^2/sigma.^2);
+    normFactor = sum(gauss);
+    
+    tGauss(idx) = sum(data(:,1).*gauss)./normFactor;
+    xGauss(idx) = sum(data(:,2).*gauss)./normFactor;
+    yGauss(idx) = sum(data(:,3).*gauss)./normFactor;
+end
+disp('done!')
+%%
+figure(6)
+hold on
+scatter(xGauss, yGauss, [], 0.5*(times+times2))
+scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)
