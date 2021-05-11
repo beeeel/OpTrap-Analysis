@@ -341,6 +341,7 @@ disp('grouped')
 xGauss = zeros(length(tIdxs),1);
 yGauss = zeros(length(tIdxs),1);
 tGauss = zeros(length(tIdxs),1);
+nGauss = tIdxs2 - tIdxs;
 
 parfor idx = 1:length(tIdxs)
     data = eventsGrouped{idx};
@@ -355,7 +356,25 @@ parfor idx = 1:length(tIdxs)
 end
 disp('done!')
 %%
+xSF = (337 - 141)/range(allPos(:,2));
+ySF = (324 - 115)/range(allPos(:,3));
+xOS = 210;
+yOS = 225;
+%
 figure(6)
+clf
 hold on
-scatter(xGauss, yGauss, [], 0.5*(times+times2))
-scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)
+scatter(xGauss, yGauss, 30*nGauss/max(nGauss), 0.5*(times+times2))
+scatter(xOS+allPos(:,2)*xSF, yOS-allPos(:,3)*ySF,[],'k','.')
+legend('Event data','Stage position')
+xlabel('X (px)')
+ylabel('Y (px)')
+title(sprintf('Regularized reconstructed data, gaussian σ = %0.1fms',1e-3*sigma))
+%% Event distribution in time
+idx = 3e5;
+figure(7)
+histogram(1e-6*cdEvents.ts(1e5:idx),100)
+xlabel('Event time (s)')
+ylabel('Count')
+title(sprintf('Time distribution of first %.G events',idx))
+
