@@ -10,63 +10,134 @@ function centres = imCentreOfMass(ims,varargin)
 validateattributes(ims, {'numeric'},{'nonempty','real'},'imCentreOfMass','ims',1)
 [imH, imW, nIms] = size(ims);
 
-ims = double(ims);
-
 if nargin == 1
-    method = 'simple';
-elseif nargin == 2 || nargin == 3
-    method = varargin{1};
-else
-    disp('Input arguments:')
-    disp(varargin)
-    error('Too many nargins!')
+        method = 'simple';
+    elseif nargin == 2 || nargin == 3
+        method = varargin{1};
+    else
+        disp('Input arguments:')
+        disp(varargin)
+        error('Too many nargins!')
 end
 
-switch method
-    case 'simple'
-        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
-        % Calculate centre of mass - sum weighted by pixel location, normalized to
-        % image total.
-        centres = squeeze([sum(ims.*X,[1 2]) sum(ims.*Y,[1 2])]./sum(ims,[1 2]));
-    case 'square'
-        % Square every pixel first
-        ims = ims.^2;
-        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
-        % Calculate centre of mass - sum weighted by pixel location, normalized to
-        % image total.
-        centres = squeeze([sum(ims.*X,[1 2]) sum(ims.*Y,[1 2])]./sum(ims,[1 2]));
-    case 'norm-square'
-        ims = double(ims);
-        imsVec = reshape(ims,[],1,nIms);
-        imsVecNorm = imsVec - double(mean(ims, [1 2]));
-        imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
-        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
-        % Calculate centre of mass - sum weighted by pixel location, normalized to
-        % image total.
-        centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
-    case 'norm-n'
-        if nargin == 3
-            n = varargin{2};
-            validateattributes(n, {'numeric'},{'integer','positive'},'imCentreOfMass','n',2)
-        else
-            error('When using norm-n, you need another input argument for n')
+%% Gotta check it's gonna be ok to do it vectorized
+memNeeded = 8 * numel(ims); % Number of bytes to store ims as double
+
+warnLimit = 2e9;    % Warning at 2GB seems sensible?
+maxLimit = 4e9;     % 4GB max size seems sensible?
+if memNeeded < maxLimit
+    % Do it vectorized
+    if memNeeded > warnLimit
+        warning('Might need lots of memory, sorry if I crash!')
+    end
+    
+    imsD = double(ims);
+
+    switch method
+        case 'simple'
+            [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+            % Calculate centre of mass - sum weighted by pixel location, normalized to
+            % image total.
+            centres = squeeze([sum(imsD.*X,[1 2]) sum(imsD.*Y,[1 2])]./sum(imsD,[1 2]));
+        case 'square'
+            % Square every pixel first
+            imsD = imsD.^2;
+            [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+            % Calculate centre of mass - sum weighted by pixel location, normalized to
+            % image total.
+            centres = squeeze([sum(imsD.*X,[1 2]) sum(imsD.*Y,[1 2])]./sum(imsD,[1 2]));
+        case 'norm-square'
+            imsD = double(imsD);
+            imsVec = reshape(imsD,[],1,nIms);
+            imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+            imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+            [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+            % Calculate centre of mass - sum weighted by pixel location, normalized to
+            % image total.
+            centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
+        case 'norm-n'
+            if nargin == 3
+                n = varargin{2};
+                validateattributes(n, {'numeric'},{'integer','positive'},'imCentreOfMass','n',2)
+            else
+                error('When using norm-n, you need another input argument for n')
+            end
+            imsD = double(imsD);
+            imsVec = reshape(imsD,[],1,nIms);
+            imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+            imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+            [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+            % Calculate centre of mass - sum weighted by pixel location, normalized to
+            % image total.
+            centres = squeeze([sum(imsMatNorm.^n.*X,[1 2]) sum(imsMatNorm.^n.*Y,[1 2])]./sum(imsMatNorm.^n,[1 2]));
+        case 'dark-norm-square'
+            imsD = double(imsD);
+            imsVec = reshape(imsD,[],1,nIms);
+            imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+            imsVecNorm(imsVecNorm > 0) = 0;
+            imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+            [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+            % Calculate centre of mass - sum weighted by pixel location, normalized to
+            % image total.
+            centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
+    end
+else
+    blockSize = floor(warnLimit/(8*imW*imH));
+    allcentres = zeros(2,nIms);
+    for idxI = 1:blockSize:nIms
+        idxF = min(idxI+blockSize, nIms);
+        
+        imsD = double(ims(:,:,idxI:idxF));
+        
+        switch method
+            case 'simple'
+                [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+                % Calculate centre of mass - sum weighted by pixel location, normalized to
+                % image total.
+                centres = squeeze([sum(imsD.*X,[1 2]) sum(imsD.*Y,[1 2])]./sum(imsD,[1 2]));
+            case 'square'
+                % Square every pixel first
+                imsD = imsD.^2;
+                [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+                % Calculate centre of mass - sum weighted by pixel location, normalized to
+                % image total.
+                centres = squeeze([sum(imsD.*X,[1 2]) sum(imsD.*Y,[1 2])]./sum(imsD,[1 2]));
+            case 'norm-square'
+                imsD = double(imsD);
+                imsVec = reshape(imsD,[],1,nIms);
+                imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+                imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+                [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+                % Calculate centre of mass - sum weighted by pixel location, normalized to
+                % image total.
+                centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
+            case 'norm-n'
+                if nargin == 3
+                    n = varargin{2};
+                    validateattributes(n, {'numeric'},{'integer','positive'},'imCentreOfMass','n',2)
+                else
+                    error('When using norm-n, you need another input argument for n')
+                end
+                imsD = double(imsD);
+                imsVec = reshape(imsD,[],1,nIms);
+                imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+                imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+                [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+                % Calculate centre of mass - sum weighted by pixel location, normalized to
+                % image total.
+                centres = squeeze([sum(imsMatNorm.^n.*X,[1 2]) sum(imsMatNorm.^n.*Y,[1 2])]./sum(imsMatNorm.^n,[1 2]));
+            case 'dark-norm-square'
+                imsD = double(imsD);
+                imsVec = reshape(imsD,[],1,nIms);
+                imsVecNorm = imsVec - double(mean(imsD, [1 2]));
+                imsVecNorm(imsVecNorm > 0) = 0;
+                imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
+                [X, Y] = meshgrid(cast(1:imW,'like',imsD),cast(1:imH,'like',imsD));
+                % Calculate centre of mass - sum weighted by pixel location, normalized to
+                % image total.
+                centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
         end
-        ims = double(ims);
-        imsVec = reshape(ims,[],1,nIms);
-        imsVecNorm = imsVec - double(mean(ims, [1 2]));
-        imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
-        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
-        % Calculate centre of mass - sum weighted by pixel location, normalized to
-        % image total.
-        centres = squeeze([sum(imsMatNorm.^n.*X,[1 2]) sum(imsMatNorm.^n.*Y,[1 2])]./sum(imsMatNorm.^n,[1 2]));
-    case 'dark-norm-square'
-        ims = double(ims);
-        imsVec = reshape(ims,[],1,nIms);
-        imsVecNorm = imsVec - double(mean(ims, [1 2]));
-        imsVecNorm(imsVecNorm > 0) = 0;
-        imsMatNorm = reshape(imsVecNorm,imH, imW, nIms);
-        [X, Y] = meshgrid(cast(1:imW,'like',ims),cast(1:imH,'like',ims));
-        % Calculate centre of mass - sum weighted by pixel location, normalized to
-        % image total.
-        centres = squeeze([sum(imsMatNorm.^2.*X,[1 2]) sum(imsMatNorm.^2.*Y,[1 2])]./sum(imsMatNorm.^2,[1 2]));
+        allcentres(:,idxI:idxF) = centres;
+    end
+    centres = allcentres;
 end
