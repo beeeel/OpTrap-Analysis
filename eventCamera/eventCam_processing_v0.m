@@ -15,7 +15,8 @@ dirList = dir([evtCamDir subDir]);
 ls([evtCamDir subDir])
 
 % fileBase = 'TrappedBead_3'; % 1, 2, or 3
-fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
+% fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
+fileBase = 'Fluorescence_Stage_SineWave_smallsteps'; 
 
 cdEvents = load_cd_events([evtCamDir subDir fileBase '_td.dat'])
 %%
@@ -34,6 +35,14 @@ if strcmp(subDir(end-4:end),'Bead/')
     ts = ts - ts(1);
     range(ts)./1e3
     metadata.Summary.Prefix
+    
+    xyPos = fileread([evtCamDir subDir 'sCMOS_' fileBase '/XYPositions.txt']);
+    xyPos = strsplit(xyPos, {'\t'});
+    allPos = zeros(size(xyPos));
+    for idx = 1:numel(xyPos)
+        allPos(idx) = str2double(xyPos{idx});
+    end
+    allPos = reshape(allPos(1:end-1),floor(numel(allPos)/5),5);
 elseif strcmp(subDir(end-4:end),'Wave/')
     dirList = dir([evtCamDir subDir 'sCMOS_' fileBase '/']);
     imStack = {{}};
@@ -49,9 +58,9 @@ elseif strcmp(subDir(end-4:end),'Wave/')
                 fCount = fCount + 1;
             elseif strcmp(dirList(fIdx).name(end-3:end),'.txt')
                 %%
-                fid = fopen([dirList(fIdx).folder '/' dirList(fIdx).name]);
+%                 fid = fopen([dirList(fIdx).folder '/' dirList(fIdx).name]);
                 xyPos = fileread([dirList(fIdx).folder '/' dirList(fIdx).name]);
-                fid = fclose(fid);
+%                 fid = fclose(fid);
                 xyPos = strsplit(xyPos, {'\t'});
                 allPos = zeros(size(xyPos));
                 for idx = 1:numel(xyPos)
@@ -77,7 +86,36 @@ ims = cat(3, imStack{1}{:});
 %%
 centres = imCentreOfMass(ims .* uint16(ims > 2.2e4));
 size(centres)
+%% Load mat file with MSDs
+dirName = '~/Data/phd/EventCam/';
+% fName = 'TrappedBead_3_td_msd.mat';
+% fName = 'Bead_Stage_SineWave_td_msd.mat';
+fName = 'Fluorescence_Stage_SineWave_smallsteps_td_msd.mat';
+load([dirName fName],'msd')
+whos('msd')
+xGauss = msd.tracks{1}(:,2);
+yGauss = msd.tracks{2}(:,2);
+tGauss = msd.tracks{1}(:,1);
+%% Plot loaded MSDs
+pow = 1;
+mult = 3e4;
+% Xrange = [-4.2 -2];
+Xrange = [-3 -1];
 
+figure(7)
+clf
+ax = gca;
+hold on
+msd.plotMSD
+ax.XAxis.Scale = 'log';
+ax.YAxis.Scale = 'log';
+
+X = logspace(Xrange(1), Xrange(2));
+Y = mult.*X.^pow;
+
+plot(X,Y,'--','LineWidth',2)
+
+legend('X', 'Y','α τ^1')
 %% Plot raw
 figure(1)
 clf 
@@ -292,7 +330,7 @@ tIdxs2 = zeros(length(times),1);
 
 residuals = zeros(length(times),1);
 residuals2 = zeros(length(times),1);
-% Get indexes for raw data
+%% Get indexes for raw data
 %     % create matrix of abs differences, find minimum  to choose as index
 %     % take those indexes out of xGauss yGauss (tGauss??) and MSD with log
 %     % spacing
@@ -329,7 +367,7 @@ while idx < length(times2)
     tIdxs2(idx) = tIdxs2(idx) + idxs(1) - 1;
 end
 disp('time2''d')
-%
+%%
 eventsGrouped = cell(length(tIdxs),1);
 for idx = 1:length(tIdxs)
     idxs = tIdxs(idx):tIdxs2(idx);
@@ -337,7 +375,7 @@ for idx = 1:length(tIdxs)
     eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs)];
 end
 disp('grouped')
-% Apply filter in parallel
+%% Apply filter in parallel
 xGauss = zeros(length(tIdxs),1);
 yGauss = zeros(length(tIdxs),1);
 tGauss = zeros(length(tIdxs),1);
@@ -346,13 +384,13 @@ nGauss = tIdxs2 - tIdxs;
 parfor idx = 1:length(tIdxs)
     data = eventsGrouped{idx};
     
-    mu = (times2(idx) + times(idx))*0.5;
-    gauss = (1/sqrt(2*pi*sigma.^2)) * exp(- (data(:,1) - mu).^2/sigma.^2);
-    normFactor = sum(gauss);
+    muT = (times2(idx) + times(idx))*0.5;
+    gaussT = (1/sqrt(2*pi*sigma.^2)) * exp(- (data(:,1) - muT).^2/sigma.^2);
+    normFactor = sum(gaussT);
     
-    tGauss(idx) = sum(data(:,1).*gauss)./normFactor;
-    xGauss(idx) = sum(data(:,2).*gauss)./normFactor;
-    yGauss(idx) = sum(data(:,3).*gauss)./normFactor;
+    tGauss(idx) = sum(data(:,1).*gaussT)./normFactor;
+    xGauss(idx) = sum(data(:,2).*gaussT)./normFactor;
+    yGauss(idx) = sum(data(:,3).*gaussT)./normFactor;
 end
 disp('done!')
 %%
@@ -364,7 +402,8 @@ yOS = 225;
 figure(6)
 clf
 hold on
-scatter(xGauss, yGauss, 30*nGauss/max(nGauss), 0.5*(times+times2))
+% scatter(xGauss, yGauss, 30*nGauss/max(nGauss), 0.5*(times+times2))
+scatter(xGauss, yGauss, [], tGauss)
 scatter(xOS+allPos(:,2)*xSF, yOS-allPos(:,3)*ySF,[],'k','.')
 legend('Event data','Stage position')
 xlabel('X (px)')
@@ -377,4 +416,5 @@ histogram(1e-6*cdEvents.ts(1e5:idx),100)
 xlabel('Event time (s)')
 ylabel('Count')
 title(sprintf('Time distribution of first %.G events',idx))
+
 
