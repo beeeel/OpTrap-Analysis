@@ -1,3 +1,5 @@
+import java.lang.Math;
+
 public class oneCentroid{
 
 // Centroid by weighted variance
@@ -155,6 +157,30 @@ public static double[] getCentroidQuart(short[] pixels, int width, int height, s
     }
     CenterOfMass[0] = x2sum/sum2+0.5;
     CenterOfMass[1] = y2sum/sum2+0.5;
+    return CenterOfMass;
+}
+
+// Centroid by Gaussian weighted
+public static double[] getCentroidGauss(short[] pixels, int width, int height, short thresh, double xi, double yi, double var) {
+    // Finds centroid for object based on brightness
+    // Good for bright objects with no BG and no other objects in frame
+    double mean;
+    double[] CenterOfMass = {0, 0};
+    int i, count = 0;
+    double v, sum = 0.0, xsum=0.0, ysum=0.0;
+    
+    for (int y=0; y<(height); y++) {
+        i = y*width;
+        for (int x=0; x<(width); x++) {
+            v = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * Math.exp(- ((x - xi) * (x - xi) + (y - yi) * (y - yi)) / var) : 0;
+            sum += v;
+            xsum += x*v;
+            ysum += y*v;
+            i++;
+        }
+    }
+    CenterOfMass[0] = xsum/sum+0.5;
+    CenterOfMass[1] = ysum/sum+0.5;
     return CenterOfMass;
 }
 

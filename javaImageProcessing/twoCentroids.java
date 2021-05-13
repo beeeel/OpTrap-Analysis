@@ -1,3 +1,5 @@
+import java.lang.Math;
+
 public class twoCentroids{
 
 // Calculate centroids by weighted variance measure
@@ -199,6 +201,48 @@ public static double[] getTwoCentroidsBasic(short[] pixels, int width, int heigh
     return CenterOfMass;
 }
 
+// Calculate centroids by Gaussian weighted
+public static double[] getTwoCentroidsGuass(short[] pixels, int width, int height, int subWidth, short thresh, double[] xyi, double var) 
+{
+    // Finds centroid for object based brightness
+    // Get one centroid for left half of image and one for right half
+    double mean;
+    double[] CenterOfMass = {0, 0, 0, 0};
+    int i, countl = 0, countr = 0;
+    double vl, suml = 0.0, xsuml=0.0, ysuml=0.0;
+    double vr, sumr = 0.0, xsumr=0.0, ysumr=0.0;
+    double G = 0;
+    
+    for (int y=0; y<(height); y++) {
+		i = y*width;
+    	for (int x=0; x<(subWidth); x++) 
+        {    
+		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var) + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
+        	vl = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G : 0;
+			suml += vl;
+			xsuml += x*vl;
+			ysuml += y*vl;
+			
+			i++;
+		}
+    	for (int x=(width-subWidth); x<(width); x++) 
+        {
+		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var) + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
+            vr = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G: 0;
+			sumr += vr;
+			xsumr += x*vr;
+			ysumr += y*vr;
+
+			i++;
+		}
+	}                                   
+	
+    CenterOfMass[0] = xsuml/suml+0.5;
+    CenterOfMass[1] = ysuml/suml+0.5;
+    CenterOfMass[2] = xsumr/sumr+0.5;
+    CenterOfMass[3] = ysumr/sumr+0.5;
+    return CenterOfMass;
+}
 // END OF CLASS
 }
 
