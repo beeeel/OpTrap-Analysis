@@ -15,8 +15,8 @@ dirList = dir([evtCamDir subDir]);
 ls([evtCamDir subDir])
 
 % fileBase = 'TrappedBead_3'; % 1, 2, or 3
-% fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
-fileBase = 'Fluorescence_Stage_SineWave_smallsteps'; 
+fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
+% fileBase = 'Fluorescence_Stage_SineWave_smallsteps'; 
 
 cdEvents = load_cd_events([evtCamDir subDir fileBase '_td.dat'])
 %%
@@ -36,13 +36,17 @@ if strcmp(subDir(end-4:end),'Bead/')
     range(ts)./1e3
     metadata.Summary.Prefix
     
-    xyPos = fileread([evtCamDir subDir 'sCMOS_' fileBase '/XYPositions.txt']);
-    xyPos = strsplit(xyPos, {'\t'});
-    allPos = zeros(size(xyPos));
-    for idx = 1:numel(xyPos)
-        allPos(idx) = str2double(xyPos{idx});
+    try
+        xyPos = fileread([evtCamDir subDir 'sCMOS_' fileBase '/XYPositions.txt']);
+        xyPos = strsplit(xyPos, {'\t'});
+        allPos = zeros(size(xyPos));
+        for idx = 1:numel(xyPos)
+            allPos(idx) = str2double(xyPos{idx});
+        end
+        allPos = reshape(allPos(1:end-1),floor(numel(allPos)/5),5);
+    catch
+        warning('woops no XYPositions.txt')
     end
-    allPos = reshape(allPos(1:end-1),floor(numel(allPos)/5),5);
 elseif strcmp(subDir(end-4:end),'Wave/')
     dirList = dir([evtCamDir subDir 'sCMOS_' fileBase '/']);
     imStack = {{}};
@@ -75,7 +79,6 @@ elseif strcmp(subDir(end-4:end),'Wave/')
                 stage X and Y positions.
                 [t; Xd; Yd; Xs; Ys]
                 %}
-                fCount = fCount + 1;
             end
         end
         fIdx = fIdx + 1;
@@ -84,23 +87,40 @@ end
 
 ims = cat(3, imStack{1}{:});
 %%
+vidObj = VideoWriter([evtCamDir subDir fileBase '_sCMOS.avi'],'Grayscale AVI')
+open(vidObj)
+fh = figure(1);
+clf
+colormap gray
+for fr = 1:size(imStack{1},1)
+    imagesc(imStack{1}{fr,1})
+    axis off
+    axis equal
+    thisFrame = getframe(fh);
+    thisFrame.cdata = thisFrame.cdata(:,:,1);
+    writeVideo(vidObj, thisFrame);
+end
+vidObj
+close(vidObj)
+
+%%
 centres = imCentreOfMass(ims .* uint16(ims > 2.2e4));
 size(centres)
 %% Load mat file with MSDs
 dirName = '~/Data/phd/EventCam/';
-% fName = 'TrappedBead_3_td_msd.mat';
+fName = 'TrappedBead_3_td_msd.mat';
 % fName = 'Bead_Stage_SineWave_td_msd.mat';
-fName = 'Fluorescence_Stage_SineWave_smallsteps_td_msd.mat';
+% fName = 'Fluorescence_Stage_SineWave_smallsteps_td_msd.mat';
 load([dirName fName],'msd')
 whos('msd')
-xGauss = msd.tracks{1}(:,2);
-yGauss = msd.tracks{2}(:,2);
-tGauss = msd.tracks{1}(:,1);
+% xGauss = msd.tracks{1}(:,2);
+% yGauss = msd.tracks{2}(:,2);
+% tGauss = msd.tracks{1}(:,1);
 %% Plot loaded MSDs
 pow = 1;
 mult = 3e4;
 % Xrange = [-4.2 -2];
-Xrange = [-3 -1];
+Xrange = [-4.2 -1];
 
 figure(7)
 clf
@@ -236,9 +256,9 @@ hold on
 scatter(xGauss, yGauss, [], tGauss./1e3)
 scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3, [], allPos(:,1))
 title('Bead location from event camera')
-%%
-step = 5e3;
-overlap = 10e3;
+%% Animate
+step = 1e3;
+overlap = 5e3;
 nSteps = 200;
 figure(4)
 clf
@@ -246,7 +266,10 @@ hold on
 ax = gca;
 scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)%, [], tGauss(end)*allPos(:,1)./allPos(1))
 for idx = 1:nSteps
-    scatter(xGauss((idx-1)*step + (1:(step+2*overlap))), yGauss((idx-1)*step + (1:(step+2*overlap))), [] , tGauss((idx-1)*step + (1:(step+2*overlap))))
+    scatter(xGauss((idx-1)*step + (1:(step+2*overlap))), ...
+        yGauss((idx-1)*step + (1:(step+2*overlap))), ...
+        30*nGauss((idx-1)*step + (1:(step+2*overlap)))/max(nGauss) , ...
+        tGauss((idx-1)*step + (1:(step+2*overlap))))
     title(sprintf('%.1fs to %.1fs',1e-6*tGauss((idx-1)*step + 1),1e-6*tGauss((idx-1)*step + step)))
     xlim([100 400])
     ylim([100 350])
@@ -255,6 +278,42 @@ for idx = 1:nSteps
         delete(ax.Children(1))
     end
 end
+%% Integrate some
+map = [0 10 0
+    0 9 0
+    0 8 0
+    0 7 0 
+    0 6 0
+    0 5 0
+    5 5 5
+    5 0 0
+    6 0 0
+    7 0 0 
+    8 0 0
+    9 0 0
+    10 0 0]/10;
+idxs = 3896:72712;
+figure(10)
+plot(idxs, cdEvents.ts(idxs))
+xlabel('Event number')
+ylabel('Time stamp (μs)')
+title('Time distribution of events')
+
+im = zeros(max(cdEvents.y)+1,max(cdEvents.x)+1);
+for idx = idxs
+    x = cdEvents.x(idx)+1;
+    y = cdEvents.y(idx)+1;
+    im(y, x) = im(y, x) + cdEvents.p(idx);
+end
+% im = 1.2.^im;
+% im = log(im);
+figure(11)    
+imagesc(im)
+colorbar
+caxis([-1 1] * 20)
+xlim([160 240])
+ylim([190 260])
+title(sprintf('Sum of events from %.2gs to %.2gs',cdEvents.ts(idxs(1))*1e-6,cdEvents.ts(idxs(end))*1e-6))
 %% Gaussian weighted Gaussian filtering
 sigma = 500;
 
@@ -367,7 +426,7 @@ while idx < length(times2)
     tIdxs2(idx) = tIdxs2(idx) + idxs(1) - 1;
 end
 disp('time2''d')
-%%
+%% Group events and apply Gaussian
 eventsGrouped = cell(length(tIdxs),1);
 for idx = 1:length(tIdxs)
     idxs = tIdxs(idx):tIdxs2(idx);
@@ -375,7 +434,7 @@ for idx = 1:length(tIdxs)
     eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs)];
 end
 disp('grouped')
-%% Apply filter in parallel
+% Apply filter in parallel
 xGauss = zeros(length(tIdxs),1);
 yGauss = zeros(length(tIdxs),1);
 tGauss = zeros(length(tIdxs),1);
@@ -392,6 +451,7 @@ parfor idx = 1:length(tIdxs)
     xGauss(idx) = sum(data(:,2).*gaussT)./normFactor;
     yGauss(idx) = sum(data(:,3).*gaussT)./normFactor;
 end
+clear eventsGrouped
 disp('done!')
 %%
 xSF = (337 - 141)/range(allPos(:,2));
@@ -402,8 +462,8 @@ yOS = 225;
 figure(6)
 clf
 hold on
-% scatter(xGauss, yGauss, 30*nGauss/max(nGauss), 0.5*(times+times2))
-scatter(xGauss, yGauss, [], tGauss)
+scatter(xGauss, yGauss, 30*nGauss/max(nGauss), 0.5*(times+times2))
+% scatter(xGauss, yGauss, [], tGauss)
 scatter(xOS+allPos(:,2)*xSF, yOS-allPos(:,3)*ySF,[],'k','.')
 legend('Event data','Stage position')
 xlabel('X (px)')
