@@ -1,5 +1,5 @@
 function data = bead_normMSD_polyfit(data, direction, offset, varargin)
-%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow])
+%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, noNorm])
 % Take data object and use x, y or both from raw data, returning calculated
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work
@@ -9,6 +9,7 @@ doPlots = true;
 useRaw = false;
 centresRow = 1;
 num_t = data.nPoints;
+doNorm = true;
 if nargin >= 4 && ~isempty(varargin{1})
     num_t = varargin{1};
 end
@@ -18,10 +19,13 @@ end
 if nargin >= 6 && ~isempty(varargin{3})
     useRaw = varargin{3};
 end
-if nargin == 7 && ~isempty(varargin{4})
+if nargin >= 7 && ~isempty(varargin{4})
     centresRow = varargin{4};
 end
-if nargin > 7
+if nargin >= 8 && ~isempty(varargin{5})
+    doNorm = logical(varargin{5});
+end
+if nargin > 8
     warning('Wrong number of input arguments')
     warning(['Ignoring ' num2str(nargin-7) ' arguments'])
 end
@@ -116,8 +120,13 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     MSDs = squeeze(MSDs(:, 2, :));
     Xs = cat(3, msd.tracks{:});
     Xs = squeeze(Xs(:,2,:));
-    Xvars = var(Xs);
-    MSDnorm = 0.5*MSDs./Xvars;
+    % Normalize unless told not to
+    if doNorm
+        Xvars = var(Xs);
+        MSDnorm = 0.5*MSDs./Xvars;
+    else
+        MSDnorm = MSDs;
+    end    
     
     % Put the nomalized MSD and msdanalyzer object into data struct
     data.pro.([direction(1) 'MSDnorm']) = [dTs MSDnorm];
@@ -156,8 +165,13 @@ if doPlots
         loglog(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
         xlim([1e-3 diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
-        ylabel('Normalized MSD')
-        title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        if doNorm
+            ylabel('Normalized MSD')
+            title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        else
+            ylabel('MSD (μm^2)')
+            title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        end
         legend(legCell,'Location','best')
         
         subplot(2,1,2);
@@ -165,8 +179,13 @@ if doPlots
         loglog(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), 'LineWidth',2);
         xlim([1e-3 diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
-        ylabel('Normalized MSD')
-        title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        if doNorm
+            ylabel('Normalized MSD')
+            title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        else
+            ylabel('MSD (μm^2)')
+            title({'Mean square Y displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        end
         legend(legCell,'Location','best')
     else
         loglog(dTs, MSDnorm,'LineWidth',2)
@@ -177,8 +196,13 @@ if doPlots
         xlim([1e-3 tracks{1}(end/2,1)])
         
         xlabel('Delay (s)')
-        ylabel('Normalized MSD')
-        title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        if doNorm
+            ylabel('Normalized MSD')
+            title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        else
+            ylabel('MSD (μm^2)')
+            title({'Mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        end
         legend(legCell, 'Location','best')
     end
     % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
