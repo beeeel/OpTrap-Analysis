@@ -2,8 +2,8 @@
 evtCamDir = '~/Documents/data/EventCam/';
 subDir = 'Tanias_data/';
 
-sigmaFactor = 5;
-nTimes = 10e5;
+sigmaFactor = 250;
+nTimes = 2e5;
 
 % idxPreExp = '1:numel(cdEvents.x)';
 % idxPostExp = 'round(dT:dT:(length(cdEvents.ts)-dT))';
@@ -11,7 +11,6 @@ nTimes = 10e5;
 
 %% Load data
 addpath('~/Documents/Analysis/prophesee-matlab-scripts');   % Event cam loading scripts
-addpath('~/Documents/Analysis/tinevez-msdanalyzer-da0bdaa');% MSDanalyzer
 
 dirList = dir([evtCamDir subDir]);
 ls([evtCamDir subDir])
@@ -33,9 +32,10 @@ for fIdx = [4:5 9]%:length(dirList)
             
             nEvents = numel(cdEvents.ts);
             dT = floor(range(cdEvents.ts)/nTimes);
+            evtRate = nEvents/range(cdEvents.ts);
             
             fprintf('Got %.2E events\t\t Range %is\t Mean rate %iHz\n',nEvents, range(cdEvents.ts)*1e-6, nEvents/range(cdEvents.ts)*1e-6)
-            fprintf('Reconstruction dT %ius\t Mean events per point %.f\n', dT, nEvents/nTimes)
+            fprintf('Reconstruction dT %ius\t Mean events per point %.f\n', dT, gaussWdth*evtRate)
             
             times = round(0:dT:(max(cdEvents.ts)-dT-1))+min(cdEvents.ts);
             times2 = round(0:dT:(max(cdEvents.ts)-dT-1))+min(cdEvents.ts)+gaussWdth;
@@ -46,48 +46,70 @@ for fIdx = [4:5 9]%:length(dirList)
             residuals = zeros(length(times),1);
             residuals2 = zeros(length(times),1);
             
+            %             tIdxs = tI{1};
+%             tIdxs2 = tI{2};
+%             idx = 0;
+%             idxs = 1:2e5;
+%             tic
+%             while idx < length(times)
+%                 idx = idx + 1;
+%                 
+%                 % You can go your own waaaayyy
+% %                 [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
+%                 [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts - times(idx)));
+% 
+%                 
+%                 % Needed better check for idxs going beyond max
+% %                 while idxs(end) < nEvents  && residuals(idx) == abs(cdEvents.ts(idxs(end)) - times(idx))
+% %                     idxs = idxs + min(15e3,nEvents-idxs(end));
+% %                     [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
+% %                 end
+%                 tIdxs(idx) = tIdxs(idx) + idxs(1) - 1;
+%             end
+%             toc
+%             disp('timed')
+                
             % Get indexes for raw data
-            idx = 0;
-            idxs = 1:2e4;
-            
-            while idx < length(times)
-                idx = idx + 1;
-                
-                % You can go your own waaaayyy
-                [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
-                
-                % Needs better check for idxs going beyond max
-                while idxs(end) < nEvents  && residuals(idx) == abs(cdEvents.ts(idxs(end)) - times(idx))
-                    idxs = idxs + min(15e3,nEvents-idxs(end));
-                    [residuals(idx), tIdxs(idx)] = min(abs(cdEvents.ts(idxs) - times(idx)));
+            tI = cell(2,1);
+            ts = cdEvents.ts;
+            alltimes = [times' times2'];
+            tic
+            for t = 1:2
+                time = alltimes(:,t);
+                tIdxs = NaN(length(time),1);
+                idx = 0;
+                while idx < length(time)
+                    idx = idx + 1;
+                    tmp = ts - time(idx);
+                    tmpIdx = sum(tmp <= 0);
+                    tIdxs(idx) = tmpIdx;
+                    residuals = tmp(tmpIdx);
                 end
-                tIdxs(idx) = tIdxs(idx) + idxs(1) - 1;
+                tI{t} = tIdxs;
+                toc
             end
-            disp('timed')
-            
             idx = 0;
-            idxs = 1:2e4;
+            idxs = 1:2e5;
             while idx < length(times2)
                 idx = idx + 1;
                 
                 % You can go your own waaaayyy
-                [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
+%                 [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
+                [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts - times2(idx)));
                 
-                while idxs(end) < nEvents && residuals2(idx) == abs(cdEvents.ts(idxs(end)) - times2(idx))
-                    idxs = idxs + min(15e3,nEvents-idxs(end));
-                    [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
-                end
+%                 while idxs(end) < nEvents && residuals2(idx) == abs(cdEvents.ts(idxs(end)) - times2(idx))
+%                     idxs = idxs + min(15e3,nEvents-idxs(end));
+%                     [residuals2(idx), tIdxs2(idx)] = min(abs(cdEvents.ts(idxs) - times2(idx)));
+%                 end
                 tIdxs2(idx) = tIdxs2(idx) + idxs(1) - 1;
             end
             disp('time2''d')
             
             eventsGrouped = cell(length(tIdxs),1);
-            nGauss = zeros(length(tIdxs),1);
             for idx = 1:length(tIdxs)
                 idxs = tIdxs(idx):tIdxs2(idx);
                 %     eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs) cdEvents.p(idxs)];
                 eventsGrouped{idx} = [cdEvents.ts(idxs) cdEvents.x(idxs) cdEvents.y(idxs)];
-                nGauss(idx) = numel(idxs);
             end
             disp('grouped')
             
