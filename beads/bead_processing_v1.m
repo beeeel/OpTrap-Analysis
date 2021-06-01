@@ -13,6 +13,10 @@ fpass = 0;              % Pass frequency
 cropTHPval = 1;       % Frames to crop after HP filter
 msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
+msdCentresRow = 1;      % Row of centres array to use for MSDs (empty for default)
+msdNumT = [];           % Number of time points to use for MSDs (empty for all)
+msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
+msdDoNorm = true;       % Normalize MSDs by position variance (empty for default)
 doFFT = true;           % Calculate FFT and maybe plot
 
 % Data file parameters
@@ -27,6 +31,8 @@ doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
 setLims = [-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
 fftYlim = [0 10];    % Set limits in units amplitude for FFT plots, empty for auto limit
+plotDC = false;
+plotRaw = false;
 setDCLims = [0 0.1];  % Set limits in units pixel brightness for DC plots, empty for auto limit
 
 % Get all the children directories in a struct
@@ -72,28 +78,40 @@ for fileIdx = 27:35%length(dirList)
     %% Process data
     % Calculate the stiffnesses and put into data
     if calcStiff
+        stiffIdx = 1;
+        out(fileIdx).suffix = data.raw.suffixes{stiffIdx};
+        
         xStiff = calcStiffness(data.pro.xCentresM);
         yStiff = calcStiffness(data.pro.yCentresM);
-        data.pro.stiffXY = [xStiff, yStiff];
-        out(fileIdx).stiff = data.pro.stiffXY;
+        data.pro.stiffXYpro = [xStiff, yStiff];
+        out(fileIdx).stiff = data.pro.stiffXYpro(stiffIdx,:);
+        
+        xStiff = calcStiffness(data.raw.xCentresPx, data.mPerPx);
+        yStiff = calcStiffness(data.raw.yCentresPx, data.mPerPx);
+        data.pro.stiffXYraw = [xStiff, yStiff];
+        out(fileIdx).stiffraw = data.pro.stiffXYraw(stiffIdx,:);
     end
     
     % Plot the processed data
     if doPlots
+        if plotRaw
+            fh = bead_plotRawData(data, setLims);
+        end
+
         fh = bead_plotProData(data, setLims); %#ok<*UNRCH>
         if saveFigs
             saveas(fh, [data.fName '_pro.png'])
         end
         
         % If there's DC data, plot it
-        if isfield(data.raw,'dcAvg')
+        if isfield(data.raw,'dcAvg') && plotDC
             fh = bead_plotDCData(data, setDCLims);
             if saveFigs
                 saveas(fh, [data.fName '_DC.png'])
             end
         end
     end
-    
+    %%
     % Calculate frequency spectrum in physical units
     if doFFT
         data = bead_fft_scaled(data, doPlots, fftYlim);
@@ -136,13 +154,13 @@ for fileIdx = 27:35%length(dirList)
         xStiff = calcStiffness(data.pro.xCentresHP);
         yStiff = calcStiffness(data.pro.yCentresHP);
         data.pro.stiffXYHP = [xStiff, yStiff];
-        out(fileIdx).stiffHP = data.pro.stiffXYHP;
+        out(fileIdx).stiffHP = data.pro.stiffXYHP(2,:);
 
     end
     
     % Look at mean-square displacement (for cell-bead expts)
     if ~isempty(msdOffset)
-        data = bead_normMSD_polyfit(data, msdDim, msdOffset, 12e4);
+        data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
