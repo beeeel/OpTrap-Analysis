@@ -5,7 +5,11 @@ function fh = bead_plotProData(data, varargin)
 xCentresM = data.pro.xCentresM;
 yCentresM = data.pro.yCentresM;
 timeVec = data.raw.timeVecMs;
-cropT = data.opts.cropT;      
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;      
+else
+    cropT = [1 length(timeVec)];
+end
 
 xStiff = calcStiffness(xCentresM);
 yStiff = calcStiffness(yCentresM);

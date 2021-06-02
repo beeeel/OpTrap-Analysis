@@ -61,7 +61,7 @@ if size(xCentresM, 1) == 1
     
     % Scatterplot of each centre in units um
     subplot(3,1,2)
-    plot(xCentresM.*1e6,yCentresM.*1e6,'.')
+    scatter(xCentresM.*1e6,yCentresM.*1e6,[],1e-3*timeVec,'.')
     if ~isempty(setLims)
         xlim(setLims)
         ylim(setLims)
@@ -70,6 +70,7 @@ if size(xCentresM, 1) == 1
     xlabel('X (\mu m)')
     ylabel('Y (\mu m)')
     axis equal
+    colorbar
     
     % Time traces of X and Y in units um
     subplot(3,2,5)

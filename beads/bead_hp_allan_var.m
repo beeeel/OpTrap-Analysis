@@ -5,12 +5,22 @@ function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot)
 % variances together, along with unfiltered and linear fitted.
 %
 % Uses position stored in data.raw.(field)
+% (Lazily) uses first row of centres
 
-
+centresRow = 1;
+data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(centresRow);
 centreVec = data.raw.(field);
-centreVec = [centreVec(end:-1:1) centreVec centreVec(end:-1:1)];
+centreVec = [centreVec(centresRow,end:-1:1) centreVec(centresRow,:) centreVec(centresRow,end:-1:1)];
+
 timeVec = data.raw.timeVecMs;
-cropT = data.opts.cropT + length(data.raw.timeVecMs);
+
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;      
+else
+    cropT = [1 length(timeVec)];
+end
+
+cropT = cropT + length(timeVec);
 fName = data.fName;
 
 % Outputs

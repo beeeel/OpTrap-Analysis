@@ -49,10 +49,17 @@ if useRaw
     end
     filtStr = ['unfiltered'];
 elseif isfield(data.opts,'fpass') 
+    % Else use highpass if available
+
     % Hacky af: set num_t to min of actual num_t and previous value
     num_t = min(num_t, size(data.pro.xCentresHP,2));
-    % Else use highpass
-    cropT = data.opts.cropT;
+    
+    if length(data.opts.cropT) == 2
+        cropT = data.opts.cropT;
+    else
+        cropT = [1 length(data.raw.timeVecMs)];
+    end
+    
     cropTHPval = data.opts.cropTHPval;
     cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
 
@@ -70,7 +77,7 @@ elseif isfield(data.opts,'fpass')
     end
     filtStr = ['after ' num2str(data.opts.fpass) 'Hz highpass filtering '];
 elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') && min(isfield(data.pro,{'xCentresM','yCentresM'})))
-    % If data has not been highpass filtered, use raw
+    % If data has not been highpass filtered, use polyfiltered
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
         centres = data.pro.([direction 'CentresM']);
         timeVec = data.raw.timeVecMs;
@@ -163,7 +170,8 @@ if doPlots
         subplot(2,1,1);
         
         loglog(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
-        xlim([1e-3 diff(tracks{1}([1 end/2],1))])
+        % Set X lim to show shortest delay up to half total time
+        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
         if doNorm
             ylabel('Normalized MSD')
@@ -177,7 +185,8 @@ if doPlots
         subplot(2,1,2);
 
         loglog(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), 'LineWidth',2);
-        xlim([1e-3 diff(tracks{1}([1 end/2],1))])
+        % Set X lim to show shortest delay up to half total time
+        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
         if doNorm
             ylabel('Normalized MSD')
@@ -193,7 +202,8 @@ if doPlots
         fh.Children.XAxis.Scale = 'log';
         fh.Children.YAxis.Scale = 'log';
         
-        xlim([1e-3 tracks{1}(end/2,1)])
+        % Set X lim to show shortest delay up to half total time
+        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
         
         xlabel('Delay (s)')
         if doNorm

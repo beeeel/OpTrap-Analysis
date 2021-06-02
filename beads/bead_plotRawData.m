@@ -2,12 +2,21 @@ function fh = bead_plotRawData(data, varargin)
 %% figureHandle = plotRawBeadData(data, [setLims, figNum])
 % Do histograms and scatterplots for 2D position/time data
 
+if ~isfield(data.mPerPx)
+    error('No pixel calibration in data struct')
+end
+
 xCentresM = data.raw.xCentresPx * data.mPerPx;
 xCentresM = xCentresM - mean(xCentresM, 2);
 yCentresM = data.raw.yCentresPx * data.mPerPx;
 yCentresM = yCentresM - mean(yCentresM, 2);
+
 timeVec = data.raw.timeVecMs;
-cropT = data.opts.cropT;      
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;      
+else
+    cropT = [1 length(timeVec)];
+end
 
 xStiff = calcStiffness(xCentresM);
 yStiff = calcStiffness(yCentresM);

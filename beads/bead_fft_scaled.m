@@ -13,8 +13,12 @@ else
     setLims = [];
 end
 
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;      
+else
+    cropT = [1 length(data.raw.timeVecMs)];
+end
 
-cropT = data.opts.cropT;
 n_points = diff(cropT)+1;
 
 for direction = 'xy'

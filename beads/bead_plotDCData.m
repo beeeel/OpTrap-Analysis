@@ -22,8 +22,14 @@ if isfield(data.raw, 'dcAvg') && (min(size(data.raw.dcAvg)==size(data.raw.timeVe
         error('How many nargins did you use? Should be 1 to 3!')
     end
     
-    cropT = data.opts.cropT;
-    timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
+    timeVec = data.raw.timeVecMs;
+    if length(data.opts.cropT) == 2
+        cropT = data.opts.cropT;
+    else
+        cropT = [1 length(timeVec)];
+    end
+    
+    timeVec = timeVec(cropT(1):cropT(2));
     DC = data.raw.dcAvg(cropT(1):cropT(2));
     
     subplot(2,1,1)
