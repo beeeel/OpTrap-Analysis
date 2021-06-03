@@ -1,5 +1,5 @@
-function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot)
-%% data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot)
+function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot, varargin)
+%% data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot, [centresRow])
 %% High-pass filter position and then calculate allan variance. 
 % Do this for each frequency in fpasses and (optional) plot all the
 % variances together, along with unfiltered and linear fitted.
@@ -8,6 +8,10 @@ function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot)
 % (Lazily) uses first row of centres
 
 centresRow = 1;
+if nargin >= 6
+    centresRow = varargin{1};
+end
+
 data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(centresRow);
 centreVec = data.raw.(field);
 centreVec = [centreVec(centresRow,end:-1:1) centreVec(centresRow,:) centreVec(centresRow,end:-1:1)];
@@ -28,8 +32,6 @@ fName = data.fName;
 % Need to change input validator
 %% Setup
 fs = length(centreVec)./ (1e-3 * (max(timeVec) - min(timeVec))); % Sampling frequency in Hz
-%fpasses = [0.5 1 5 10 50 100]; % Pass frequency
-%cropTHPval = 1; % Number of frames to crop to remove ringing caused by HP
 
 %% Input validation
 N_input_validator();
@@ -41,7 +43,7 @@ cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
 nPoints = diff(cropT) - 2 * cropTHPval + 2;
 % Lag times
 lagTimes = calcLagTimes(nPoints);
-YOut = zeros(length(lagTimes),length(fpasses));
+YOut = zeros(length(lagTimes), size(centreVec,1), length(fpasses));
 % Cell for legend
 legCell = {'Unfiltered', 'Linear fit subtracted'};
 legOffset = length(legCell);
@@ -61,24 +63,15 @@ for fpIdx = 1:length(fpasses)
     % yCentresHP = highpass(yCentres(cropT(1):cropT(2)),fpass,fs) .* mPerPx;
     
     % Crop time (twice) after HP
-    CentresHP = highpass( centreVec, fpass, fs) .* mPerPx;
-    CentresHP = CentresHP(cropT(1):cropT(2));
-    CentresHPcrop = CentresHP(cropTHP(1):cropTHP(2));
+    CentresHP = highpass( centreVec', fpass, fs)' .* mPerPx;
+    CentresHP = CentresHP(:,cropT(1):cropT(2));
+    CentresHPcrop = CentresHP(:,cropTHP(1):cropTHP(2));
     
     %% Allan variancing
     
-    [YOut(:,fpIdx), ~] = allanvar(CentresHPcrop, lagTimes, fs);
+    [YOut(:,:,fpIdx), Tau] = allanvar(CentresHPcrop', lagTimes, fs);
 end
-xCentresM = centreVec(cropT(1):cropT(2)) .* mPerPx;
-dims = [1, 3, 2];
-pOrder = 1;
-[~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
-    permute(xCentresM, dims), pOrder, 1, length(xCentresM));
 
-xCentresM = ipermute(xCentresM, dims);
-
-[Y, Tau] = allanvar(xCentresM(cropTHP(1):cropTHP(2)), lagTimes, fs);
-[Yuf, ~] = allanvar(centreVec(cropT(1):cropT(2)) .* mPerPx, lagTimes, fs);
 
 data.pro.([field(1) 'AlanVar']) = YOut;
 data.pro.([field(1) 'Tau']) = Tau;
@@ -86,6 +79,17 @@ data.pro.([field(1) 'CentresHP']) = CentresHPcrop;
 
 
 if doPlot
+    xCentresM = centreVec(cropT(1):cropT(2)) .* mPerPx;
+    dims = [1, 3, 2];
+    pOrder = 1;
+    [~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
+        permute(xCentresM, dims), pOrder, 1, length(xCentresM));
+    
+    xCentresM = ipermute(xCentresM, dims);
+    
+    [Y, ~] = allanvar(xCentresM(cropTHP(1):cropTHP(2)), lagTimes, fs);
+    [Yuf, ~] = allanvar(centreVec(cropT(1):cropT(2)) .* mPerPx, lagTimes, fs);
+
     fh = figure;
     fh.Name = fName;
     clf
@@ -102,7 +106,7 @@ end
 
 function N_input_validator()
 % Inputs are: (centreVec, timeVec, fpasses, cropT, cropTHPval, fName, doPlot)
-validateattributes(centreVec, {'numeric'},{'vector','real','finite'},...
+validateattributes(centreVec, {'numeric'},{'real','finite'},...
     'func_bead_hp_allan_var','centreVec')
 validateattributes(timeVec, {'numeric'},...
     {'nonnegative','increasing','vector','real','finite'},...,'size',size(centreVec)},...
@@ -111,7 +115,7 @@ validateattributes(fpasses, {'numeric'},{'vector','real','finite', 'positive','<
     'func_bead_hp_allan_var','fpasses')
 validateattributes(cropT, {'numeric'},{'numel',2,'integer', 'positive','<=',length(centreVec)},...
     'func_bead_hp_allan_var','cropT')
-validateattributes(cropTHPval, {'numeric'},{'integer','scalar', 'positive','<',(diff(cropT)+1)/2},...
+validateattributes(cropTHPval, {'numeric'},{'integer','scalar', 'nonnegative','<',(diff(cropT)+1)/2},...
     'func_bead_hp_allan_var','cropTHPval')
 validateattributes(fName,{'string','char'},{},'func_bead_hp_allan_var','fName')
 validateattributes(doPlot,{'logical'},{'scalar'},'func_bead_hp_allan_var','doPlot')
