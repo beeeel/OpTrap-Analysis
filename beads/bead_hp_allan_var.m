@@ -31,7 +31,7 @@ fName = data.fName;
 
 % Need to change input validator
 %% Setup
-fs = length(centreVec)./ (1e-3 * (max(timeVec) - min(timeVec))); % Sampling frequency in Hz
+fs = length(timeVec)./ (1e-3 * (max(timeVec) - min(timeVec))); % Sampling frequency in Hz
 
 %% Input validation
 N_input_validator();
