@@ -5,10 +5,10 @@
 int set = 1;
 String rep = "01";
 // Write the save path here, be careful the folder doesn't already have data in it!
-folderPath = "E:/Will/data/2021_06_25/drift5_exp07ms_01/";//hela_s3_5um"+set+"_"+rep+"/";
+folderPath = "E:/Will/data/2021_06_30/drift5_exp07ms_02/";//hela_s3_5um"+set+"_"+rep+"/";
 
 // Acquisition parameters
-short thresh = 6500; // Threshold below which pixels are ignored for centroid algorithm
+short thresh = 6000; // Threshold below which pixels are ignored for centroid algorithm
 int n = 1e6; // number of frames
 int saveInterval = 1e3; // How often to save an image (in frames)
 float expMs = 0.7;		// Exposure time (ms)
@@ -34,6 +34,8 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.Roi;
 ImagePlus curImage = WindowManager.getCurrentImage();
+// Need this for.... plots....
+import ij.gui.Plot;
 
 // Check the folder exists and is empty
 imageFolder = "images_and_metadata";
@@ -171,7 +173,7 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
 		Yrs[i] = centres[3];
 		
 		//centres = twoCentroids.getTwoCentroidsGuass(pixels, width, height, subWidth, (short) 0, centres,  sigSq);
-		//short[] pixels, int width, int height, int subWidth, short thresh, double[] xyi, double var
+		////short[] pixels, int width, int height, int subWidth, short thresh, double[] xyi, double var
 		//Xlg[i] = centres[0];
 		//Ylg[i] = centres[1];
 		//Xrg[i] = centres[2];
@@ -203,6 +205,22 @@ if (iSave > 1) {
 }
 
 print("Completed main acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+// Do the plots
+plt = new Plot("X time trace", "X position (px)", "Time (ms)");
+plt.add("dot", Times, Xls);
+plt.show();
+
+plt = new Plot("Y time trace", "Y position (px)", "Time (ms)");
+plt.add("dot", Times, Yls);
+plt.show();
+
+plt = new Plot("Scatterplot", "Y position (px)", "X position (px)");
+plt.add("dot", Xls, Yls);
+plt.show();
+dim = plt.getSize();
+plt.setFrameSize((int) dim.getWidth(), (int) dim.getWidth());
+
 // Reset the ROI to full frame
 java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
 mm.app().setROI(ROI);
@@ -231,6 +249,11 @@ myTools.writeDoubleArrayToFile(Xlq, n, folderPath + "Xlq.dat");
 myTools.writeDoubleArrayToFile(Ylq, n, folderPath + "Ylq.dat");
 myTools.writeDoubleArrayToFile(Xrq, n, folderPath + "Xrq.dat");
 myTools.writeDoubleArrayToFile(Yrq, n, folderPath + "Yrq.dat");
+
+//myTools.writeDoubleArrayToFile(Xlg, n, folderPath + "Xlg.dat");
+//myTools.writeDoubleArrayToFile(Ylg, n, folderPath + "Ylg.dat");
+//myTools.writeDoubleArrayToFile(Xrg, n, folderPath + "Xrg.dat");
+//myTools.writeDoubleArrayToFile(Yrg, n, folderPath + "Yrg.dat");
 
 myTools.writeDoubleArrayToFile(Is, n, folderPath + "I.dat");
 
