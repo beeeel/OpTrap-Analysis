@@ -2,7 +2,7 @@ function fh = bead_plotRawData(data, varargin)
 %% figureHandle = plotRawBeadData(data, [setLims, figNum])
 % Do histograms and scatterplots for 2D position/time data
 
-if ~isfield(data.mPerPx)
+if ~isfield(data, 'mPerPx')
     error('No pixel calibration in data struct')
 end
 
