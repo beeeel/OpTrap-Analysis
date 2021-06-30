@@ -1,5 +1,7 @@
 function doubleVec = byteStreamToDouble(filePath)
 %% Load a double vector from a file containing Java bytestream
+%doubleVec = byteStreamToDouble(filePath)
+%
 % Tested on files saved from fast_acq.bsh on B09 trapping rig
 % Due to endianness, the stream needs to be reversed twice to recover
 % original data
