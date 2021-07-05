@@ -2,16 +2,16 @@
  * Using sequence acquisition and real-time processing to track the location of a particle
  */
 // Set and rep number to go in save file names
-int set = 1;
+int set = 2;
 String rep = "01";
 // Write the save path here, be careful the folder doesn't already have data in it!
-folderPath = "E:/Will/data/2021_06_30/drift5_exp07ms_02/";//hela_s3_5um"+set+"_"+rep+"/";
+folderPath = "E:/Will/data/2021_07_05/hela_s3_2-5um_"+set+"_"+rep+"/";
 
 // Acquisition parameters
-short thresh = 6000; // Threshold below which pixels are ignored for centroid algorithm
+short thresh = 6500; // Threshold below which pixels are ignored for centroid algorithm
 int n = 1e6; // number of frames
 int saveInterval = 1e3; // How often to save an image (in frames)
-float expMs = 0.7;		// Exposure time (ms)
+float expMs = 0.6;		// Exposure time (ms)
 int subWidth = 70; // Number of px on each side to calculate CofM
 //double sigSq = 80;		// Variance of Gaussian weighting function, in units px^2
 
@@ -207,16 +207,19 @@ if (iSave > 1) {
 print("Completed main acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
 
 // Do the plots
-plt = new Plot("X time trace", "X position (px)", "Time (ms)");
+plt = new Plot("X time trace", "Time (ms)", "X position (px)");
 plt.add("dot", Times, Xls);
+plt.add("square", Times, Xrs);
 plt.show();
 
-plt = new Plot("Y time trace", "Y position (px)", "Time (ms)");
+plt = new Plot("Y time trace", "Time (ms)", "Y position (px)");
 plt.add("dot", Times, Yls);
+plt.add("square", Times, Yrs);
 plt.show();
 
-plt = new Plot("Scatterplot", "Y position (px)", "X position (px)");
+plt = new Plot("Scatterplot", "X position (px)", "Y position (px)");
 plt.add("dot", Xls, Yls);
+plt.add("square", Xrs, Yrs);
 plt.show();
 dim = plt.getSize();
 plt.setFrameSize((int) dim.getWidth(), (int) dim.getWidth());
