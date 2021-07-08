@@ -34,6 +34,12 @@ if nargin > 9
     warning(['Ignoring ' num2str(nargin-9) ' arguments'])
 end
 
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;
+else
+    cropT = [1 length(data.raw.timeVecMs)];
+end
+
 % A little bit hacky - if both directions are wanted, stick them together
 % and replicate offset array. This means offset is the same for both
 % dimensions
@@ -42,13 +48,17 @@ nPerDir = length(offset);
 if useRaw
     % If data has not been highpass filtered, use raw
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.raw.([direction 'CentresPx']) * data.mPerPx;
-        timeVec = data.raw.timeVecMs;
+        centres = data.raw.([direction 'CentresPx'])(centresRow,cropT(1):cropT(2)) * data.mPerPx;
+        timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
         legCell = repmat({direction},nPerDir,1);
     else
-        centres = [data.raw.xCentresPx data.raw.yCentresPx] * data.mPerPx;
-        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-        offset = [offset (offset + data.nPoints)];
+        centres = [data.raw.xCentresPx(centresRow,cropT(1):cropT(2)) ...
+            data.raw.yCentresPx(centresRow,cropT(1):cropT(2))] * data.mPerPx;
+        timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
+            data.raw.timeVecMs(cropT(1):cropT(2))];
+        
+        nP = min(data.nPoints, diff(cropT)+1);
+        offset = [offset (offset + nP)];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['unfiltered'];
@@ -57,12 +67,6 @@ elseif isfield(data.opts,'fpass')
 
     % Hacky af: set num_t to min of actual num_t and previous value
     num_t = min(num_t, size(data.pro.xCentresHP,2));
-    
-    if length(data.opts.cropT) == 2
-        cropT = data.opts.cropT;
-    else
-        cropT = [1 length(data.raw.timeVecMs)];
-    end
     
     cropTHPval = data.opts.cropTHPval;
     cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
@@ -83,13 +87,17 @@ elseif isfield(data.opts,'fpass')
 elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') && min(isfield(data.pro,{'xCentresM','yCentresM'})))
     % If data has not been highpass filtered, use polyfiltered
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.pro.([direction 'CentresM']);
-        timeVec = data.raw.timeVecMs;
+        centres = data.pro.([direction 'CentresM'])(centresRow,cropT(1):cropT(2));
+        timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
         legCell = repmat({direction},nPerDir,1);
     else
-        centres = [data.pro.xCentresM data.pro.yCentresM];
-        timeVec = [data.raw.timeVecMs data.raw.timeVecMs];
-        offset = [offset (offset + data.nPoints)];
+        centres = [data.pro.xCentresM(centresRow,cropT(1):cropT(2)) ...
+            data.pro.yCentresM(centresRow,cropT(1):cropT(2))];
+        timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
+            data.raw.timeVecMs(cropT(1):cropT(2))];
+        
+        nP = min(data.nPoints, diff(cropT)+1);
+        offset = [offset (offset + nP)];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
@@ -107,7 +115,6 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
         data.opts.msdSuffix = data.raw.suffixes(centresRow);
     elseif isfield(data.opts, 'xHPSuffix')
         data.opts.msdSuffix = data.opts.xHPSuffix;
-        centresRow = 1;
     elseif ~isfield(data.raw,'suffixes')
         warning('Data does not contain suffixes field, cannot determine centroid method')
     else
@@ -119,7 +126,7 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     for idx = 1:length(offset)
         % Crop data, then demean. (Don't fit poly because either this has
         % already been done, or it's not wanted)
-        centresCrop = centres(centresRow, offset(idx) : offset(idx) + num_t - 1);
+        centresCrop = centres(offset(idx) : offset(idx) + num_t - 1);
         centresCrop = centresCrop - mean(centresCrop,2);
 %         
 %         [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
