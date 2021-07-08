@@ -1,5 +1,5 @@
 function data = bead_normMSD_polyfit(data, direction, offset, varargin)
-%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, noNorm])
+%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars])
 % Take data object and use x, y or both from raw data, returning calculated
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work
@@ -10,6 +10,7 @@ useRaw = false;
 centresRow = 1;
 num_t = data.nPoints;
 doNorm = true;
+errorBars = false;
 if nargin >= 4 && ~isempty(varargin{1})
     num_t = varargin{1};
 end
@@ -25,9 +26,12 @@ end
 if nargin >= 8 && ~isempty(varargin{5})
     doNorm = logical(varargin{5});
 end
-if nargin > 8
+if nargin >= 9 && ~isempty(varargin{6})
+    errorBars = logical(varargin{6});
+end
+if nargin > 9
     warning('Wrong number of input arguments')
-    warning(['Ignoring ' num2str(nargin-7) ' arguments'])
+    warning(['Ignoring ' num2str(nargin-9) ' arguments'])
 end
 
 % A little bit hacky - if both directions are wanted, stick them together
@@ -99,7 +103,17 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     % dims = [1, 3, 2];
     
     % Store which row of centres we're using
-    data.opts.msdSuffix = data.raw.suffixes(centresRow);
+    if size(centres,1) >= centresRow && isfield(data.raw, 'suffixes')
+        data.opts.msdSuffix = data.raw.suffixes(centresRow);
+    elseif isfield(data.opts, 'xHPSuffix')
+        data.opts.msdSuffix = data.opts.xHPSuffix;
+        centresRow = 1;
+    elseif ~isfield(data.raw,'suffixes')
+        warning('Data does not contain suffixes field, cannot determine centroid method')
+    else
+        disp('data.opts does not contain xHPSuffix, and centres does not contain enough rows to use specified centres row')
+        error('Cannot determine which centroid method has been used')
+    end
     % Prepare data to go into msdanalyzer
     tracks = cell(length(offset),1);
     for idx = 1:length(offset)
@@ -124,6 +138,11 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     % Calculate normalized MSD
     MSDs = cat(3,msd.msd{:});
     dTs = squeeze(MSDs(:, 1, :));
+    if errorBars
+        msdStd = squeeze(MSDs(:,3,:));
+    else
+        msdStd = [];
+    end
     MSDs = squeeze(MSDs(:, 2, :));
     Xs = cat(3, msd.tracks{:});
     Xs = squeeze(Xs(:,2,:));
@@ -148,10 +167,26 @@ elseif doPlots
     end
     
     % Extract the saved data to be used for plots below
-    MSDnorm = data.pro.([savedDirection 'MSDnorm']);
-    dTs = MSDnorm(:,1:end/2);
-    MSDnorm = MSDnorm(:,1+end/2:end);
-    tracks = data.pro.([savedDirection 'msdObj']).tracks;
+    msd = data.pro.([savedDirection 'msdObj']);
+    MSDs = cat(3,msd.msd{:});
+    dTs = squeeze(MSDs(:, 1, :));
+    if errorBars
+        msdStd = squeeze(MSDs(:,3,:));
+    else
+        msdStd = [];
+    end
+    MSDs = squeeze(MSDs(:, 2, :));
+    Xs = cat(3, msd.tracks{:});
+    Xs = squeeze(Xs(:,2,:));
+    % Normalize unless told not to
+    if doNorm
+        Xvars = var(Xs);
+        MSDnorm = 0.5*MSDs./Xvars;
+    else
+        MSDnorm = MSDs;
+    end    
+    tracks = msd.tracks;
+    
 end
 
 
@@ -167,9 +202,14 @@ if doPlots
             legCell{Idx} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
         end
         
-        subplot(2,1,1);
-        
-        loglog(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
+        ax = subplot(2,1,1);
+        if ~isempty(msdStd)
+            errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
+        else
+            plot(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
+        end
+        ax.XScale = 'log';
+        ax.YScale = 'log';
         % Set X lim to show shortest delay up to half total time
         xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
@@ -182,9 +222,15 @@ if doPlots
         end
         legend(legCell,'Location','best')
         
-        subplot(2,1,2);
+        ax = subplot(2,1,2);
 
-        loglog(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), 'LineWidth',2);
+        if ~isempty(msdStd)
+            errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
+        else
+            plot(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end),  'LineWidth',2);
+        end
+        ax.XScale = 'log';
+        ax.YScale = 'log';
         % Set X lim to show shortest delay up to half total time
         xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
         xlabel('Delay (s)')
@@ -197,7 +243,10 @@ if doPlots
         end
         legend(legCell,'Location','best')
     else
-        loglog(dTs, MSDnorm,'LineWidth',2)
+        ax = gca;
+        errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)
+        ax.XScale = 'log';
+        ax.YScale = 'log';
         
         fh.Children.XAxis.Scale = 'log';
         fh.Children.YAxis.Scale = 'log';
