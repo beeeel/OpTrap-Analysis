@@ -2,15 +2,12 @@ function fh = bead_plotRawData(data, varargin)
 %% figureHandle = plotRawBeadData(data, [setLims, figNum])
 % Do histograms and scatterplots for 2D position/time data
 
-if ~isfield(data.mPerPx)
+%% Setup
+if ~isfield(data, 'mPerPx')
     error('No pixel calibration in data struct')
 end
 
-xCentresM = data.raw.xCentresPx * data.mPerPx;
-xCentresM = xCentresM - mean(xCentresM, 2);
-yCentresM = data.raw.yCentresPx * data.mPerPx;
-yCentresM = yCentresM - mean(yCentresM, 2);
-
+% Get time and cropping
 timeVec = data.raw.timeVecMs;
 if length(data.opts.cropT) == 2
     cropT = data.opts.cropT;      
@@ -18,13 +15,11 @@ else
     cropT = [1 length(timeVec)];
 end
 
-xStiff = calcStiffness(xCentresM);
-yStiff = calcStiffness(yCentresM);
-    
+% Parse varargins
 if nargin >= 2
     setLims = varargin{1};
 else
-    setLims = false;
+    setLims = [];
 end
 
 if nargin < 3
@@ -35,6 +30,26 @@ else
     error('How many nargins did you use? Should be 1 to 3!')
 end
 
+% Choose centres row
+if isfield(data.opts, 'centresRow')
+    cRow = data.opts.centresRow;
+elseif isfield(data.raw, 'suffixes')
+    cRow = 1:length(data.raw.suffixes);
+else
+    cRow = 1:size(data.raw.xCentresPx,1);
+end
+
+% Get centres and demean
+xCentresM = data.raw.xCentresPx(cRow,cropT(1):cropT(2)) * data.mPerPx;
+xCentresM = xCentresM - mean(xCentresM, 2);
+yCentresM = data.raw.yCentresPx(cRow,cropT(1):cropT(2)) * data.mPerPx;
+yCentresM = yCentresM - mean(yCentresM, 2);
+
+% Calculate stiffness using equipartition method
+xStiff = calcStiffness(xCentresM);
+yStiff = calcStiffness(yCentresM);
+
+%% Plotting
 fh.Name = data.fName;
 clf
 
@@ -44,7 +59,7 @@ if size(xCentresM, 1) == 1
     hold on
     histogram(xCentresM.*1e6,'Normalization','probability')
     histogram(yCentresM.*1e6,'Normalization','probability')
-    if setLims
+    if ~isempty(setLims)
             xlim(setLims)
     end
     xlabel('Centre position (\mu m)')
@@ -56,7 +71,7 @@ if size(xCentresM, 1) == 1
     % Scatterplot of each centre in units um
     subplot(3,1,2)
     plot(xCentresM.*1e6,yCentresM.*1e6,'.')
-    if setLims
+    if ~isempty(setLims)
         xlim(setLims)
         ylim(setLims)
     end
@@ -71,7 +86,7 @@ if size(xCentresM, 1) == 1
     xlabel('Time (s)')
     ylabel('X (\mu m)')
     title('X time trace')
-    if setLims
+    if ~isempty(setLims)
         ylim(setLims)
     end
     subplot(3,2,6)
@@ -79,7 +94,7 @@ if size(xCentresM, 1) == 1
     xlabel('Time (s)')
     ylabel('Y (\mu m)')
     title('Y time trace')
-    if setLims
+    if ~isempty(setLims)
         ylim(setLims)
     end
 else

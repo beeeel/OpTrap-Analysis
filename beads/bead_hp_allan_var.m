@@ -7,14 +7,20 @@ function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot, vara
 % Uses position stored in data.raw.(field)
 % (Lazily) uses first row of centres
 
-centresRow = 1;
+% Choose centres row
+if isfield(data.opts, 'centresRow')
+    cRow = data.opts.centresRow;
+else
+    cRow = 1;
+end
+% User input overrides for legacy porpoises
 if nargin >= 6
-    centresRow = varargin{1};
+    cRow = varargin{1};
 end
 
-data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(centresRow);
+data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(cRow);
 centreVec = data.raw.(field);
-centreVec = [centreVec(centresRow,end:-1:1) centreVec(centresRow,:) centreVec(centresRow,end:-1:1)];
+centreVec = [centreVec(cRow,end:-1:1) centreVec(cRow,:) centreVec(cRow,end:-1:1)];
 
 timeVec = data.raw.timeVecMs;
 

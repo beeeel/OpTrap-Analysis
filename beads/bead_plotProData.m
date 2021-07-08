@@ -2,8 +2,16 @@ function fh = bead_plotProData(data, varargin)
 %% figureHandle = plotProBeadData(data, [setLims, figNum])
 % Do histograms and scatterplots for 2D position/time data
 
-xCentresM = data.pro.xCentresM;
-yCentresM = data.pro.yCentresM;
+if isfield(data.opts, 'centresRow')
+    cRow = data.opts.centresRow;
+elseif isfield(data.raw, 'suffixes')
+    cRow = 1:length(data.raw.suffixes);
+else
+    cRow = 1:size(data.pro.xCentresM,1);
+end
+
+xCentresM = data.pro.xCentresM(cRow,:);
+yCentresM = data.pro.yCentresM(cRow,:);
 timeVec = data.raw.timeVecMs;
 if length(data.opts.cropT) == 2
     cropT = data.opts.cropT;      

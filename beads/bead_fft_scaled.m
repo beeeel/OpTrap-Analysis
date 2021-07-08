@@ -3,6 +3,7 @@ function data = bead_fft_scaled(data, doPlots, varargin)
 % Calculate Fourier transform of centres data in both directions, store
 % one-sided spectra in data struct along with frequency vector in Hz
 
+%% Setup
 argN = 1;
 if nargin > 2 && ~ isempty(varargin{argN})
     % help give better errors when misused!
@@ -21,10 +22,20 @@ end
 
 n_points = diff(cropT)+1;
 
+% Choose centres row
+if isfield(data.opts, 'centresRow')
+    cRow = data.opts.centresRow;
+elseif isfield(data.raw, 'suffixes')
+    cRow = 1:length(data.raw.suffixes);
+else
+    cRow = 1:size(data.raw.xCentresPx,1);
+end
+
+%% Calculation
 for direction = 'xy'
     % Get the FFT. Copied from MATLAB's example of scaling FFT to physical
     % units
-    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx'])(:,cropT(1):cropT(2)), [], 2);
+    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx'])(cRow,cropT(1):cropT(2)), [], 2);
     P = abs(X/n_points);
     P = P(:,1:floor(end/2)+1);
     P(:,2:end-1) = 2*P(:,2:end-1);
@@ -35,6 +46,7 @@ end
 % Frequency in index (k+1) is k cycles per whole dataset, so convert to Hz
 data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(data.raw.timeVecMs([1 end])*1e-3);
 
+%% Plot
 if doPlots
     fh = figure;
     fh.Name = data.fName;
