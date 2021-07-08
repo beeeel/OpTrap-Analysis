@@ -5,7 +5,7 @@
 int set = 1;
 String rep = "01";
 // Write the save path here, be careful the folder doesn't already have data in it!
-folderPath = "E:/Will/data/2021_05_17/hela_s3_5um"+set+"_"+rep+"/";
+folderPath = "E:/Will/data/2021_06_17/hela_s3_5um"+set+"_"+rep+"/";
 
 // Acquisition parameters
 short thresh = 3300; // Threshold below which pixels are ignored for centroid algorithm
@@ -29,6 +29,11 @@ import Static_Image_Math;
 import twoCentroids;
 import oneCentroid;
 import myTools;
+// Need this for ROI selection
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.Roi;
+ImagePlus curImage = WindowManager.getCurrentImage();
 
 // Check the folder exists and is empty
 imageFolder = "images_and_metadata";
@@ -78,7 +83,8 @@ int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
 if ((width != 1920) || (height != 1080))
 {
-	mm.clearROI();
+	java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+mm.app().setROI(ROI);
 }
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
@@ -102,7 +108,12 @@ image = images.get(0);
 store1.putImage(image);
 
 // Set the ROI and check it has been set
-mm.setROI();
+if (curImage != null) {
+   Roi roi = curImage.getRoi();
+   if (roi != null && roi.getType() == Roi.RECTANGLE) {
+      mm.app().setROI(roi.getBounds());
+   }
+}
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
 print("w = " + width + " h = " + height);
@@ -201,7 +212,8 @@ if (iSave > 1) {
 
 print("Completed main acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
 // Reset the ROI to full frame
-mm.clearROI();
+java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+mm.app().setROI(ROI);
 print("Set ROI at " + (System.nanoTime() - startTime)/1e9 + "s");
 // Get an after image
 if (mmc.isSequenceRunning())

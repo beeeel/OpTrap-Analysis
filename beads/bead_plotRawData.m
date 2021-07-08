@@ -104,7 +104,7 @@ else
         hold on
         histogram(xCentresM(obj,:).*1e6,30,'Normalization','probability')
         histogram(yCentresM(obj,:).*1e6,30,'Normalization','probability')
-        if ~isempty(setLims)
+        if setLims
             xlim(setLims)
         end
         xlabel('Centre position (\mu m)')
@@ -118,7 +118,7 @@ else
         subplot( 3, size(xCentresM,1), size(xCentresM,1) + obj)
         hold on
         scatter(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
-        if ~isempty(setLims)
+        if setLims
             xlim(setLims)
             ylim(setLims)
         end
@@ -135,7 +135,7 @@ else
         xlabel('Time (s)')
         ylabel('X (\mu m)')
         title('X time trace')
-        if ~isempty(setLims)
+        if setLims
             ylim(setLims)
         end
         
@@ -145,7 +145,7 @@ else
         xlabel('Time (s)')
         ylabel('Y (\mu m)')
         title('Y time trace')
-        if ~isempty(setLims)
+        if setLims
             ylim(setLims)
         end
     end

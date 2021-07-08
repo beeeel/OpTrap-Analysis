@@ -183,7 +183,8 @@ public static double[] getTwoCentroidsBasic(short[] pixels, int width, int heigh
 			
 			i++;
 		}
-    	for (int x=(width-subWidth); x<(width); x++) 
+        i = y*width + (width - subWidth);
+	for (int x=(width-subWidth); x<(width); x++) 
         {
             vr = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
 			sumr += vr;
@@ -217,7 +218,8 @@ public static double[] getTwoCentroidsGuass(short[] pixels, int width, int heigh
 		i = y*width;
     	for (int x=0; x<(subWidth); x++) 
         {    
-		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var) + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
+		// Only need to calculate left Gaussian for left bead (lazy but fine if separation >> var)
+		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var);// + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
         	vl = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G : 0;
 			suml += vl;
 			xsuml += x*vl;
@@ -225,9 +227,11 @@ public static double[] getTwoCentroidsGuass(short[] pixels, int width, int heigh
 			
 			i++;
 		}
+        i = y*width + (width - subWidth);
     	for (int x=(width-subWidth); x<(width); x++) 
         {
-		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var) + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
+		// Only need to calculate right Gaussian for right bead (lazy but fine if separation >> var)
+		G =  Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); // + Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var)
             vr = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G: 0;
 			sumr += vr;
 			xsumr += x*vr;
