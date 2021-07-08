@@ -17,7 +17,7 @@ end
 idx = 1;
 errMsg = '';
 
-for suff = {'Centres', '', 'simple', 'quart', 'l', 'r', 'b', 's', 'v', 'lq', 'rq'}
+for suff = {'Centres', '', 'simple', 'quart', 'gauss', 'l', 'r', 'b', 's', 'v', 'lq', 'rq'}
     fNameX = [data.dirPath '/X' suff{:} '.dat'];
     fNameY = [data.dirPath '/Y' suff{:} '.dat'];
     if exist(fNameX, 'file') && exist(fNameY, 'file')
