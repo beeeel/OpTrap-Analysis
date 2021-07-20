@@ -1,9 +1,16 @@
 function data = bead_fft_scaled(data, doPlots, varargin)
-%% data = bead_fft_scaled(data, doPlots, [setLims])
+%% data = bead_fft_scaled(data, doPlots, [setLims, fh])
 % Calculate Fourier transform of centres data in both directions, store
-% one-sided spectra in data struct along with frequency vector in Hz
+% one-sided spectra in data struct along with frequency vector in Hz.
+%
+% Optional: Set axis y limits, provide figure handle
 
 %% Setup
+if nargin == 1
+    doPlots = false;
+end
+
+% Don't ask.
 argN = 1;
 if nargin > 2 && ~ isempty(varargin{argN})
     % help give better errors when misused!
@@ -13,6 +20,7 @@ if nargin > 2 && ~ isempty(varargin{argN})
 else
     setLims = [];
 end
+    
 
 if length(data.opts.cropT) == 2
     cropT = data.opts.cropT;      
@@ -44,11 +52,16 @@ for direction = 'xy'
 end
 
 % Frequency in index (k+1) is k cycles per whole dataset, so convert to Hz
-data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(data.raw.timeVecMs([1 end])*1e-3);
+data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(data.raw.timeVecMs([cropT(1) cropT(2)])*1e-3);
 
 %% Plot
 if doPlots
-    fh = figure;
+    argN = 2;
+    if nargin >= 4 && ~ isempty(varargin{argN})
+        fh = varargin{argN};
+    else
+        fh = figure;
+    end
     fh.Name = data.fName;
     
     if size(data.pro.xfftM,1) == 1
