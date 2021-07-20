@@ -17,6 +17,7 @@ msdCentresRow = 1;      % Row of centres array to use for MSDs (empty for defaul
 msdNumT = [];           % Number of time points to use for MSDs (empty for all)
 msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
 msdDoNorm = true;       % Normalize MSDs by position variance (empty for default)
+msdErrorBars = false;    % Plot errorbars on MSD (empty for default)
 doFFT = true;           % Calculate FFT and maybe plot
 
 % Data file parameters
@@ -25,6 +26,7 @@ saveData = false;        % Save data to file
 dataSuff = '_120k_28min';       % Suffix for filename when saving/loading
 
 % Plotting parameters
+loadPics = true;    % Load the TIF images
 saveFigs = false;
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
@@ -60,7 +62,7 @@ for fileIdx = 27:35%length(dirList)
         % Set names and load data
         data.dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
         data.fName = dirList(fileIdx).name;
-        data = bead_loadData(data);
+        data = bead_loadData(data, loadPics);
         
         % Apply calibration and crop time
         data.opts.cropT = cropTs{fileIdx};
@@ -80,6 +82,7 @@ for fileIdx = 27:35%length(dirList)
     if calcStiff
         stiffIdx = 1;
         out(fileIdx).suffix = data.raw.suffixes{stiffIdx};
+        out(fileIdx).name = data.fName;
         
         xStiff = calcStiffness(data.pro.xCentresM);
         yStiff = calcStiffness(data.pro.yCentresM);
@@ -129,7 +132,7 @@ for fileIdx = 27:35%length(dirList)
     if showStack
         % System can be called with an & in there to run in background
         command = ['imagej ' data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif '];
-        if isfield(data, 'ImstackFullFoV')
+        if true %isfield(data, 'ImstackFullFoV')
             command = [command data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif '];
         end
         system([command '&']);
@@ -154,13 +157,15 @@ for fileIdx = 27:35%length(dirList)
         xStiff = calcStiffness(data.pro.xCentresHP);
         yStiff = calcStiffness(data.pro.yCentresHP);
         data.pro.stiffXYHP = [xStiff, yStiff];
-        out(fileIdx).stiffHP = data.pro.stiffXYHP(2,:);
+        out(fileIdx).stiffHP = data.pro.stiffXYHP(1,:);
 
     end
     
     % Look at mean-square displacement (for cell-bead expts)
     if ~isempty(msdOffset)
-        data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
+%         data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
+        data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm, msdErrorBars);
+        out(fileIdx).msdObj = data.pro.amsdObj;
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
