@@ -111,16 +111,17 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     % dims = [1, 3, 2];
     
     % Store which row of centres we're using
-    if size(centres,1) >= centresRow && isfield(data.raw, 'suffixes')
-        data.opts.msdSuffix = data.raw.suffixes(centresRow);
+    if ~isfield(data.raw,'suffixes')
+        warning('Data does not contain suffixes field, cannot determine centroid method')
     elseif isfield(data.opts, 'xHPSuffix')
         data.opts.msdSuffix = data.opts.xHPSuffix;
-    elseif ~isfield(data.raw,'suffixes')
-        warning('Data does not contain suffixes field, cannot determine centroid method')
+    elseif isfield(data.raw, 'suffixes')
+        data.opts.msdSuffix = data.raw.suffixes(centresRow);
     else
         disp('data.opts does not contain xHPSuffix, and centres does not contain enough rows to use specified centres row')
         error('Cannot determine which centroid method has been used')
     end
+    
     % Prepare data to go into msdanalyzer
     tracks = cell(length(offset),1);
     for idx = 1:length(offset)
