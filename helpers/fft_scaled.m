@@ -2,7 +2,8 @@ function [w, X] = fft_scaled(t, x, varargin)
 %% [w, X] = fft_scaled(t, x, [doPlots, ax, fn])
 % Calculate Fourier transform of xf, return one-sided spectra in m and
 % frequency vector in Hz. Assumes x in m and t in s. [Optional] Plots X in
-% m and w in Hz, [optional] on axis ax. 
+% m and w in Hz, [optional] on axis ax, and evaluate function fn using
+% input X
 
 doPlots = true;
 fn = '';
