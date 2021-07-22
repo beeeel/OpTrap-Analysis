@@ -1,6 +1,6 @@
 %% Process multiple sets of bead data sequentially
 % Experiment parameters
-mPerPx = 0.07e-6;           % Camera pixel size calibration
+mPerPx = 0.065e-6;           % Camera pixel size calibration
 laserPowers = 0;      % Laser power in % for the datasets used
 ignoreDirs = {}; % Directories to ignore (ones without data)
 
