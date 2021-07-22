@@ -1,42 +1,54 @@
 %% Process multiple sets of bead data sequentially
+%
+% This file accumulates: Control data
+
+%% Data parameters
 close all
 
 % Data storage parameters
 masterDir = '~/Data/phd/OpTrap/';           % Where all the data is
-saveDir = 'accumulator_01/';                % Where to save processed data
-dayDirs = {'2021_05_17/' '2021_05_13/'};    % Which day's data to load
+saveDir = '2021_07_19';        % Where to save processed data
+
+% Which day's data to load
+dayDirs = {'2021_07_19'};
 
 % This cell contains 1 cell per dayDir above. Within that needs to be
 % indexes for that day's dirList, to choose the correct datasets.
-setIdxs = {{1:3 5:7 10:12} ...
-    {3:6 7:9 10:13 16:19 20:22 23:25}};
+setIdxs = {
+    ... % Sets going up in 5μm steps
+        ...{[5 6 8 10 11 13 14]}... 16 17 19 20 22 23 25 26]} ...
+    ... % Sets going back down in 10μm steps
+        {[7 9 12 15 18 21 24 27]} ...
+    };
 
 % Ain't nobody got time (be)for this!
 % Later I will record time in a filename when recording data
 thymes = { 
-    ... % Times from 2021_05_17
-        {[42 95 161] [80 103 142] [91 107 156]} ...
-    ... % Times from 2021_05_13
-        {[81 155 167 224] [87 137 148] [95 98 160 172] [119 123 178 207] [141 182 211] [147 186 215]}};
+    ... % Going up
+        ...{[0:5:30]}...70]} ...
+    ... % Going down
+        {[0:10:70]}...
+    }; % Actually for this data these are depths
 
-% Experiment parameters
-mPerPx = 0.07e-6;           % Camera pixel size calibration
+%% Experiment parameters
+mPerPx = 0.065e-6;           % Camera pixel size calibration
 ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without data)
 
-% Processing parameters
+%% Processing parameters
 cropTs = {[]};
 fitPoly = 1; % Fit a polynomial to remove drift.
 
-fitPolyOrder = 18;      % Order of polynomial to be fitted
+fitPolyOrder = 1;      % Order of polynomial to be fitted
 calcStiff = 1;          % Calculate trap stiffness from position variance
-fpass = 1;              % Pass frequency
+stiffIdx = 1;           % Row of centres to store stiffness from
+fpass = 0;              % Pass frequency
 cropTHPval = 0;         % Frames to crop after HP filter
 msdOffset = [1];        % Offset from start when taking data to calculate mean-square displacements
 
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
 msdCentresRow = 1;      % Row of centres array to use for MSDs (empty for default)
 msdNumT = [];           % Number of time points to use for MSDs (empty for all)
-msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
+msdUseRaw = true;      % Use raw or processed data for MSDs (empty for default)
 msdDoNorm = true;       % Normalize MSDs by position variance (empty for default)
 doFFT = false;           % Calculate FFT and maybe plot
 
@@ -46,14 +58,14 @@ saveData = false;        % Save data to file
 dataSuff = '_simple';       % Suffix for filename when saving/loading
 
 % ARE YOU READY??
-out = cell(size(dayDirs));
+accumulated = cell(size(dayDirs));
 if ~exist([masterDir saveDir], 'dir')
     mkdir([masterDir saveDir])
 end
 cd([masterDir saveDir])
 fprintf('Working in %s\n',pwd)
 fileCount = 1;
-
+%%
 % For each day chosen
 for dayIdx = 1:length(dayDirs)
     % Get the correct directory
@@ -68,15 +80,15 @@ for dayIdx = 1:length(dayDirs)
     end
     
     % Prepare for trouble
-    out{dayIdx} = {};
+    accumulated{dayIdx} = {};
     
     for cellIdx = 1:length(setIdxs{dayIdx})
         % Prepare for trouble
-        out{dayIdx}{1,cellIdx} = struct();
+        accumulated{dayIdx}{1,cellIdx} = struct();
         % And make it double
-        out{dayIdx}{cellIdx}.stiff = double(nan);
-        
-        out{dayIdx}{2,cellIdx} = thymes{dayIdx}{cellIdx};
+        accumulated{dayIdx}{1,cellIdx}.stiff = double(nan);
+        % Get the times array for this set
+        accumulated{dayIdx}{2,cellIdx} = thymes{dayIdx}{cellIdx};
         
         for fIdx = 1:length(setIdxs{dayIdx}{cellIdx})
             fileIdx = setIdxs{dayIdx}{cellIdx}(fIdx);
@@ -104,23 +116,34 @@ for dayIdx = 1:length(dayDirs)
                 data.opts.forceRun = forceRun;
             end
             
+            if dayIdx == 1 && fIdx == 1 
+                data.raw.xCentresPx = data.raw.xCentresPx(2,:);
+                data.raw.yCentresPx = data.raw.yCentresPx(2,:);
+                disp('Replaced centres once')
+%             elseif dIdx == 1
+%                 data.raw.xCentresPx = data.raw.xCentresPx(3,:);
+%                 data.raw.yCentresPx = data.raw.yCentresPx(3,:);
+            end
+            
+            % Store filenames
+            accumulated{dayIdx}{1,cellIdx}(fIdx).fName = data.fName;
+            
             % Apply scale and do polyfit
             data = bead_preProcessCentres(data);
             %% Process data
             % Calculate the stiffnesses and put into data
             if calcStiff
-                stiffIdx = 1;
-                out{dayIdx}{cellIdx}(fIdx).suffix = data.raw.suffixes{stiffIdx};
+                accumulated{dayIdx}{1,cellIdx}(fIdx).suffix = data.raw.suffixes{stiffIdx};
                 
                 xStiff = calcStiffness(data.pro.xCentresM);
                 yStiff = calcStiffness(data.pro.yCentresM);
                 data.pro.stiffXYpro = [xStiff, yStiff];
-                out{dayIdx}{cellIdx}(fIdx).stiff = data.pro.stiffXYpro(stiffIdx,:);
+                accumulated{dayIdx}{1,cellIdx}(fIdx).stiff = data.pro.stiffXYpro(stiffIdx,:);
                 
                 xStiff = calcStiffness(data.raw.xCentresPx, data.mPerPx);
                 yStiff = calcStiffness(data.raw.yCentresPx, data.mPerPx);
                 data.pro.stiffXYraw = [xStiff, yStiff];
-                out{dayIdx}{cellIdx}(fIdx).stiffraw = data.pro.stiffXYraw(stiffIdx,:);
+                accumulated{dayIdx}{1,cellIdx}(fIdx).stiffraw = data.pro.stiffXYraw(stiffIdx,:);
             end
             
             %% High-pass filter and calculate Allan variance if pass frequency is
@@ -137,13 +160,14 @@ for dayIdx = 1:length(dayDirs)
                 xStiff = calcStiffness(data.pro.xCentresHP);
                 yStiff = calcStiffness(data.pro.yCentresHP);
                 data.pro.stiffXYHP = [xStiff, yStiff];
-                out{dayIdx}{cellIdx}(fIdx).stiffHP = data.pro.stiffXYHP;
+                accumulated{dayIdx}{1,cellIdx}(fIdx).stiffHP = data.pro.stiffXYHP;
                 
             end
             
             % Look at mean-square displacement (for cell-bead expts)
             if ~isempty(msdOffset)
                 data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, false, msdUseRaw, msdCentresRow, msdDoNorm);
+                accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             end
             
             % Save if requested
