@@ -13,7 +13,11 @@ xCentresM = data.pro.xCentresHP;
 yCentresM = data.pro.yCentresHP;
 timeVec = data.raw.timeVecMs;
 
-cropT = data.opts.cropT;      
+cropT = data.opts.cropT; 
+if isempty(cropT)
+    cropT = [1 length(data.raw.timeVecMs)];
+end
+
 cropTHPval = data.opts.cropTHPval;
 cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
 
