@@ -7,7 +7,12 @@ function data = bead_normMSD_polyfit(data, direction, offset, varargin)
 % Parse the inputs
 doPlots = true;
 useRaw = false;
+% If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = 1;
+if strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r')
+    centresRow = [1 2];
+end
+
 num_t = data.nPoints;
 doNorm = true;
 errorBars = false;
@@ -123,20 +128,26 @@ if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [d
     end
     
     % Prepare data to go into msdanalyzer
-    tracks = cell(length(offset),1);
+    % When taking multiple centresRows, i.e.: 2 beads, we want all the data
+    % for one bead, followed by all the data for the second.
+    tracks = cell(length(offset), length(centresRow));
     for idx = 1:length(offset)
         % Crop data, then demean. (Don't fit poly because either this has
         % already been done, or it's not wanted)
-        centresCrop = centres(offset(idx) : offset(idx) + num_t - 1);
+        centresCrop = centres(:, offset(idx) : offset(idx) + num_t - 1);
         centresCrop = centresCrop - mean(centresCrop,2);
 %         
 %         [~, centresCrop, ~] = func_thermal_rm(1:length(centresCrop), ...
 %             permute(centresCrop, dims), data.opts.pOrder*(~useRaw), 1, length(centresCrop));
 %         centresCrop = ipermute(centresCrop, dims);
-        
-        tracks{idx} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
-            1e6 .* centresCrop'];
+
+        for row = 1:length(centresRow)
+            tracks{idx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
+                1e6 .* centresCrop(row,:)'];
+        end
     end
+    
+    tracks = reshape(tracks, [], 1);
     
     % Make an msdanalyzer and use it
     msd = msdanalyzer(1, 'um', 's','log');
