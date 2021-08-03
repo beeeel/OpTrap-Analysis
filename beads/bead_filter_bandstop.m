@@ -11,6 +11,8 @@ elseif size(data.opts.bandstop, 2) ~= 2
     error('Expected width of data.opts.bandstop to be 2, instead found %i\n', size(data.opts.bandstop, 2))
 end
 
+autoBand = isfield(data.opts, 'autoband');
+
 if ~exist('doPlots', 'var')
     doPlots = true;
 end
@@ -62,7 +64,11 @@ fPasses = data.opts.bandstop;
 fS = 1/diff(data.raw.timeVecMs(1:2)*1e-3);
 
 for fPassIdx = 1:size(fPasses,1)
-    [centres, ~] = bandstop(centres, fPasses(fPassIdx, :), fS);
+    if ~autoBand
+        [centres, ~] = bandstop(centres, fPasses(fPassIdx, :), fS);
+    else
+        error('Sorry autoBand has not been programmed yet')
+    end
 end
 
 % centres = centres(cropT(2)+1:2*cropT(2),:);
