@@ -1,7 +1,8 @@
 function [Y] = rheoFDFT_Evans(tau, msd, J0, eta)
-%Y = rheoFDFT_Evans(tau, msd, omega)
-% Compute finite discrete fourier transform using Evans et al 2009
-%% Requires consideration of the long-time limit of the gradient = 1/η
+%Y = rheoFDFT_Evans(tau, msd, J0, eta)
+%% Compute finite discrete fourier transform using Evans et al 2009
+% Requires consideration of the long-time limit of the gradient = 1/η
+% Needs to be supplied the zero-time limit of the compliance/MSD, J0
 
 % Input checking
 N = length(tau);
