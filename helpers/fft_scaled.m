@@ -22,6 +22,9 @@ if nargin >= 5
 end
 
 n_points = size(x,2);
+if n_points == 1
+    n_points = size(x,1);
+end
 
 % Get the FFT
 X = fft(x, [], 2);
