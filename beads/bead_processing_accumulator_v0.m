@@ -116,20 +116,28 @@ for dayIdx = 1:length(dayDirs)
                 data.opts.forceRun = forceRun;
             end
             
-            if dayIdx == 1 && fIdx == 1 
-                data.raw.xCentresPx = data.raw.xCentresPx(2,:);
-                data.raw.yCentresPx = data.raw.yCentresPx(2,:);
-                disp('Replaced centres once')
+%             if dayIdx == 1 && fIdx == 1 
+%                 data.raw.xCentresPx = data.raw.xCentresPx(2,:);
+%                 data.raw.yCentresPx = data.raw.yCentresPx(2,:);
+%                 disp('Replaced centres once')
 %             elseif dIdx == 1
 %                 data.raw.xCentresPx = data.raw.xCentresPx(3,:);
 %                 data.raw.yCentresPx = data.raw.yCentresPx(3,:);
-            end
+%             end
             
             % Store filenames
             accumulated{dayIdx}{1,cellIdx}(fIdx).fName = data.fName;
-            
+
             % Apply scale and do polyfit
             data = bead_preProcessCentres(data);
+            
+            % Record where the data is coming from
+            accumulated{dayIdx}{1,cellIdx}(fIdx).dirPath = data.dirPath;
+            accumulated{dayIdx}{1,cellIdx}(fIdx).fName = data.fName;
+
+            % Update times array to show time halfway through acquisition
+            accumulated{dayIdx}{2,cellIdx}(fIdx) = accumulated{dayIdx}{2,cellIdx}(fIdx) ...
+                + data.raw.timeVecMs(end/2)/60e3;
             %% Process data
             % Calculate the stiffnesses and put into data
             if calcStiff
