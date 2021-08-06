@@ -5,8 +5,9 @@ laserPowers = 0;      % Laser power in % for the datasets used
 ignoreDirs = {}; % Directories to ignore (ones without data)
 
 % Processing parameters
-cropTs = {[1 6e4], [3e4 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4], [1 6e4] };
-fitPoly = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]; % Fit a polynomial to remove drift
+angleCorrection = true; % Convert cartesian co-ordinates into polar (r, r.*theta)
+cropTs = {[]};
+fitPoly = [1]; % Fit a polynomial to remove drift
 fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 0;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
@@ -16,7 +17,7 @@ msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
 msdCentresRow = 1;      % Row of centres array to use for MSDs (empty for default)
 msdNumT = [];           % Number of time points to use for MSDs (empty for all)
 msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
-msdDoNorm = true;       % Normalize MSDs by position variance (empty for default)
+msdDoNorm = false;       % Normalize MSDs by position variance (empty for default)
 msdErrorBars = false;    % Plot errorbars on MSD (empty for default)
 doFFT = true;           % Calculate FFT and maybe plot
 
@@ -32,7 +33,7 @@ showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
 setLims = [-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
-fftYlim = [0 10];    % Set limits in units amplitude for FFT plots, empty for auto limit
+fftYlim = [0 1];    % Set limits in units amplitude for FFT plots, empty for auto limit
 plotDC = false;
 plotRaw = false;
 setDCLims = [0 0.1];  % Set limits in units pixel brightness for DC plots, empty for auto limit
@@ -65,8 +66,8 @@ for fileIdx = 27:35%length(dirList)
         data = bead_loadData(data, loadPics);
         
         % Apply calibration and crop time
-        data.opts.cropT = cropTs{fileIdx};
-        data.opts.pOrder = fitPolyOrder*fitPoly(fileIdx);
+        data.opts.cropT = cropTs{1};%fileIdx};
+        data.opts.pOrder = fitPolyOrder*fitPoly(1);%fileIdx);
         data.mPerPx = mPerPx;
     else
         tmp = load(dataFile, 'data');
@@ -132,7 +133,7 @@ for fileIdx = 27:35%length(dirList)
     if showStack
         % System can be called with an & in there to run in background
         command = ['imagej ' data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif '];
-        if true %isfield(data, 'ImstackFullFoV')
+        if isfield(data, 'ImstackFullFoV')
             command = [command data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif '];
         end
         system([command '&']);
