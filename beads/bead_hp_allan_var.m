@@ -82,7 +82,7 @@ end
 data.pro.([field(1) 'AlanVar']) = YOut;
 data.pro.([field(1) 'Tau']) = Tau;
 data.pro.([field(1) 'CentresHP']) = CentresHPcrop;
-
+data.opts.UseField = 'CentresHP';
 
 if doPlot
     xCentresM = centreVec(cropT(1):cropT(2)) .* mPerPx;
