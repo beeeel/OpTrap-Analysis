@@ -6,15 +6,15 @@ function [chi1, chi2] = rheoFDFT_Nishi(tau, msd, omega)
 % Input checking
 k = length(tau);
 try
-    validateattributes(msd, {'numeric'}, {'nrows', k})
+    validateattributes(msd, {'numeric'}, {'nrows', k, 'ncols',1})
 catch
-    error('Received msd with %i rows, and tau with %i rows', size(msd,1), size(tau,1))
+    error('Received msd with size (%i %i), and tau with %i rows', size(msd), size(tau,1))
 end
 
 % If first tau and all first msd are nonzero, correct the user
 if tau(1) ~= 0 && min(msd(1,:) ~= 0)
     tau = [0; tau];
-    msd = [zeros(1, size(msd,2)); msd];
+    msd = [0; msd];
 % If user is inconsistent, throw toys out of the pram
 elseif tau(1)~= 0 || min(msd(1,:) ~= 0)
     error('Expected first (tau msd) to be (0 0) but one was not')
@@ -69,7 +69,6 @@ for j = l+2
     chi1 = chi1 + chit(2 * j - 1) * cos(omega * tau(2 * j - 1) ) * 4 * dt / 3 + ...
         + chit(2 * j) * cos(omega * tau(2 * j) ) * dt / 3;
 end
-
 % % Original method: nested loops
 % for i = 1:m
 %     if rem(i, 10) == 0
