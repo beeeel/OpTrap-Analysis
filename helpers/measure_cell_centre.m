@@ -1,6 +1,6 @@
 function cCentre = measure_cell_centre(im, dirPath)
 % Measure the centre position of a cell in an image, and store the result
-% in a text file in the given directory
+% in a text file in the given directory. cCentre contains [Xc, Yc].
 
 if ~strcmp(dirPath(end), '/')
     dirPath(end+1) = '/';
@@ -14,8 +14,9 @@ if exist(cFile, 'file')
         warning('Received input %s, aborting', i)
         return
     end
-    fid = fopen(cFile, 'w');
 end
+fid = fopen(cFile, 'w');
+
 
 %%
 fh = figure('Units','normalized','OuterPosition',[0 0 1 1]);
@@ -28,7 +29,7 @@ title({'Drawn an ellipse on the cell,' 'matching the curvature of the cell where
 hUI = uicontrol(fh, 'Style', 'togglebutton', 'String', 'Done','Position',[20 20 180 120], ...
     'BackgroundColor',[1 1 1]/4, 'FontSize', 36, 'ForegroundColor',[1 1 1], ...
     'FontWeight', 'bold');
-ellipse = drawellipse;
+ellipse = drawellipse('Color','r');
 title('Press ''Done'' when you are finished')
 
 while ~hUI.Value
