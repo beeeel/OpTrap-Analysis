@@ -37,8 +37,9 @@ ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without da
 %% Processing parameters
 cropTs = {[]};
 fitPoly = 1; % Fit a polynomial to remove drift.
-
 fitPolyOrder = 1;      % Order of polynomial to be fitted
+
+angleCorrection = true; % Transform to (r, rθ) co-ordinates
 calcStiff = 1;          % Calculate trap stiffness from position variance
 stiffIdx = 1;           % Row of centres to store stiffness from
 fpass = 0;              % Pass frequency
@@ -103,7 +104,7 @@ for dayIdx = 1:length(dayDirs)
                 % Set names and load data
                 data.dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
                 data.fName = dirList(fileIdx).name;
-                data = bead_loadData(data, false);
+                data = bead_loadData(data, angleCorrection);
                 
                 % Apply calibration and crop time
                 data.opts.cropT = cropTs{1};
@@ -124,7 +125,9 @@ for dayIdx = 1:length(dayDirs)
 %                 data.raw.xCentresPx = data.raw.xCentresPx(3,:);
 %                 data.raw.yCentresPx = data.raw.yCentresPx(3,:);
 %             end
-            
+
+            data.opts.angleCorrection = angleCorrection;
+
             % Store filenames
             accumulated{dayIdx}{1,cellIdx}(fIdx).fName = data.fName;
 
