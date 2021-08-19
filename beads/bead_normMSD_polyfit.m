@@ -50,8 +50,37 @@ end
 % dimensions
 
 nPerDir = length(offset);
-if useRaw
-    % If data has not been highpass filtered, use raw
+if isfield(data.opts, 'UseField') && ~useRaw
+    % If there's a field we should use, and we're not forced to use raw
+    fn = data.opts.UseField;
+    
+     % Hacky af: set num_t to min of actual num_t and previous value
+    num_t = min(num_t, size(data.pro.(['x' fn]),2));
+    
+    if isfield(data.opts, 'cropTHPval')
+        cropTHPval = data.opts.cropTHPval;
+    else
+        cropTHPval = 0;
+    end
+    
+    cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
+
+    tmp = data.raw.timeVecMs(cropT(1):cropT(2));
+    tmp = tmp(cropTHP(1):cropTHP(2));
+    
+    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+        centres = data.pro.([direction fn]);
+        timeVec = tmp;
+        legCell = repmat({direction},nPerDir,1);
+    else
+        centres = [data.pro.(['x' fn]) data.pro.(['y' fn])];
+        timeVec = [tmp tmp];
+        offset = [offset (offset + size(data.pro.(['x' fn]),2))];
+        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+    end
+    filtStr = ['using field ' fn];
+else
+    % Otherwise, if told to, use raw
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
         centres = data.raw.([direction 'CentresPx'])(centresRow,cropT(1):cropT(2)) * data.mPerPx;
         timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
@@ -67,48 +96,50 @@ if useRaw
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['unfiltered'];
-elseif isfield(data.opts,'fpass') 
-    % Else use highpass if available
-
-    % Hacky af: set num_t to min of actual num_t and previous value
-    num_t = min(num_t, size(data.pro.xCentresHP,2));
-    
-    cropTHPval = data.opts.cropTHPval;
-    cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
-
-    tmp = data.raw.timeVecMs(cropT(1):cropT(2));
-    tmp = tmp(cropTHP(1):cropTHP(2));
-    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.pro.([direction 'CentresHP']);
-        timeVec = tmp;
-        legCell = repmat({direction},nPerDir,1);
-    else
-        centres = [data.pro.xCentresHP data.pro.yCentresHP];
-        timeVec = [tmp tmp];
-        offset = [offset (offset + size(data.pro.xCentresHP,2))];
-        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
-    end
-    filtStr = ['after ' num2str(data.opts.fpass) 'Hz highpass filtering '];
-elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') && min(isfield(data.pro,{'xCentresM','yCentresM'})))
-    % If data has not been highpass filtered, use polyfiltered
-    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.pro.([direction 'CentresM'])(centresRow,cropT(1):cropT(2));
-        timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
-        legCell = repmat({direction},nPerDir,1);
-    else
-        centres = [data.pro.xCentresM(centresRow,cropT(1):cropT(2)) ...
-            data.pro.yCentresM(centresRow,cropT(1):cropT(2))];
-        timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
-            data.raw.timeVecMs(cropT(1):cropT(2))];
-        
-        nP = min(data.nPoints, diff(cropT)+1);
-        offset = [offset (offset + nP)];
-        legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
-    end
-    filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
 end
-
-
+clear tmp
+%{ 
+%   elseif isfield(data.opts,'fpass')
+%     % Else use highpass if available
+% 
+%     % Hacky af: set num_t to min of actual num_t and previous value
+%     num_t = min(num_t, size(data.pro.xCentresHP,2));
+%     
+%     cropTHPval = data.opts.cropTHPval;
+%     cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
+% 
+%     tmp = data.raw.timeVecMs(cropT(1):cropT(2));
+%     tmp = tmp(cropTHP(1):cropTHP(2));
+%     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+%         centres = data.pro.([direction 'CentresHP']);
+%         timeVec = tmp;
+%         legCell = repmat({direction},nPerDir,1);
+%     else
+%         centres = [data.pro.xCentresHP data.pro.yCentresHP];
+%         timeVec = [tmp tmp];
+%         offset = [offset (offset + size(data.pro.xCentresHP,2))];
+%         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+%     end
+%     filtStr = ['after ' num2str(data.opts.fpass) 'Hz highpass filtering '];
+% elseif isfield(data.pro,[direction 'CentresM']) || (strcmp(direction(1), 'a') && min(isfield(data.pro,{'xCentresM','yCentresM'})))
+%     % If data has not been highpass filtered, use polyfiltered
+%     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
+%         centres = data.pro.([direction 'CentresM'])(centresRow,cropT(1):cropT(2));
+%         timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
+%         legCell = repmat({direction},nPerDir,1);
+%     else
+%         centres = [data.pro.xCentresM(centresRow,cropT(1):cropT(2)) ...
+%             data.pro.yCentresM(centresRow,cropT(1):cropT(2))];
+%         timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
+%             data.raw.timeVecMs(cropT(1):cropT(2))];
+%         
+%         nP = min(data.nPoints, diff(cropT)+1);
+%         offset = [offset (offset + nP)];
+%         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+%     end
+%     filtStr = ['after polynomial order ' num2str(data.opts.pOrder) ' fitting'];
+% end
+%}
 
 if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [direction(1) 'msdObj']))
     
