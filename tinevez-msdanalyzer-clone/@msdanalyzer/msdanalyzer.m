@@ -45,7 +45,7 @@ classdef msdanalyzer
         drift
         % Sampling used when calculating MSDs
         sampling = 'linear';
-        logbase = 1.25; % Base of exponent for log sampling
+        logbase = 1.05; % Base of exponent for log sampling
         % Are time vectors duplicate? Useful for splitting X and Y
         time_duplicate = false;
     end
