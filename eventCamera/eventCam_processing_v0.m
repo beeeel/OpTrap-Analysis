@@ -8,14 +8,14 @@ if length(dirList) == 2 ;system('sudo mount /dev/sda1 ~/mnt2'); end
 addpath('~/junk/prophesee-matlab-scripts');
 
 evtCamDir = '~/mnt2/Users/billh/Event_Camera/';
-% subDir = 'Event Camera - OpticallyTrappedBead/';
-subDir = 'Event Camera - Stage_SineWave/';
+subDir = 'Event Camera - OpticallyTrappedBead/';
+% subDir = 'Event Camera - Stage_SineWave/';
 
 dirList = dir([evtCamDir subDir]);
 ls([evtCamDir subDir])
 
-% fileBase = 'TrappedBead_3'; % 1, 2, or 3
-fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
+fileBase = 'TrappedBead_1'; % 1, 2, or 3
+% fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
 % fileBase = 'Fluorescence_Stage_SineWave_smallsteps'; 
 
 cdEvents = load_cd_events([evtCamDir subDir fileBase '_td.dat'])
@@ -85,7 +85,9 @@ elseif strcmp(subDir(end-4:end),'Wave/')
     end
 end
 
-ims = cat(3, imStack{1}{:});
+ims = cat(3, imStack{1}{:,1});
+imTs = (1:size(ims,3)) .*(metadata.FrameKey_49999_0_0.ElapsedTime_ms - metadata.FrameKey_0_0_0.ElapsedTime_ms) ... 
+    ./ 5e4; % I sure hope there are this many frames in the imstack!
 %%
 vidObj = VideoWriter([evtCamDir subDir fileBase '_sCMOS.avi'],'Grayscale AVI')
 open(vidObj)
@@ -104,11 +106,19 @@ vidObj
 close(vidObj)
 
 %%
-centres = imCentreOfMass(ims .* uint16(ims > 2.2e4));
+centres = imCentreOfMass(ims(10:end-10, 10:end-10, :) .* uint16(ims(10:end-10, 10:end-10, :) > 500)); %2.2e4));
 size(centres)
+%%
+idxs = 30000+(1:2200);
+figure(98)
+clf
+scatter(centres(1,idxs), centres(2, idxs), [], imTs(idxs))
+xlim([50 57])
+axis equal
+title(sprintf('%.1fs to %.1fs', 1e-3.*imTs(idxs(1)), 1e-3.*imTs(idxs(end))))
 %% Load mat file with MSDs
 dirName = '~/Data/phd/EventCam/';
-fName = 'TrappedBead_3_td_msd.mat';
+fName = 'TrappedBead_3_td_msd.mat'; % MSD for set 1 doesn't exist
 % fName = 'Bead_Stage_SineWave_td_msd.mat';
 % fName = 'Fluorescence_Stage_SineWave_smallsteps_td_msd.mat';
 load([dirName fName],'msd')
@@ -160,7 +170,7 @@ elseif isfield(cdEvents,'p')
     plot(cdEvents.p,'.','MarkerSize', 1);
     ylabel('Polarity (+/-)')
 end
-
+%%
 subplot(2,2,2)
 imagesc(imStack{1}{1,1})
 axis image
@@ -174,11 +184,11 @@ histogram(cdEvents.ts./60e6)
 xlabel('Time (mins)')
 
 subplot(4,2,4)
-histogram(cdEvents.x);
+histogram(cdEvents.x, 'BinLimits', [315 328]);
 xlabel('X (px)')
 
 subplot(4,2,6)
-histogram(cdEvents.y);
+histogram(cdEvents.y, 'BinLimits', [243 257]);
 xlabel('Y (px)')
 
 subplot(4,2,8)
@@ -234,7 +244,7 @@ gauss = 1:gaussSz;
 gauss = exp(-(gauss-ceil(gaussSz/1)).^2./sigma.^2);
 
 % pGauss = conv(cdEvents.p, gauss, 'valid')./sum(gauss);
-idx = 1:4:numel(cdEvents.x);
+idx = 1:numel(cdEvents.x);
 tmp = cdEvents.x(idx);
 xGauss = conv(tmp(cdEvents.p(idx) > 0), gauss, 'valid')./sum(gauss);
 % xGauss = conv(tmp, gauss, 'valid')./sum(gauss);
@@ -254,7 +264,7 @@ figure(3)
 clf
 hold on
 scatter(xGauss, yGauss, [], tGauss./1e3)
-scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3, [], allPos(:,1))
+% scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3, [], allPos(:,1))
 title('Bead location from event camera')
 %% Animate
 step = 1e3;
@@ -264,11 +274,11 @@ figure(4)
 clf
 hold on
 ax = gca;
-scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)%, [], tGauss(end)*allPos(:,1)./allPos(1))
+% scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)%, [], tGauss(end)*allPos(:,1)./allPos(1))
 for idx = 1:nSteps
     scatter(xGauss((idx-1)*step + (1:(step+2*overlap))), ...
         yGauss((idx-1)*step + (1:(step+2*overlap))), ...
-        30*nGauss((idx-1)*step + (1:(step+2*overlap)))/max(nGauss) , ...
+        [], ...30*nGauss((idx-1)*step + (1:(step+2*overlap)))/max(nGauss) , ...
         tGauss((idx-1)*step + (1:(step+2*overlap))))
     title(sprintf('%.1fs to %.1fs',1e-6*tGauss((idx-1)*step + 1),1e-6*tGauss((idx-1)*step + step)))
     xlim([100 400])
@@ -277,6 +287,18 @@ for idx = 1:nSteps
     if idx < nSteps
         delete(ax.Children(1))
     end
+end
+%%
+figure(99) % I got 99 figures but...
+clf
+ax2 = subplot(2,1,2);
+ax1 = subplot(2,1,1);
+for idx = 1:10
+%     title(ax1, sprintf('%i events', (step+2*overlap)))
+    histogram(ax1, xGauss((idx-1)*step + (1:(step+2*overlap))))
+    histogram(ax2, yGauss((idx-1)*step + (1:(step+2*overlap))))
+    drawnow
+    pause(0.25)
 end
 %% Integrate some
 map = [0 10 0
@@ -476,5 +498,4 @@ histogram(1e-6*cdEvents.ts(1e5:idx),100)
 xlabel('Event time (s)')
 ylabel('Count')
 title(sprintf('Time distribution of first %.G events',idx))
-
 
