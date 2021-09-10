@@ -64,7 +64,7 @@ classdef msdanalyzer
     %% Constructor
     methods
         
-        function obj = msdanalyzer(n_dim, space_units, time_units, varargin)
+        function obj = msdanalyzer(n_dim, space_units, time_units, sampling, time_dup)
             %%MSDANALYZER Builds a new MSD analyzer object.
             % obj = MSDANALYZER(dimensionality, space__units, time_units)
             % builds a new empty msdanalyzer object with the specified
@@ -83,18 +83,18 @@ classdef msdanalyzer
             
             if nargin >= 4
                 % Check input against valid sampling modes
-                if sum(strcmp(varargin{1}, obj.sampModes)) == 1
-                    obj.sampling = varargin{1};
+                if sum(strcmp(sampling, obj.sampModes)) == 1
+                    obj.sampling = sampling;
                 else
-                    error(['Unknown sampling mode ' varargin{1} ' in position 4'])
+                    error(['Unknown sampling mode ' sampling ' in position 4'])
                 end
             end
             if nargin >= 5
                 % Check input is logical for time_duplicate
-                if islogical(varargin{2})
-                    obj.time_duplicate = varargin{2};
+                if islogical(time_dup)
+                    obj.time_duplicate = time_dup;
                 else
-                    error(['Expected time_duplicate to be logical, got (' varargin{1} ') in position 5'])
+                    error(['Expected time_duplicate to be logical, got (' time_dup ') in position 5'])
                 end
             end
         end
