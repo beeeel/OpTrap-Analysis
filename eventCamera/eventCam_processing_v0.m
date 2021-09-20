@@ -107,14 +107,6 @@ close(vidObj)
 %%
 centres = imCentreOfMass(ims(10:end-10, 10:end-10, :) .* uint16(ims(10:end-10, 10:end-10, :) > 500)); %2.2e4));
 size(centres)
-%%
-idxs = 30000+(1:2200);
-figure(98)
-clf
-scatter(centres(1,idxs), centres(2, idxs), [], imTs(idxs))
-xlim([50 57])
-axis equal
-title(sprintf('%.1fs to %.1fs', 1e-3.*imTs(idxs(1)), 1e-3.*imTs(idxs(end))))
 
 %% Plot raw
 figure(1)
@@ -170,27 +162,6 @@ elseif isfield(cdEvents,'p')
     xlabel('Polarity (+/-)')
 end
 
-
-%% Square windowing
-kernSz = 1000;
-
-kern = ones(kernSz,1);
-pWindowed = conv(cdEvents.p, kern, 'valid')./sum(kern);
-xWindowed = conv(cdEvents.x, kern, 'valid')./sum(kern);
-yWindowed = conv(cdEvents.y, kern, 'valid')./sum(kern);
-tWindowed = conv(cdEvents.ts, kern, 'valid')./sum(kern);
-
-
-% % Careful, this will eat all your rams :(
-% figure(2)
-% clf
-% scatter(xWindowed, yWindowed, [], tWindowed)
-
-ampEv = range(yWindowed);
-umPerPxEv = range(allPos(:,5))./ampEv; % 2.64 from stageSineWave
-
-stiffEV = calcStiffness([xWindowed, yWindowed]', 2.64e-6); % 2.64μm/px.
-% stiffEV = 1e-11 *[2.18; 4.41]; % For TrappedBead_1. Ratio X/Y = 0.493.
 %% And interpolate
 % How many events do you need per data point?
 %% SCMOS data
@@ -234,20 +205,117 @@ stiffIms = calcStiffness(centres, 0.216e-6) % μm/px is different for trapped be
 % Use y Range of centres to determine "height" (amplitude) of sine wave
 amp = 0.108.*range(centres(2,:)); % For sineWave sets, 0.108μm/px.
 % For sineWave, amp = 569.5284px=61.51μm, but from allPos, amp should be 600[μm??].
-%% Integrate events over window (refinement ROI)
+
+%% Buffer events over window (refinement ROI)
 % Run the integration twice: Once with coarse time spacing and no ROI, and
 % once with fine time spacing and an ROI based on the coarse spacing.
 
-nt_coarse = 1e3;
-nt_fine = 1e4;
 
-[tsC, centresC] = integrateEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_coarse);
-centresNoNaN = centresC(:,~isnan(centresC(1,:)));
-ROI = [mean(centresNoNaN,2)' range(centresNoNaN,2)'];
-[tsF, centresF] = integrateEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
+% nt_coarse = 1e4;
+% [tsC, centresC] = bufferEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_coarse);
+% centresNoNaN = centresC(:,~isnan(centresC(1,:)));
+% m = mean(centresNoNaN,2)';
+% r = range(centresNoNaN,2)';
+% ROI = [m-r/2, r]
+% % lol that was a waste of time
+
+nt_fine = 1e3;
+ROI = [300 230 50 50];
+[tsF, centresF, ns] = bufferEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
+tsNoNaN = tsF(:,~isnan(centresF(1,:)));
 centresNoNaN = centresF(:,~isnan(centresF(1,:)));
-stiffEVF = calcStiffness(centresNoNaN, 2.64e-6);
-% stiffEVF = 1e-12 * [1.938; 2.122]; % For TrappedBead_1. Ratio X/Y = 0.913.
+% stiffEVFB = calcStiffness(centresNoNaN, 2.64e-6); % Dunno where I got this pixel calibration from... 
+stiffEVFB2 = calcStiffness(centresNoNaN, 0.164e-6); % Maybe should be 74e-6?
+
+plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4), 'g-')
+
+% With ROI width&height = 2*range
+% stiffEVFB = 1e-11 * [0.831; 2.891]; % For TrappedBead_1. Ratio X/Y = 0.287.
+% With ROI w&h = range
+% stiffEVFB = 1e-11 * [3.368; 0.472]; % For TrappedBead_1. Ratio X/Y = 0.140.
+% With ROI = [300 230 50 50]
+% stiffEVFB = 1e-9 * [2.455; 2.101]; % For TrappedBead_1. Ratio X/Y = 1.168.
+
+%% Animate 2.0
+step = 0.5e3;
+overlap = 250;
+nSteps = 100;
+figure(4)
+clf
+% hold on
+subplot(10, 10, [1 10])
+plot(cdEvents.ts(1:nSteps*step + 2*overlap)./1e6,'k', 'LineWidth', 2)
+hold on
+xlabel('#')
+ylabel('t (s)')
+subplot(10, 10, [21 100])
+hold on
+% ax = gca;
+% scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)%, [], tGauss(end)*allPos(:,1)./allPos(1))
+% axis equal
+for idx = 1:nSteps
+    im = zeros(480, 640);
+    for jdx = (idx-1)*step + (1:(step+2*overlap))
+        y = 1+cdEvents.y(jdx); 
+        x = 1+cdEvents.x(jdx);
+        im(y, x) = im(y,x) + cdEvents.p(jdx);
+    end
+    [t, c] = bufferEvents(...
+        cdEvents.ts((idx-1)*step + (1:(step+2*overlap))), ...
+        cdEvents.x((idx-1)*step + (1:(step+2*overlap))), ...
+        cdEvents.y((idx-1)*step + (1:(step+2*overlap))), ...
+        step + 2*overlap, ROI);
+    t = t(step + 2*overlap);
+    c = c(:,step + 2*overlap);
+    subplot(10, 10, [1 10])
+    cla
+    i1 = (idx-1)*step + 1;
+    i2 = (idx-1)*step + (step+2*overlap);
+    plot(cdEvents.ts(1:nSteps*step + 2*overlap)./1e6, 1:nSteps*step + 2*overlap,'k', 'LineWidth', 2)
+    plot(cdEvents.ts([i1 i2])./1e6, [i1 i2], 'y', 'LineWidth', 2)
+    plot(t./1e6, (i1+i2)/2, 'rx','MarkerSize',6,'LineWidth',3)
+    subplot(10, 10, [21 100])
+    imagesc(im, [-1 1]*3);
+    hold on
+    plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4), 'r-')
+    plot(c(1), c(2), 'ks', 'LineWidth', 3, 'MarkerSize', 9)
+    
+    colorbar
+    axis equal
+    axis tight
+    title(sprintf('%.1fs to %.1fs, %g events',1e-6*cdEvents.ts((idx-1)*step + 1),1e-6*cdEvents.ts((idx-1)*step + step+2*overlap), step+2*overlap))
+%     fprintf('%.1fs to %.1fs, %g events\n',1e-6*cdEvents.ts((idx-1)*step + 1),1e-6*cdEvents.ts((idx-1)*step + step+2*overlap), step+2*overlap)
+    pause(0.15)
+end
+%% Interpolate to regularise
+nT = 1e-3*range(tsNoNaN);
+
+[tIn, ia, ic]= unique(tsNoNaN);
+xin = centresNoNaN(1, ia);
+yin = centresNoNaN(2, ia);
+
+ti = linspace(min(tsNoNaN), max(tsNoNaN), nT);
+xi = interp1(tIn, xin, ti, 'pchip');
+yi = interp1(tIn, yin, ti, 'pchip');
+
+msd = msdanalyzer(1, 'px', 'us', 'log');
+tracks = {[ti' xi'], [ti' yi']};
+msd = msd.addAll(tracks);
+msd = msd.computeMSD;
+msd.plotMSD
+%%
+figure(73)
+clf
+
+for plt = 1:2
+% subplot(2,1,plt)
+loglog(msd.msd{plt}(:,1)./1e6, msd.msd{plt}(:,2))
+hold on
+end
+xlabel('Delay time τ (s)')
+ylabel('MSD (px.^2)')
+title({'Mean-squared displacement' 'for trapped bead using event cam'})
+grid on
 %% Integrate events over window (manual ROI)
 % Use an a priori ROI. You could use a single integration time to see where
 % to place this
