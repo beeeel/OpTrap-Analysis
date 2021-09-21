@@ -151,6 +151,65 @@ for idx = 1:nSteps
         delete(ax.Children(1))
     end
 end
+%% Animate 2.0
+step = 1e3;
+overlap = 0.5e3;
+nSteps = 200;
+figure(4)
+clf
+% hold on
+subplot(10, 10, [1 10])
+plot(cdEvents.ts(1:nSteps*step + 2*overlap)./1e6,'k', 'LineWidth', 2)
+hold on
+xlabel('#')
+ylabel('t (s)')
+subplot(10, 10, [11 100])
+% ax = gca;
+% scatter(200+allPos(:,2)./3, 225-allPos(:,3)./3)%, [], tGauss(end)*allPos(:,1)./allPos(1))
+% axis equal
+for idx = 1:nSteps
+    im = zeros(480, 640);
+    for jdx = (idx-1)*step + (1:(step+2*overlap))
+        y = 1+cdEvents.y(jdx); 
+        x = 1+cdEvents.x(jdx);
+        im(y, x) = im(y,x) + cdEvents.p(jdx);
+    end
+%     scatter(cdEvents.x((idx-1)*step + (1:(step+2*overlap))), ...
+%         cdEvents.y((idx-1)*step + (1:(step+2*overlap))), ...
+%         [], ...30*nGauss((idx-1)*step + (1:(step+2*overlap)))/max(nGauss) , ...
+%         cdEvents.ts((idx-1)*step + (1:(step+2*overlap))), '.')
+    subplot(10, 10, [1 10])
+    i1 = (idx-1)*step + 1;
+    i2 = (idx-1)*step + (step+2*overlap);
+    plot(cdEvents.ts(1:nSteps*step + 2*overlap)./1e6,'k', 'LineWidth', 2)
+    plot([i1 i2], cdEvents.ts([i1 i2])./1e6, 'y', 'LineWidth', 2)
+    subplot(10, 10, [12 100])
+    imagesc(im, [-1 1]*3);
+    colorbar
+    axis equal
+    title(sprintf('%.1fs to %.1fs, %g events',1e-6*cdEvents.ts((idx-1)*step + 1),1e-6*cdEvents.ts((idx-1)*step + step), step+2*overlap))
+    xlim([100 400])
+    ylim([100 350])
+    pause(0.15)
+%     if idx < nSteps
+%         delete(ax.Children(1))
+%     end
+end
+
+%% Integrate events over window (refinement ROI)
+% Run the integration twice: Once with coarse time spacing and no ROI, and
+% once with fine time spacing and an ROI based on the coarse spacing.
+
+nt_coarse = 1e3;
+nt_fine = 1e4;
+
+[tsC, centresC] = integrateEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_coarse);
+centresNoNaN = centresC(:,~isnan(centresC(1,:)));
+ROI = [mean(centresNoNaN,2)' range(centresNoNaN,2)'];
+[tsF, centresF] = integrateEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
+centresNoNaN = centresF(:,~isnan(centresF(1,:)));
+stiffEVF = calcStiffness(centresNoNaN, 2.64e-6);
+% stiffEVF = 1e-12 * [1.938; 2.122]; % For TrappedBead_1. Ratio X/Y = 0.913.
 %%
 figure(99) % I got 99 figures but...
 clf
@@ -194,6 +253,7 @@ end
 % im = log(im);
 figure(11)    
 imagesc(im)
+axis equal
 colorbar
 caxis([-1 1] * 20)
 xlim([160 240])
@@ -395,4 +455,32 @@ histogram(1e-6*cdEvents.ts(1e5:idx),100)
 xlabel('Event time (s)')
 ylabel('Count')
 title(sprintf('Time distribution of first %.G events',idx))
+%%
+idxs = 30000+(1:2200);
+figure(98)
+clf
+scatter(centres(1,idxs), centres(2, idxs), [], imTs(idxs))
+xlim([50 57])
+axis equal
+title(sprintf('%.1fs to %.1fs', 1e-3.*imTs(idxs(1)), 1e-3.*imTs(idxs(end))))
 
+%% Square windowing
+kernSz = 1000;
+
+kern = ones(kernSz,1);
+pWindowed = conv(cdEvents.p, kern, 'valid')./sum(kern);
+xWindowed = conv(cdEvents.x, kern, 'valid')./sum(kern);
+yWindowed = conv(cdEvents.y, kern, 'valid')./sum(kern);
+tWindowed = conv(cdEvents.ts, kern, 'valid')./sum(kern);
+
+
+% % Careful, this will eat all your rams :(
+% figure(2)
+% clf
+% scatter(xWindowed, yWindowed, [], tWindowed)
+
+ampEv = range(yWindowed);
+umPerPxEv = range(allPos(:,5))./ampEv; % 2.64 from stageSineWave
+
+stiffEV = calcStiffness([xWindowed, yWindowed]', 2.64e-6); % 2.64μm/px.
+% stiffEV = 1e-11 *[2.18; 4.41]; % For TrappedBead_1. Ratio X/Y = 0.493.
