@@ -33,7 +33,7 @@ public static double[] getTwoCentroids(short[] pixels, int width, int height, in
 	    i = y*width;
     	for (int x=0; x<(subWidth); x++) 
         {
-		    vl = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+		    vl = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE - mean : 0;
 		    v2l = vl*vl;
     		sum2l += v2l;
 			x2suml += x*v2l;
@@ -43,7 +43,7 @@ public static double[] getTwoCentroids(short[] pixels, int width, int height, in
 	    i = y*width + (width-subWidth);
     	for (int x=(width-subWidth); x<(width); x++) 
         {
-            vr = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+            vr = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE - mean : 0;
 		    v2r = vr*vr;
     		sum2r += v2r;
 			x2sumr += x*v2r;
@@ -90,7 +90,7 @@ public static double[] getTwoCentroidsQuart(short[] pixels, int width, int heigh
 	    i = y*width;
     	for (int x=0; x<(subWidth); x++) 
         {
-		    vl = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+		    vl = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE - mean : 0;
 		    v2l = vl*vl*vl*vl;
     		sum2l += v2l;
 			x2suml += x*v2l;
@@ -100,7 +100,7 @@ public static double[] getTwoCentroidsQuart(short[] pixels, int width, int heigh
 	    i = y*width + (width-subWidth);
     	for (int x=(width-subWidth); x<(width); x++) 
         {
-            vr = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+            vr = (pixels[i] > thresh) ? pixels[i]- thresh  + Double.MIN_VALUE - mean : 0;
 		    v2r = vr*vr*vr*vr;
     		sum2r += v2r;
 			x2sumr += x*v2r;
@@ -133,7 +133,7 @@ public static double[] getTwoCentroidsBasicSq(short[] pixels, int width, int hei
 		i = y*width;
     	for (int x=0; x<(subWidth); x++) 
         {    
-            vl = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
+            vl = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE : 0;
 			v2l = vl*vl;
 			sum2l += v2l;
 			x2suml += x*v2l;
@@ -144,7 +144,7 @@ public static double[] getTwoCentroidsBasicSq(short[] pixels, int width, int hei
         i = y*width + (width - subWidth);
     	for (int x=(width-subWidth); x<(width); x++) 
         {
-            vr = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
+            vr = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE : 0;
 			v2r = vr*vr;
 			sum2r += v2r;
 			x2sumr += x*v2r;
@@ -186,7 +186,7 @@ public static double[] getTwoCentroidsBasic(short[] pixels, int width, int heigh
         i = y*width + (width - subWidth);
 	for (int x=(width-subWidth); x<(width); x++) 
         {
-            vr = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
+            vr = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE : 0;
 			sumr += vr;
 			xsumr += x*vr;
 			ysumr += y*vr;
@@ -220,7 +220,7 @@ public static double[] getTwoCentroidsGuass(short[] pixels, int width, int heigh
         {    
 		// Only need to calculate left Gaussian for left bead (lazy but fine if separation >> var)
 		G = Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var);// + Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); 
-        	vl = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G : 0;
+        	vl = (pixels[i] > thresh) ? (pixels[i] - thresh + Double.MIN_VALUE) * G : 0;
 			suml += vl;
 			xsuml += x*vl;
 			ysuml += y*vl;
@@ -232,7 +232,7 @@ public static double[] getTwoCentroidsGuass(short[] pixels, int width, int heigh
         {
 		// Only need to calculate right Gaussian for right bead (lazy but fine if separation >> var)
 		G =  Math.exp(- ((x - xyi[2]) * (x - xyi[2]) + (y - xyi[3]) * (y - xyi[3])) / var); // + Math.exp(- ((x - xyi[0]) * (x - xyi[0]) + (y - xyi[1]) * (y - xyi[1])) / var)
-            vr = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * G: 0;
+            vr = (pixels[i] > thresh) ? (pixels[i] - thresh + Double.MIN_VALUE) * G: 0;
 			sumr += vr;
 			xsumr += x*vr;
 			ysumr += y*vr;
