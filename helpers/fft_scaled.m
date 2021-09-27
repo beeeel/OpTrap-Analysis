@@ -24,6 +24,7 @@ end
 n_points = size(x,2);
 if n_points == 1
     n_points = size(x,1);
+    x = x.';
 end
 
 % Get the FFT
