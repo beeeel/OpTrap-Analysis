@@ -25,7 +25,7 @@ public static double[] getCentroid(short[] pixels, int width, int height, short 
     for (int y=0; y<(height); y++) {
         i = y*width;
         for (int x=0; x<(width); x++) {
-            v = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+            v = (pixels[i] > thresh) ? pixels[i]  - thresh + Double.MIN_VALUE - mean : 0;
 	        v2 = v*v;
             sum2 += v2;
             x2sum += x*v2;
@@ -50,7 +50,7 @@ public static double[] getCentroidBasicSq(short[] pixels, int width, int height,
     for (int y=0; y<(height); y++) {
         i = y*width;
         for (int x=0; x<(width); x++) {
-            v = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
+            v = (pixels[i] > thresh) ? pixels[i]  - thresh + Double.MIN_VALUE : 0;
             v2 = v*v;
             sum2 += v2;
             x2sum += x*v2;
@@ -75,7 +75,7 @@ public static double[] getCentroidBasic(short[] pixels, int width, int height, s
     for (int y=0; y<(height); y++) {
         i = y*width;
         for (int x=0; x<(width); x++) {
-            v = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE : 0;
+            v = (pixels[i] > thresh) ? pixels[i] - thresh + Double.MIN_VALUE : 0;
             sum += v;
             xsum += x*v;
             ysum += y*v;
@@ -147,7 +147,7 @@ public static double[] getCentroidQuart(short[] pixels, int width, int height, s
     for (int y=0; y<(height); y++) {
         i = y*width;
         for (int x=0; x<(width); x++) {
-            v = (pixels[i] > thresh) ? pixels[i] + Double.MIN_VALUE - mean : 0;
+            v = (pixels[i] > thresh) ? pixels[i]  - thresh + Double.MIN_VALUE - mean : 0;
 	        v2 = v*v*v*v;
             sum2 += v2;
             x2sum += x*v2;
@@ -172,7 +172,7 @@ public static double[] getCentroidGauss(short[] pixels, int width, int height, s
     for (int y=0; y<(height); y++) {
         i = y*width;
         for (int x=0; x<(width); x++) {
-            v = (pixels[i] > thresh) ? (pixels[i] + Double.MIN_VALUE) * Math.exp(- ((x - xi) * (x - xi) + (y - yi) * (y - yi)) / var) : 0;
+            v = (pixels[i] > thresh) ? (pixels[i]  - thresh + Double.MIN_VALUE) * Math.exp(- ((x - xi) * (x - xi) + (y - yi) * (y - yi)) / var) : 0;
             sum += v;
             xsum += x*v;
             ysum += y*v;
