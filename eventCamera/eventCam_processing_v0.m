@@ -2,12 +2,18 @@
 %
 
 %% Load data
-dirList = dir('~/mnt2');
-if length(dirList) == 2 ;system('sudo mount /dev/sda1 ~/mnt2'); end
+hn = system('hostname');
+if strcmp(hn, 'bowtie')
+    evtCamDir = '~/Documents/data/EventCam/';
+    addpath('~/Documents/Analysis/prophesee-matlab-scripts');
 
-addpath('~/junk/prophesee-matlab-scripts');
+else
+    dirList = dir('~/mnt2');
+    if length(dirList) == 2 ;system('sudo mount /dev/sda1 ~/mnt2'); end
+    evtCamDir = '~/mnt2/Users/billh/Event_Camera/';
+    addpath('~/junk/prophesee-matlab-scripts');
 
-evtCamDir = '~/mnt2/Users/billh/Event_Camera/';
+end
 subDir = 'Event Camera - OpticallyTrappedBead/';
 % subDir = 'Event Camera - Stage_SineWave/';
 
