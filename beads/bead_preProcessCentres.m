@@ -12,16 +12,17 @@ if ~isfield(data.opts, 'angleCorrection')
     data.opts.angleCorrection = false;
 end
 
-xCentresM = data.raw.xCentresPx .* mPerPx;
-yCentresM = data.raw.yCentresPx .* mPerPx;
+% These are in units of pixels
+xCentres = data.raw.xCentresPx;
+yCentres = data.raw.yCentresPx;
 
 % Conditional drift removal only demeans when pOrder = 0
 dims = [1, 3, 2];
 
-[~, xCentresM, ~] = func_thermal_rm(1:length(xCentresM), ...
-    permute(xCentresM, dims), data.opts.pOrder, 1, length(xCentresM));
-[~, yCentresM, ~] = func_thermal_rm(1:length(yCentresM), ...
-    permute(yCentresM, dims), data.opts.pOrder, 1, length(yCentresM));
+[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
+    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
+[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
+    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
 
 if data.opts.angleCorrection
     if isfield(data, 'ImstackFullFoV')
@@ -34,15 +35,15 @@ if data.opts.angleCorrection
             % Measure centre function
             cCentre = measure_cell_centre(data.ImstackFullFoV{1}{1,1}, data.dirPath);
         end
-        % Apply correction for ROI position
+        % Get ROI position
         roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
-        cCentre = cCentre - roi(1:2);
+        % This is written in my lab book 22/9/2021
+        rhoX = xCentres + roi(1) - cCentre(1);
+        rhoY = yCentres + roi(2) - cCentre(2);
         % This is actually radial co-ordinate
-        xCentresM = sqrt( ( xCentresM + cCentre(1) ).^2 ...
-            + ( yCentresM + cCentre(2) ).^2 );
+        xCentres = sqrt( rhoX.^2 + rhoY.^2 );
         % This is r times tangential co-ordinate
-        yCentresM = xCentresM .* atan( ( yCentresM + cCentre(2) ) ...
-            ./ ( xCentresM + cCentre(1) ) );
+        yCentres = xCentres .* atan( rhoY ./ rhoX );
         if data.opts.pOrder > 0
             warning('Be careful, drift removal was done before conversion to angular co-ordinates,')
             warning('I have not thought carefully about the implications of this. Continue at own risk')
@@ -52,6 +53,6 @@ if data.opts.angleCorrection
     end
 end
 
-data.pro.xCentresM = ipermute(xCentresM, dims);
-data.pro.yCentresM = ipermute(yCentresM, dims);
+data.pro.xCentresM = ipermute(xCentres.* mPerPx, dims);
+data.pro.yCentresM = ipermute(yCentres.* mPerPx, dims);
 data.opts.UseField = 'CentresM';
