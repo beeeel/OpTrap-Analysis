@@ -1,5 +1,5 @@
 function data = bead_preProcessCentres(data)
-
+%% General preprocessing on bead data - polynomial fit removal, angular correction, unit conversion, time regularisation
 if isfield(data,'mPerPx')
     mPerPx = data.mPerPx;
 else
@@ -10,6 +10,15 @@ end
 % Do angular correction?
 if ~isfield(data.opts, 'angleCorrection')
     data.opts.angleCorrection = false;
+end
+
+% Do time regularisation?
+if ~isfield(data.opts, 'timeRegularisation')
+    data.opts.timeRegularisation = false;
+elseif data.opts.timeRegularisation
+    t = data.raw.timeVecMs;
+    dt = median(diff(t));
+    data.raw.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
 end
 
 % These are in units of pixels
