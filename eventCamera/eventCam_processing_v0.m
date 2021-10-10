@@ -225,15 +225,20 @@ amp = 0.108.*range(centres(2,:)); % For sineWave sets, 0.108μm/px.
 % ROI = [m-r/2, r]
 % % lol that was a waste of time
 
+% nt_fine = 1e3;
+% ROI = [300 230 50 50];
+% [tsF, centresF, ns] = bufferEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
+% tsNoNaN = tsF(:,~isnan(centresF(1,:)));
+% centresNoNaN = centresF(:,~isnan(centresF(1,:)));
+% % stiffEVFB = calcStiffness(centresNoNaN, 2.64e-6); % Dunno where I got this pixel calibration from... 
+% stiffEVFB2 = calcStiffness(centresNoNaN, 0.164e-6); % Maybe should be 74e-6?
+
 nt_fine = 1e3;
 ROI = [300 230 50 50];
-[tsF, centresF, ns] = bufferEvents(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
-tsNoNaN = tsF(:,~isnan(centresF(1,:)));
-centresNoNaN = centresF(:,~isnan(centresF(1,:)));
-% stiffEVFB = calcStiffness(centresNoNaN, 2.64e-6); % Dunno where I got this pixel calibration from... 
-stiffEVFB2 = calcStiffness(centresNoNaN, 0.164e-6); % Maybe should be 74e-6?
+[tsF, centresF, ns] = bufferEvents_2(cdEvents.ts, cdEvents.x, cdEvents.y, nt_fine, ROI);
+stiffBuffEv2 = calcStiffness(centresF, 2.64e-6); % stiffBuffEv2 = 1e-9 * [1.330; 1.127]; % For TrappedBead_1. Ratio X/Y = 1.1804
 
-plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4), 'g-')
+% plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4), 'g-')
 
 % With ROI width&height = 2*range
 % stiffEVFB = 1e-11 * [0.831; 2.891]; % For TrappedBead_1. Ratio X/Y = 0.287.
@@ -242,6 +247,24 @@ plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4),
 % With ROI = [300 230 50 50]
 % stiffEVFB = 1e-9 * [2.455; 2.101]; % For TrappedBead_1. Ratio X/Y = 1.168.
 
+%% Interpolate to regularise
+nT = 1e-3*range(tsF);
+
+xin = centresF(1, :);
+yin = centresF(2, :);
+
+ti = linspace(min(tsF), max(tsF), nT);
+xi = interp1(tsF, xin, ti, 'pchip');
+yi = interp1(tsF, yin, ti, 'pchip');
+
+msd = msdanalyzer(1, 'px', 'us', 'log');
+tracks = {[ti' xi'], [ti' yi']};
+msd = msd.addAll(tracks);
+msd = msd.computeMSD;
+msd.plotMSD
+ax = gca;
+ax.XScale = 'log';
+ax.YScale = 'log';
 %% Animate 2.0
 step = 0.5e3;
 overlap = 250;
