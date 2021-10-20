@@ -6,6 +6,7 @@ ignoreDirs = {}; % Directories to ignore (ones without data)
 
 % Processing parameters
 angleCorrection = true; % Convert cartesian co-ordinates into polar (r, r.*theta)
+timeRegularise = true;  % Regularise time vector (for data acquired with fast_acq_v9 onwards)
 cropTs = {[]};
 fitPoly = [1]; % Fit a polynomial to remove drift
 fitPolyOrder = 1;       % Order of polynomial to be fitted
@@ -47,7 +48,7 @@ for d = 1:length(ignoreDirs)
 end
 % Check cropTs has been made with the right number of elements. Throws an
 % error and gives an empty list if not.
-checkCropTs(cropTs, dirList);
+% checkCropTs(cropTs, dirList);
 
 out = struct();
 out(1).stiff = nan;
@@ -63,7 +64,7 @@ for fileIdx = 27:35%length(dirList)
         % Set names and load data
         data.dirPath = [dirList(fileIdx).folder '/' dirList(fileIdx).name];
         data.fName = dirList(fileIdx).name;
-        data = bead_loadData(data, loadPics);
+        data = bead_loadData(data, any([loadPics angleCorrection]));
         
         % Apply calibration and crop time
         data.opts.cropT = cropTs{1};%fileIdx};
@@ -76,6 +77,7 @@ for fileIdx = 27:35%length(dirList)
         data.opts.forceRun = forceRun;
     end
     
+    data.opts.timeRegularisation = timeRegularise;
     % Apply scale and do polyfit
     data = bead_preProcessCentres(data);
     %% Process data
