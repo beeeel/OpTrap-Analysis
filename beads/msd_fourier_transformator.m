@@ -1,14 +1,12 @@
-function [FT] = msd_fourier_transformator(msdObj, obsT, varargin)
+function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 
 %% TO DO:
 % Check through everything once
-% Allow for drawing on extant figure and clearing/holding
-% Check wRange behaviour
-% Replace references to accumulated in main loop
 
 %% Parse inputs
-
+% If you're troubleshooting this bit, don't bother. Much easier to give up.
 nMSDs = size(msdObj.msd, 1);
+nargoutchk(1,2);
 
 p = inputParser;
 
@@ -20,8 +18,31 @@ p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima'})))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
+p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
+p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
+p.addParameter('yLims', [2e-6 1e-1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
+p.addParameter('figHand', [], @(x)isa(x,'matlab.ui.Figure'))
+p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x < 1) && length(x) == 3))
+p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
+p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 
 p.parse(msdObj, obsT, varargin{:});
+
+% FT options
+wR = p.Results.wRange;
+trunc_mode = p.Results.trunc;
+extrap_mode = p.Results.extrap;
+norm_mode = p.Results.norm;
+show_ints = p.Results.show_int;
+% MSD options
+nSkip = p.Results.nSkip;
+dims = p.Results.dims;
+% Plot options
+yLs = p.Results.yLims;
+fh = p.Results.figHand;
+colour = p.Results.lineColour;
+lS = p.Results.lineStyle;
+mS = p.Results.marker;
 
 %% Preparatory
 % hee hee
@@ -32,138 +53,107 @@ elseif nMSDs == 4
 else
     error('huh, how many beads?');
 end
-cols = {'k', [0.8 0 0], 'b', [0 0.75 0], 'k', 'k', 'k', 'k', 'k'};
-lS = {'-','-','-','-','-','-','-','-','-'};
-mS = {'none','none','none','none','none','none','none','none','none'}; {'s','o'};
+
 if obsT < 0
     legs = sprintf('%i min before drug',abs(round(obsT)));
 else
     legs = sprintf('%i min after drug',round(obsT));
 end
 
-yLs = [2e-6 1e-1];
-fSz = 14;
+fSz = 16;
 
-
-figure(20)
-prep_figure(tits, fSz, yLs, length(dims), show_ints, norm_mode);
+prep_figure(fh, tits, fSz, yLs, length(dims), show_ints, norm_mode);
 clear h
 
+allOCs = {};
+FT = cell(length(dims),1);
 
 for dimI = 1:length(dims)
     dim = dims(dimI);
-    for rep = 1:length(rIdxs)
-        rIdx = rIdxs(rep);
-        
-        % Number of points to skip
-        nSkip = 40;
-        
-        % Get the MSD
-        track = accumulated{dIdx}{1,cIdx}(rIdx).msd.msd{dim};
-        tau = track(2:end-nSkip,1);
-        msd = track(2:end-nSkip,2);
-        
-        % Determine truncation point
-        [idx, eta] = msd_truncator(tau, msd, trunc_mode, -30*(dimI-1));
-        
-        % Extrapolate if necessary
-        [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
-        
-        switch wRange_mode
-            case 'auto'
-                % Get plateau index for auto wRanging
-                [pIdx, ~] = msd_truncator(tau, msd, 'minima', 0);
-                edx = min(pIdx + 50, length(tau));
-                sdx = max(pIdx-100, 1);
-                wR = {1./tau([pIdx, sdx]), 1./tau([edx, pIdx])};
-            case 'r-theta'
-                wR = wRanges{dim};
-            case 'all'
-                wR = wRanges{dim}{rep};
-            case 'struct'
-                if ~isstruct(wRanges)
-                    tmp = whos('wRanges');
-                    error('wRanges needs to be a struct, instead got: %s\n', tmp.class)
-                end
-                day = dayDirs{dIdx};
-                if isfield(wRanges, ['d' day])
-                    c = num2str(cIdx);
-                    if isfield(wRanges.(['d' day]), ['c' c])
-                        if size(wRanges.(['d' day]).(['c' c]), 1) >= rIdx
-                            wR = wRanges.(['d' day]).(['c' c]){rIdx,dim};
-                        else 
-                            wR = {};
-                        end
-                    else
-                        wR = {};
-                    end
-                else
-                    wR = {};
-                end
-            otherwise
-                wR = wRanges{dIdx, cIdx};
-        end
-        
-        % Do the interpolation and rheoFT
-        [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
-        
-        % Find and show intercepts
-        subplot(2+show_ints, length(dims),length(dims)* (1 + show_ints) + dimI)
-        oC = gstar_interceptor(omega, G1, G2, wR, show_ints, cols{rep});
-        
-        allOCs{dim, rIdx} = oC;
-        
-        % Plot MSD
-        subplot(2+show_ints, length(dims),dimI)
-        
-        switch norm_mode
-            case 'intercept'
-                nF = oC(end);
-                xlim auto
-            otherwise
-                nF = 1;
-        end
-        
-        h(rep) = loglog(nF.*tau, msd, 'LineWidth', 2, ...
-            'Color', cols{rep}, 'LineStyle', lS{rep}, 'Marker', mS{rep});
-        h(length(rIdxs)+1) = plot(nF.*tau(idx), msd(idx), ...
-            'rx', 'LineWidth', 3, 'MarkerSize', 12);
-        
-        % Plot inverse of intercept frequencies
-        yl = ylim;
-        tmp = plot(nF.*[1; 1]./oC, yl, '--',...
-            'Color',0.7*[1 1 1 0.8], 'LineWidth', 2);
-        h(length(rIdxs)+2) = tmp(1);
-        ylim(yl);
-        
-        %     legend('MSD','1 ÷ Intercept frequency','Location','best')
-        
-        
-        % Plot the FT with intercept frequencies
-        subplot(2+show_ints, length(dims),length(dims)+dimI)
-        loglog(omega, ...
-            G1, 'LineWidth', 2, ...
-            'Color', cols{rep}, 'Marker', mS{rep}, 'LineStyle', '-', 'LineWidth', 2);
-        loglog(omega, ...
-            G2, 'LineWidth', 2, ...
-            'Color', cols{rep}, 'Marker', mS{rep}, 'LineStyle', '--', 'LineWidth', 2);
-        
-        % Show Intercept frequency without changing YLims
-        yl = ylim;
-        plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
-        ylim(yl);
-        
-        legend('Storage','Loss','Intercept frequency','Location','best')
-        
+    
+    % Get the MSD
+    track = msdObj.msd{dim};
+    tau = track(2:end-nSkip,1);
+    msd = track(2:end-nSkip,2);
+    
+    % Determine truncation point
+    [idx, eta] = msd_truncator(tau, msd, trunc_mode, -30*(dimI-1));
+    
+    % Extrapolate if necessary
+    [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
+    
+    % Do the interpolation and rheoFT
+    [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
+    
+    FT{dimI} = [omega, G1, G2];
+    
+    % Find and show intercepts
+    subplot(2+show_ints, length(dims),length(dims)* (1 + show_ints) + dimI)
+    oC = gstar_interceptor(omega, G1, G2, wR{dimI}, show_ints, colour);
+    
+    allOCs{dim} = oC;
+    
+    % Plot MSD
+    subplot(2+show_ints, length(dims),dimI)
+    
+    switch norm_mode
+        case 'intercept'
+            nF = oC(end);
+            xlim auto
+        otherwise
+            nF = 1;
     end
-    legend(h, legs{:},'Final point used in FT','1 ÷ Intercept frequency','Location','best')
+    
+    h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
+        'Color', colour, 'LineStyle', lS, 'Marker', mS);
+    h(end+1) = plot(nF.*tau(idx), msd(idx), ...
+        'rx', 'LineWidth', 3, 'MarkerSize', 12);
+    
+    % Plot inverse of intercept frequencies
+    yl = ylim;
+    tmp = plot(nF.*[1; 1]./oC, yl, '--',...
+        'Color',0.7*[1 1 1 0.8], 'LineWidth', 2);
+    h(end+1) = tmp(1);
+    ylim(yl);
+    
+    %     legend('MSD','1 ÷ Intercept frequency','Location','best')
+    
+    
+    % Plot the FT with intercept frequencies
+    subplot(2+show_ints, length(dims),length(dims)+dimI)
+    loglog(omega, ...
+        G1, 'LineWidth', 2, ...
+        'Color', colour, 'Marker', mS, 'LineStyle', '-', 'LineWidth', 2);
+    loglog(omega, ...
+        G2, 'LineWidth', 2, ...
+        'Color', colour, 'Marker', mS, 'LineStyle', '--', 'LineWidth', 2);
+    
+    % Show Intercept frequency without changing YLims
+    yl = ylim;
+    plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
+    ylim(yl);
+    
+    legend('Storage','Loss','Intercept frequency','Location','best')
+    
+    legend(h, legs,'Final point used in FT','1 ÷ Intercept frequency','Location','best')
 end
 
-%% Function definitions
+if nargout == 2
+    varargout{1} = allOCs;
+end
 
-function prep_figure(tits, fSz, yLs, n_dim, show_ints, norm_mode)
+% End of main function
+end
+%% Sub-function definitions
+
+function prep_figure(fh, tits, fSz, yLs, n_dim, show_ints, norm_mode)
 % Prepare figure window
-clf
+if isempty(fh)
+    figure(20)
+    clf
+else
+    figure(fh)
+end
 for plt = 1:n_dim
     subplot(2+show_ints, n_dim,plt)
     hold on
@@ -195,9 +185,9 @@ for plt = 1:n_dim
     if show_ints
         subplot(3,n_dim,plt+n_dim*(1+show_ints))
         hold on
-        title('Ratio of storage to loss moduli')
+%         title('Ratio of storage to loss moduli')
         xlabel('Frequency (Hz)')
-        ylabel('Ratio G''/G''''')
+        ylabel('tan(\delta) = G''''÷G''')
         set(gca,'FontSize',fSz)
         set(gca,'XScale','log')
         set(gca,'YScale','log')
@@ -320,7 +310,7 @@ function oC = gstar_interceptor(omega, G1, G2, wRange, doPlot, colour)
 % Find the intercepts between G1 and G2 as functions of frequency omega.
 % Uses linear fit over ranges given in cell array wRange.
 
-oC = zeros(1,length(wRange));
+oC = nan(1,max(1,length(wRange)));
 
 for wRIdx = 1:length(wRange)
     wdx = [0 0];
@@ -328,7 +318,7 @@ for wRIdx = 1:length(wRange)
     wdx(1) = max(sum(omega > wRange{wRIdx}(2)), 1);
     
     odata = omega(wdx(1):wdx(2));
-    Gdata = G1(wdx(1):wdx(2))./G2(wdx(1):wdx(2));
+    Gdata = G1(wdx(1):wdx(2)).\G2(wdx(1):wdx(2));
     
     try
         fo = fit(log(odata), log(Gdata), 'Poly1');
@@ -348,10 +338,10 @@ for wRIdx = 1:length(wRange)
     end
 end
 if doPlot
-    h(2) = loglog(omega, G1./G2, 'Color', colour, 'LineWidth', 2);
+    h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2);
     plot(xlim, [1 1], '--','Color',[1 1 1]*0.8, 'LineWidth', 3)
     try
-        legend(h, 'Fit result', 'Ratio G''÷G''''','Location','best')
+        legend(h, 'Fit result', 'Ratio G''''÷G''','Location','best')
     catch ME
         error(ME.identifier, 'No wRanges supplied?')
     end
