@@ -48,6 +48,8 @@ thymes = {
         {[2 8 11 15 18 31 48]-8} ... {[0 6] [0 4 10] [0 2 8 11 15 18 31]} ...
     ... % Times from 2021_05_17
         {([80 103 142 165 203]-100) ([91 107 156 172 211]-100)}};
+    
+wRanges = get_wRanges_struct(dayDirs);
 %% Experiment parameters
 mPerPx = 0.065e-6;           % Camera pixel size calibration
 ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without data)
@@ -87,6 +89,7 @@ cd([masterDir saveDir])
 fprintf('Working in %s\n',pwd)
 fileCount = 1;
 %%
+fh = figure(69);
 % For each day chosen
 for dayIdx = 1:length(dayDirs)
     % Get the correct directory
@@ -160,6 +163,16 @@ for dayIdx = 1:length(dayDirs)
                 accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             end
             
+            % Get wRange from struct
+            wR = wRange_getter(wRanges, dayDirs{dayIdx}, cellIdx, fIdx);
+            % Do the fourier transform to find intercept frequency
+            [FT, oC] = msd_fourier_transformator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), ...
+                'wRange',wR, 'fh', fh);
+            % Also fit to the MSD to find corner time equivalent frequency
+            % Probably take the mean of the two for pass frequency
+            
+            
+            
             % High-pass filter and calculate Allan variance if pass frequency is positive
             if fpass > 0
                 data.opts.fpass = fpass;
@@ -190,4 +203,93 @@ end
 
 if saveAccu
     save(accuFile, 'accumulated', 'dayDirs')
+end
+
+function wR = wRange_getter(wRanges, day, cIdx, fIdx)
+if ~isstruct(wRanges)
+    tmp = whos('wRanges');
+    error('wRanges needs to be a struct, instead got: %s\n', tmp.class)
+end
+day = ['d' day];
+if isfield(wRanges, day)
+    c = ['c' num2str(cIdx)];
+    if isfield(wRanges.(day), c)
+        if size(wRanges.(day).(c), 1) >= fIdx
+            wR = wRanges.(day).(c)(fIdx,:);
+        else
+            wR = {};
+        end
+    else
+        wR = {};
+    end
+else
+    wR = {};
+end
+end
+
+function [wRanges] = get_wRanges_struct(dayDirs)
+% This has numbers from LatB data
+wRanges = struct(strcat('d',dayDirs{end}), struct('c1', {{}}));
+
+wRanges.d2021_07_27.c2 = {...
+    {[2e-2 1] [5 1e2]} {[2e-2 1] [5 1e2]};
+    {[2e-2 1] [5 1e2]} {[2e-2 1] [5 1e2]};
+    {[2e-2 0.8] [8e2 2e3]} {[8 80]};
+    {[2e-2 0.8] [8e2 2e3]} {[8 80]};
+    {[2 10]} {[2 10]};
+    {[2 10]} {[2 10]};
+    {[1 7]} {[1 10]};
+    {[1e-2 1.5e-1] [30 1e4]} {[2 10]};};
+wRanges.d2021_07_27.c1 = {...
+    {[1e-2 2] [200 2e3]} {[1e-2 5] [60 8e2]};
+    {[1e-2 5] [500 5e4]} {[1e-2 6] [200 1e4]};
+    {[1e-2 2] [8e2 2e3]} {[1e-2 1] [200 1e4]};
+    {[1e-2 2] [8e2 2e3]} {[1e-1 2] [200 1e4]};
+    {[1e-2 1] [8e2 2e3]} {[1e-2 1] [200 1e4]};
+    {[1e-1 3] [20 1e2]} {[1e-2 1] [200 1e4]};
+    {[1e-2 1] [6e2 2e3]} {[1e-2 1] [200 1e4]};
+    {[1e-2 1] [6e2 2e3]} {[1e-2 1] [200 1e4]};
+    {[1e-2 1] [6e2 2e3]} {[1e-2 1] [200 1e4]}};
+wRanges.d2021_07_26.c1 = {...
+    {[1e-2 10] [50 3e2]} {[1e-2 10] [20 8e2]};
+    {[1e-2 5] [50 5e2]} {[1e-2 6] [20 8e2]};
+    {[1e-2 10] [50 3e2]} {[1e-2 10] [20 8e2]};
+    {[6e-2 2] [50 3e2]} {[6e-2 2] [20 8e2]};
+    {[1e-2 1] [50 3e2]} {[1e-2 1] [20 8e2]};
+    {[1e-1 3] [20 1e2]} {[1e-2 3] [20 2e2]};
+    {[1e-1 3] [50 3e2]} {[1e-2 3] [50 3e2]};
+    {[1e-1 3] [10 2e2]} {[1e-2 3] [10 2e2]}};
+wRanges.d2021_07_23.c3 = {...
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 8e2]};
+    {[1e-2 0.8] [100 1e4]} {[100 1e4]};
+    {[100 1e4]} {[20 8e2]};
+    {[100 1e4]} {[20 1e3]}};
+wRanges.d2021_07_23.c2 = {...
+    {[1e-2 1] [70 1e4]} {[5 80]};
+    {[3 50]} {[2 30]};
+    {[3 50]} {[0.5 5]};
+    {[3 50]} {[0.5 5]};
+    {[0.5 4]} {[0.5 4]};
+    {[3e-1 5]} {[3e-1 3]};
+    {[1 10]} {[1 10]}; %
+    {[2e-1 10]} {[2e-1 8]};
+    {[4e-1 3]} {[1e-1 3]};
+    {[1 5]} {[1 5]};};
+wRanges.d2021_07_23.c1 = {...
+    {[1e-1 5]} {[1e-1 5]};
+    {[5e-1 500]} {[1e-1 5]};
+    {[1e-1 5]} {[1e-1 5]};
+    {[1e-1 3]} {[1e-1 3]};
+    {[1e-1 3]} {[1e-1 3]};
+    {[1e-1 5]} {[1e-1 5]};
+    {[1e-2 2]} {[1e-2 2]}; %
+    {[1e-2 30]} {[1e-2 8]};
+    {[1e-2 1] [20 200] [300 1e3]} {[1e-2 2]};
+    {[1e-2 1] [20 200] [300 1e3]} {[1e-2 2]}};
+
 end
