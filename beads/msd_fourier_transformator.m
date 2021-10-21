@@ -1,7 +1,19 @@
 function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
-
-%% TO DO:
-% Check through everything once
+%% [FT, [oCs]] = msd_fourier_transformator(msdObj, obsT, varargin)
+% Do Fourier transform of MSD and find intercept frequency(s) if given.
+% Takes parameters in name-value pairs. Possible options:
+% wRange        - cell row vector with 1 element per dimension to be FT'd
+% trunc         - truncation mode ('none', or 'minima')
+% extrap        - extrapolation mode ('none', or 'linear')
+% norm          - which corner to normalise time to ('none','low', or 'high')
+% show_int      - show plots with tan(δ) used for intercept finding
+% nSkip         - number of MSD points to skip (default 40)
+% dims          - which dimensions to do FT on (indexes to msdObj.msd)
+% yLims         - y limits on MSD plot
+% figHand       - figure handle to plot upon (automatically holds existing plots if correct axes are present)
+% lineColour    - line colour to plot
+% lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
+% marker        - line marker to plot MSD and FT with
 
 %% Parse inputs
 % If you're troubleshooting this bit, don't bother. Much easier to give up.
