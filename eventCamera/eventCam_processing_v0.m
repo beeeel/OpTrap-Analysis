@@ -304,6 +304,8 @@ for idx = 1:nSteps
     plot(cdEvents.ts([i1 i2])./1e6, [i1 i2], 'y', 'LineWidth', 2)
     plot(t./1e6, (i1+i2)/2, 'rx','MarkerSize',6,'LineWidth',3)
     subplot(10, 10, [21 100])
+    xlim([300 350])
+ylim([300 350])
     imagesc(im, [-1 1]*3);
     hold on
     plot(ROI([1 1 1 1 1])+[0 1 1 0 0].*ROI(3), ROI([2 2 2 2 2])+[0 0 1 1 0].*ROI(4), 'r-')
