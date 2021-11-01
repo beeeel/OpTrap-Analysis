@@ -1,10 +1,25 @@
 function cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
-%% TO DO: Write header comment
+%% cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
+% Find forner times between tRanges using linear fits to loglog data.
+% Accepts additional parameters in name-value pairs. Possible options:
+% nSkip         - Number of points from MSD to skip
+% dims          - Indices within msdObj.msd to use
+% yLims         - Y limits when plotting MSDs
+% figHand       - Figure handle to plot upon
+% lineColour    - Line colour to plot MSD
+% lineStyle     - Line style to plot MSD
+% marker        - Marker to plot MSD
+% interpM       - Interpolation method for fitting
+% interpF       - Interpolation factor for fitting
+
+%% TO DO: 
 % Check that stuff actually works
 % Incorporate into bead_processing_accumulator_v1
 % Consider whether it's worth making bead_processor_v2 with detailed
 %  analysis (should mostly be copypasta from accumulator_v1)
 % Sleep
+% Make version using [alpha, D] = leastSq(log(tauData),log(msdData)) to do
+% fits
 
 %% Parse inputs
 nMSDs = size(msdObj.msd, 1);

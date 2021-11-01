@@ -50,6 +50,7 @@ thymes = {
         {([80 103 142 165 203]-100) ([91 107 156 172 211]-100)}};
     
 wRanges = get_wRanges_struct(dayDirs);
+tRanges = get_tRanges_struct(dayDirs);
 %% Experiment parameters
 mPerPx = 0.065e-6;           % Camera pixel size calibration
 ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without data)
@@ -164,14 +165,19 @@ for dayIdx = 1:length(dayDirs)
             end
             
             % Get wRange from struct
-            wR = wRange_getter(wRanges, dayDirs{dayIdx}, cellIdx, fIdx);
+            wR = Range_getter(wRanges, dayDirs{dayIdx}, cellIdx, fIdx);
+            
             % Do the fourier transform to find intercept frequency
             [FT, oC] = msd_fourier_transformator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), ...
                 'wRange',wR, 'fh', fh);
+            
+            % Get tRange from struct
+            tR = Range_getter(tRanges, dayDirs{dayIdx}, cellIdx, fIdx);
             % Also fit to the MSD to find corner time equivalent frequency
+            tC = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
+            
             % Probably take the mean of the two for pass frequency
-            
-            
+            fpass = mean([tC 1./oC]); % ( Double check sizes here )
             
             % High-pass filter and calculate Allan variance if pass frequency is positive
             if fpass > 0
@@ -205,7 +211,7 @@ if saveAccu
     save(accuFile, 'accumulated', 'dayDirs')
 end
 
-function wR = wRange_getter(wRanges, day, cIdx, fIdx)
+function wR = Range_getter(wRanges, day, cIdx, fIdx)
 if ~isstruct(wRanges)
     tmp = whos('wRanges');
     error('wRanges needs to be a struct, instead got: %s\n', tmp.class)
@@ -292,4 +298,22 @@ wRanges.d2021_07_23.c1 = {...
     {[1e-2 1] [20 200] [300 1e3]} {[1e-2 2]};
     {[1e-2 1] [20 200] [300 1e3]} {[1e-2 2]}};
 
+end
+
+function [tRanges] = get_tRanges_struct(dayDirs)
+% This has numbers from LatB data
+tRanges = struct(strcat('d',dayDirs{end}), struct('c1', {{}}));
+
+tRanges.d2021_07_27.c2 = {...
+    };
+tRanges.d2021_07_27.c1 = {...
+    };
+tRanges.d2021_07_26.c1 = {...
+    };
+tRanges.d2021_07_23.c3 = {...
+    };
+tRanges.d2021_07_23.c2 = {...
+    };
+tRanges.d2021_07_23.c1 = {...
+    };
 end

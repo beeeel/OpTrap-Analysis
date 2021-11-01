@@ -25,7 +25,7 @@ p = inputParser;
 p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
-p.addParameter('wRange',{},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
+p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima'})))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
@@ -58,9 +58,9 @@ mS = p.Results.marker;
 
 %% Preparatory
 % hee hee
-if nMSDs == 2
+if length(dims) == 2
     tits = {'Radial', 'Tangential'};    
-elseif nMSDs == 4
+elseif length(dims) == 4
     tits = {'Left Radial', 'Left Tangential', 'Right Radial', 'Right Tangential'};
 else
     error('huh, how many beads?');
