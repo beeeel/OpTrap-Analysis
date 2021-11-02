@@ -171,12 +171,12 @@ for dayIdx = 1:length(dayDirs)
             [FT, oC] = msd_fourier_transformator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), ...
                 'wRange',wR, 'fh', fh);
             
-            % Get tRange from struct
+            %% Get tRange from struct
             tR = Range_getter(tRanges, dayDirs{dayIdx}, cellIdx, fIdx);
             % Also fit to the MSD to find corner time equivalent frequency
             tC = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
             
-            % Probably take the mean of the two for pass frequency
+            %% Probably take the mean of the two for pass frequency
             fpass = mean([tC 1./oC]); % ( Double check sizes here )
             
             % High-pass filter and calculate Allan variance if pass frequency is positive
@@ -211,25 +211,25 @@ if saveAccu
     save(accuFile, 'accumulated', 'dayDirs')
 end
 
-function wR = Range_getter(wRanges, day, cIdx, fIdx)
-if ~isstruct(wRanges)
+function Range = Range_getter(Ranges, day, cIdx, fIdx)
+if ~isstruct(Ranges)
     tmp = whos('wRanges');
     error('wRanges needs to be a struct, instead got: %s\n', tmp.class)
 end
 day = ['d' day];
-if isfield(wRanges, day)
+if isfield(Ranges, day)
     c = ['c' num2str(cIdx)];
-    if isfield(wRanges.(day), c)
-        if size(wRanges.(day).(c), 1) >= fIdx
-            wR = wRanges.(day).(c)(fIdx,:);
+    if isfield(Ranges.(day), c)
+        if size(Ranges.(day).(c), 1) >= fIdx
+            Range = Ranges.(day).(c)(fIdx,:);
         else
-            wR = {};
+            Range = {};
         end
     else
-        wR = {};
+        Range = {};
     end
 else
-    wR = {};
+    Range = {};
 end
 end
 

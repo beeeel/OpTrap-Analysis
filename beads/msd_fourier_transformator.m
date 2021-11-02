@@ -14,6 +14,8 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineColour    - line colour to plot
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
+%
+% Could I make a "hold on" version of this to redraw on same axis?
 
 %% Parse inputs
 % If you're troubleshooting this bit, don't bother. Much easier to give up.
@@ -33,7 +35,7 @@ p.addParameter('show_int',false,@(x)islogical(x))
 p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
 p.addParameter('yLims', [2e-6 1e-1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
-p.addParameter('figHand', [], @(x)isa(x,'matlab.ui.Figure'))
+p.addParameter('fh', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x < 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
@@ -51,7 +53,7 @@ nSkip = p.Results.nSkip;
 dims = p.Results.dims;
 % Plot options
 yLs = p.Results.yLims;
-fh = p.Results.figHand;
+fh = p.Results.fh;
 colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
@@ -145,7 +147,7 @@ for dimI = 1:length(dims)
     plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
     ylim(yl);
     
-    legend('Storage','Loss','Intercept frequency','Location','best')
+    legend('"Storage"','"Loss"','Intercept frequency','Location','best')
     
     legend(h, legs,'Final point used in FT','1 ÷ Intercept frequency','Location','best')
 end
@@ -190,8 +192,8 @@ for plt = 1:n_dim
 %     ylim([1e-6 1e1])
     xlim([8e-3 1e4])
     xlabel('Frequency (Hz)')
-    ylabel('G'', G''''')
-    title([tits{plt} ' Moduli'])
+    ylabel('"G'', G''''"')
+    title([tits{plt} ' Fourier transform'])
     set(gca,'FontSize',fSz)
     
     if show_ints
@@ -199,7 +201,7 @@ for plt = 1:n_dim
         hold on
 %         title('Ratio of storage to loss moduli')
         xlabel('Frequency (Hz)')
-        ylabel('tan(\delta) = G''''÷G''')
+        ylabel('"tan(\delta) = G''''÷G''"')
         set(gca,'FontSize',fSz)
         set(gca,'XScale','log')
         set(gca,'YScale','log')

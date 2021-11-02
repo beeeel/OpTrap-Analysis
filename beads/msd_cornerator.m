@@ -12,14 +12,10 @@ function cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % interpM       - Interpolation method for fitting
 % interpF       - Interpolation factor for fitting
 
-%% TO DO: 
-% Check that stuff actually works
-% Incorporate into bead_processing_accumulator_v1
+%% TO DO:
 % Consider whether it's worth making bead_processor_v2 with detailed
 %  analysis (should mostly be copypasta from accumulator_v1)
 % Sleep
-% Make version using [alpha, D] = leastSq(log(tauData),log(msdData)) to do
-% fits
 
 %% Parse inputs
 nMSDs = size(msdObj.msd, 1);
@@ -39,16 +35,20 @@ p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'next', 'previous', 'spline', 'pchip', 'cubic', 'v5cubic', 'makima'})))
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
+p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
+
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
 
 % Intercept
-tRanges = p.Results.tRange;
+tRanges = p.Results.tRanges;
 interpM = p.Results.interpM;
 interpF = p.Results.interpF;
 % MSD options
 nSkip = p.Results.nSkip;
 dims = p.Results.dims;
+% Estimator
+est = p.Results.estimator;
 % Plot options
 yl = p.Results.yLims;
 fh = p.Results.figHand;
@@ -57,42 +57,27 @@ lS = p.Results.lineStyle;
 mS = p.Results.marker;
 %% Setup
 
-% Titles for X and Y directions
-if length(dims) == 2
-    tits = {'Radial','Tangential'};
-elseif length(dims) == 4
-    tits = {'left bead Radial','left bead Tangential', 'right bead Radial', 'right bead Tangential'};
-else 
-    error('Length of dimensions needs to be 2 or 4 because I''m lazy')
-end
-% Font size
-fSz = 16;
+cTau = nan(floor(length(tRanges)/2),length(dims));
 
-if isempty(fh)
-    fh = figure(203);
-    clf
-else
-    figure(fh)
+% Just give up if there's no tRanges to work on
+if ~ size(cTau,1) 
+    return
 end
 
-if obsT < 0
-    legs = sprintf('%i min before drug',abs(round(obsT)));
-else
-    legs = sprintf('%i min after drug',round(obsT));
-end
+legs = {};
+N_setup_fig;
 
-cTau = zeros(numel(tRanges{:}),length(dims));
 
-% For each dimension, get the tau and msd, interpolate and then fit all the
-% tRanges
+fps = zeros(2, length(tRanges), length(dims));
+
+% For each dimension 
 for dIdx = dims
-    plt = dims(dIdx);
-    ax = subplot(nTracks/2,2,plt);
-    hold on
-    clear h
+    d = dims(dIdx);
+    subplot(length(dims)/2,2,dIdx)
     try
-        tau = msdObj.msd{plt}(2:end-nSkip,1);
-        msd = msdObj.msd{plt}(2:end-nSkip,2);
+        % get the tau and msd, interpolate 
+        tau = msdObj.msd{d}(2:end-nSkip,1);
+        msd = msdObj.msd{d}(2:end-nSkip,2);
         
         taui = logspace(log10(tau(1)), log10(tau(end)), length(tau).*interpF)';
         msdi = interp1(tau, msd, taui, interpM);
@@ -100,48 +85,116 @@ for dIdx = dims
         h = plot(taui, msdi, ...
             'Color',colour, 'LineWidth', 2, 'LineStyle', lS, 'Marker', mS);
         
-        % Fit to interpolated data
-        fps = zeros(2, length(tRanges));
-        for fIdx = 1:length(tRanges)
+        % Fit to interpolated data from all the tRanges
+        
+        for fIdx = 1:length(tRanges{d})
             % Get the indexes for the specified time range
-            msdIdx = find(taui > tRanges{fIdx}(1), 1) ...
-                : find(taui < tRanges{fIdx}(2), 1, 'last');
+            msdIdx = find(taui > tRanges{d}{fIdx}(1), 1) ...
+                : find(taui < tRanges{d}{fIdx}(2), 1, 'last');
             tauData = taui(msdIdx);
             msdData = msdi(msdIdx);
-            % Fit to log data and show the fits
-            fo = fit(log(tauData), log(msdData), 'poly1');
-            plot(tauData, exp(fo.p1 * log(tauData) + fo.p2), 'k:', 'LineWidth', 1.5)
-            % Store the data for later
-            fps(:,fIdx) = [fo.p1; fo.p2];
+            
+            % Fit to log data
+            fps(:,fIdx, dIdx) = N_get_fits;
+            % Show fits
+            plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx)) , ...
+                'r:', 'LineWidth', 2.5)
+
         end
-        % Find corners by intercept of fits
+        % Find corners by intercept of fits. I fucking hope I wrote this in
+        % my lab book.... (I probably didn't)
         dfps = diff(fps,1,2);
-        cTau(:, dIdx) = exp(-dfps(2,:)./dfps(1,:));
+        cTau(:, dIdx) = exp(-dfps(2,:,dIdx)./dfps(1,:,dIdx));
+        
+        for corn = 1:size(cTau,1)
+            plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.5])
+        end
     catch ME
         warning(['caught error: ' ME.message])
     end
     
+    % Set legend
     try
         legend(h,legs, 'Location', 'northwest');
     catch ME
         warning(['Couldn''t set legend: ' ME.message])
     end
-    
-    % This is horrible
-    ax.XScale = 'log';
-    ax.YScale = 'log';
-    
-    ax.FontSize = fSz;
-    xl = [1 2];
-    [xl(1), xl(2)] = bounds(msdObj.msd{1}(:,1));
-    
-    xlim(xl)
-    ylim(yl)
-    
-    xlabel('Delay time \tau (s)')
-    ylabel('Mean-squared displacement (\mu m^2)')
-    title(sprintf('%s direction',tits{plt}))
-    grid on
 end
 
+%% Function definitions
+    function fps = N_get_fits
+        % Either use linear fit or the least squares estimator from [1]Ling
+        % 2019 eq. 2.4
+        switch est
+            case 'lsq'
+                [alpha, D] = leastSq(log(tauData), log(msdData));
+                % This needs to output the gradient (alpha) and y-intercept
+                % of the linear fit, whereas 2D is the MSD at τ=1. [1]
+                fps = [alpha; log(2*D)];
+                % Truth is I couldn't tell you how this works, but it does.
+            case 'fit'
+                % Fit to log data
+                fo = fit(log(tauData), log(msdData), 'poly1');
+                % Store the data for later
+                fps = [fo.p1; fo.p2];
+        end
+        
+    end
+
+
+    function N_setup_fig
+        % Titles for X and Y directions
+        if length(dims) == 2
+            tits = {'Radial','Tangential'};
+        elseif length(dims) == 4
+            tits = {'left bead Radial','left bead Tangential', 'right bead Radial', 'right bead Tangential'};
+        else
+            error('Length of dimensions needs to be 2 or 4 because I''m lazy')
+        end
+        % Font size
+        fSz = 16;
+        
+        
+        if isempty(fh)
+            fh = figure(203);
+            clf
+        else
+            figure(fh)
+        end
+        
+        if obsT < 0
+            legs = sprintf('%i min before drug',abs(round(obsT)));
+        else
+            legs = sprintf('%i min after drug',round(obsT));
+        end
+        
+        for pIdx = dims
+            plt = dims(pIdx);
+            
+            ax = subplot(length(dims)/2,2,plt);
+            
+            hold on
+            clear h
+            
+            % This is horrible
+            % Less so now
+            ax.XScale = 'log';
+            ax.YScale = 'log';
+            
+            ax.FontSize = fSz;
+            
+            [xl1, xl2] = bounds(msdObj.msd{1}(:,1));
+            
+            xlim([xl1 xl2])
+            ylim(yl)
+            
+            xlabel('Delay time \tau (s)')
+            ylabel('Mean-squared displacement (\mu m^2)')
+            
+            title(sprintf('%s direction',tits{plt}))
+            
+            grid on
+            
+        end
+    end
 end
