@@ -14,7 +14,8 @@ function cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
 
 %% TO DO:
 % Consider whether it's worth making bead_processor_v2 with detailed
-%  analysis (should mostly be copypasta from accumulator_v1)
+%  analysis (should mostly be copypasta from accumulator_v1)... probably
+%  not
 % Sleep
 
 %% Parse inputs
@@ -107,7 +108,7 @@ for dIdx = dims
         cTau(:, dIdx) = exp(-dfps(2,:,dIdx)./dfps(1,:,dIdx));
         
         for corn = 1:size(cTau,1)
-            plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.5])
+            h(2) = plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.25], 'LineWidth', 3);
         end
     catch ME
         warning(['caught error: ' ME.message])
@@ -115,7 +116,7 @@ for dIdx = dims
     
     % Set legend
     try
-        legend(h,legs, 'Location', 'northwest');
+        legend(h,{legs 'Fit intercept time'}, 'Location', 'northwest');
     catch ME
         warning(['Couldn''t set legend: ' ME.message])
     end
