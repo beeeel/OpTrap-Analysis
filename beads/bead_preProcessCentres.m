@@ -7,11 +7,6 @@ else
     mPerPx = 0.07e-6;
 end
 
-% Do angular correction?
-if ~isfield(data.opts, 'angleCorrection')
-    data.opts.angleCorrection = false;
-end
-
 % Do time regularisation?
 if ~isfield(data.opts, 'timeRegularisation')
     data.opts.timeRegularisation = false;
@@ -25,7 +20,39 @@ end
 xCentres = data.raw.xCentresPx;
 yCentres = data.raw.yCentresPx;
 
-if data.opts.angleCorrection
+% Do angular correction?
+if ~isfield(data.opts, 'angleCorrection')
+    data.opts.angleCorrection = false;
+elseif data.opts.angleCorrection
+    N_doAngleCorrection;
+end
+
+if data.opts.pOrder > 0 && data.opts.angleCorrection
+    warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
+    warning('I have not thought carefully about the implications of this. Continue at own risk')
+end
+        
+% Conditional drift removal only demeans when pOrder = 0
+dims = [1, 3, 2];
+
+[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
+    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
+[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
+    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
+
+if ~isfield(data.opts.downsampleR)
+    data.opts.downsampleR = 1;
+elseif data.opts.downsampleR > 1
+    N_downsample
+end
+
+data.pro.xCentresM = ipermute(xCentres.* mPerPx, dims);
+data.pro.yCentresM = ipermute(yCentres.* mPerPx, dims);
+data.opts.UseField = 'CentresM';
+
+
+function N_doAngleCorrection
+
     if isfield(data, 'ImstackFullFoV')
         cFile = [data.dirPath '/cell_centre.txt'];
         if exist(cFile, 'file')
@@ -51,19 +78,29 @@ if data.opts.angleCorrection
     end
 end
 
-if data.opts.pOrder > 0 && data.opts.angleCorrection
-    warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
-    warning('I have not thought carefully about the implications of this. Continue at own risk')
-end
+    function N_downsample
+        % Downsample position and time data, storing the outputs. Untested.
         
-% Conditional drift removal only demeans when pOrder = 0
-dims = [1, 3, 2];
-
-[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
-    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
-[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
-    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
-
-data.pro.xCentresM = ipermute(xCentres.* mPerPx, dims);
-data.pro.yCentresM = ipermute(yCentres.* mPerPx, dims);
-data.opts.UseField = 'CentresM';
+        [nR, ~, nT] = size(xCentres);
+        r = data.opts.downsampleR;
+        
+        tmp = [xCentres, yCentres];
+        Centres = zeros(nR, 2, floor(nT./r));
+        for idx = 1:floor(nT/r)
+            % Average both rows of the track, using a number of elements
+            % equal to R (downsampling factor)
+            Centres(:,:,idx) = mean( tmp( :, :, (idx - 1) * r + 1 : idx * r ));
+        end
+        xCentres = Centres(:,1,:);
+        yCentres = Centres(:,2,:);
+        
+        tmp = data.raw.timeVecMs;
+        t1 = zeros(1, floor(nT./r));
+        for idx = 1:floor(nT/r)
+            % Average time vector using a number of elements equal to R
+            % (downsampling factor)
+            t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
+        end
+        data.raw.timeVecMs = t1;
+    end
+end
