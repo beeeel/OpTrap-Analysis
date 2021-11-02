@@ -46,11 +46,12 @@ if data.opts.angleCorrection
         % This is r times tangential co-ordinate
         yCentres = xCentres .* atan( rhoY ./ rhoX );
     else
+        data.opts.angleCorrection = false;
         warning('No image files loaded, skipping angular correction')
     end
 end
 
-if data.opts.pOrder > 0
+if data.opts.pOrder > 0 && data.opts.angleCorrection
     warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
     warning('I have not thought carefully about the implications of this. Continue at own risk')
 end
