@@ -25,14 +25,6 @@ end
 xCentres = data.raw.xCentresPx;
 yCentres = data.raw.yCentresPx;
 
-% Conditional drift removal only demeans when pOrder = 0
-dims = [1, 3, 2];
-
-[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
-    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
-[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
-    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
-
 if data.opts.angleCorrection
     if isfield(data, 'ImstackFullFoV')
         cFile = [data.dirPath '/cell_centre.txt'];
@@ -53,14 +45,23 @@ if data.opts.angleCorrection
         xCentres = sqrt( rhoX.^2 + rhoY.^2 );
         % This is r times tangential co-ordinate
         yCentres = xCentres .* atan( rhoY ./ rhoX );
-        if data.opts.pOrder > 0
-            warning('Be careful, drift removal was done before conversion to angular co-ordinates,')
-            warning('I have not thought carefully about the implications of this. Continue at own risk')
-        end
     else
         warning('No image files loaded, skipping angular correction')
     end
 end
+
+if data.opts.pOrder > 0
+    warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
+    warning('I have not thought carefully about the implications of this. Continue at own risk')
+end
+        
+% Conditional drift removal only demeans when pOrder = 0
+dims = [1, 3, 2];
+
+[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
+    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
+[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
+    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
 
 data.pro.xCentresM = ipermute(xCentres.* mPerPx, dims);
 data.pro.yCentresM = ipermute(yCentres.* mPerPx, dims);
