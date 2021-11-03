@@ -5,7 +5,7 @@
 %       uptick/low frequency intercept. Use this to apply highpass
 %       filtering before recalculating MSD and FTs.
 %
-% This file accumulates: Control data
+% This file accumulates: Latrunculin B data
 
 %% Data parameters
 close all
