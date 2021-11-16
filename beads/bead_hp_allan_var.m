@@ -19,7 +19,15 @@ if nargin >= 6
 end
 
 data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(cRow);
-centreVec = data.raw.(field);
+
+if isfield(data.raw, field)
+    centreVec = data.raw.(field);
+elseif isfield(data.pro, field)
+    centreVec = data.pro.(field);
+else
+    error('Could not find field %s in data.raw or data.pro',field)
+end
+
 centreVec = [centreVec(cRow,end:-1:1) centreVec(cRow,:) centreVec(cRow,end:-1:1)];
 
 timeVec = data.raw.timeVecMs;
