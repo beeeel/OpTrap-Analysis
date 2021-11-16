@@ -28,7 +28,8 @@ p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
-p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima'})))
+p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima'})))%,'FF'
+p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1})}))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
@@ -45,6 +46,7 @@ p.parse(msdObj, obsT, varargin{:});
 % FT options
 wR = p.Results.wRange;
 trunc_mode = p.Results.trunc;
+FF = p.Results.truncFF;
 extrap_mode = p.Results.extrap;
 norm_mode = p.Results.norm;
 show_ints = p.Results.show_int;
@@ -76,6 +78,13 @@ end
 
 fSz = 16;
 
+% silence warnings
+warns = {'curvefit:fit:complexYusingOnlyReal','MATLAB:Axes:NegativeDataInLogAxis', 'MATLAB:legend:IgnoringExtraEntries'};
+for wI = 1:length(warns)
+    st(wI) = warning('query', warns{wI});
+    warning('off', warns{wI});
+end
+
 prep_figure(fh, tits, fSz, yLs, length(dims), show_ints, norm_mode);
 clear h
 
@@ -86,12 +95,13 @@ for dimI = 1:length(dims)
     dim = dims(dimI);
     
     % Get the MSD
-    track = msdObj.msd{dim};
-    tau = track(2:end-nSkip,1);
-    msd = track(2:end-nSkip,2);
+    msdV = msdObj.msd{dim};
+    tau = msdV(2:end-nSkip,1);
+    msd = msdV(2:end-nSkip,2);
+    
     
     % Determine truncation point
-    [idx, eta] = msd_truncator(tau, msd, trunc_mode, -30*(dimI-1));
+    [idx, eta] = msd_truncator(tau, msd, trunc_mode, FF);
     
     % Extrapolate if necessary
     [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
@@ -118,6 +128,8 @@ for dimI = 1:length(dims)
             nF = 1;
     end
     
+    loglog(nF.*msdV(2:end,1), msdV(2:end,2), 'LineWidth', 2, ...
+        'Color', [1 1 1 0.25], 'LineStyle', lS, 'Marker', mS);
     h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
         'Color', colour, 'LineStyle', lS, 'Marker', mS);
     h(end+1) = plot(nF.*tau(idx), msd(idx), ...
@@ -156,6 +168,9 @@ if nargout == 2
     varargout{1} = allOCs;
 end
 
+for wI = 1:length(warns)
+    warning(st(wI).state, warns{wI});
+end
 % End of main function
 end
 %% Sub-function definitions
@@ -166,7 +181,7 @@ if isempty(fh)
     figure(20)
     clf
 else
-    figure(fh)
+    figure(fh.Number)
 end
 for plt = 1:n_dim
     subplot(2+show_ints, n_dim,plt)
@@ -208,6 +223,7 @@ for plt = 1:n_dim
         grid on
     end
 end
+
 end
 
 function [idx, eta] = msd_truncator(tau, msd, mode, FF)
@@ -228,6 +244,8 @@ switch mode
     case 'minima'
         idx = idx + FF;
     % Don't truncate
+    case 'FF'
+        idx = length(tau) - FF;
     otherwise
         idx = length(tau);
 end
@@ -243,7 +261,7 @@ function [tau, msde, eta, idx] = msd_extrapolator(tau, msd, idx, eta, mode)
 % the same tau values
 switch mode
     case 'linear'
-        nP = 15;
+        nP = 30;
         fo = fit(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)), 'Poly1');
         msde = msd;
         msde(idx-nP:end) = exp(fo.p1 * log(tau(idx-nP:end)) + fo.p2);
@@ -260,71 +278,76 @@ end
 % hold on
 % loglog(tau, msde,'-')
 end
-
-function [dydx, varargout] = msd_gradientor(tau, msd, varargin)
-% Calculates MSD gradient. I've made this so I can replace the pointwise
-% numerical with a fitting method
-
-if nargin == 2
-    method = 'piecewise';
-else
-    method = varargin{1};
-end
-if nargin == 4
-    nP = varargin{2};
-end
-
-switch method
-    case 'piecewise'
-        % Calculate pointwise gradient in log space
-        tRs = tau(2:end)./tau(1:end-1);
-        mRs = msd(2:end,:)./msd(1:end-1,:);
-        
-        dydx = log(mRs) ./ log(tRs);
-        
-        % Rolling average
-        if ~exist('nP','var')
-            nP = 15;
-        end
-        kern = ones(nP,1);
-        dydx = conv(dydx, kern, 'valid')./nP;
-        tout = conv(tau(1:end-1), kern, 'valid') ./ nP;
-    case 'fitting'
-        if ~exist('nP','var')
-            nP = 40;
-        end
-        dydx = zeros(size(msd,1)-nP, size(msd,2));
-        tout = nan(length(tau)-nP, 1);
-        tau = tau(msd > 0); % Careful, if MSD is a matrix this will shit itself
-        msd = msd(msd > 0);
-        for jdx = 1:size(msd,2)
-            for idx = 1:length(tau)-nP
-                tdata = tau(idx:idx+nP);
-                mdata = msd(idx:idx+nP,jdx);
-                
-                tout(idx) = mean(tdata);
-                
-                fo = fit(log(tdata), log(mdata), 'Poly1');
-                dydx(idx, jdx) = fo.p1;
-            end
-        end
-    otherwise
-        error('Choose a correct method')
-end
-
-if nargout == 2
-    varargout = {tout};
-elseif nargout > 2
-    error('Too many nargouts in msd_gradientor')
-end
-
-end
+% 
+% function [dydx, varargout] = msd_gradientor(tau, msd, varargin)
+% % Calculates MSD gradient. I've made this so I can replace the pointwise
+% % numerical with a fitting method
+% 
+% if nargin == 2
+%     method = 'piecewise';
+% else
+%     method = varargin{1};
+% end
+% if nargin == 4
+%     nP = varargin{2};
+% end
+% 
+% switch method
+%     case 'piecewise'
+%         % Calculate pointwise gradient in log space
+%         tRs = tau(2:end)./tau(1:end-1);
+%         mRs = msd(2:end,:)./msd(1:end-1,:);
+%         
+%         dydx = log(mRs) ./ log(tRs);
+%         
+%         % Rolling average
+%         if ~exist('nP','var')
+%             nP = 15;
+%         end
+%         kern = ones(nP,1);
+%         dydx = conv(dydx, kern, 'valid')./nP;
+%         tout = conv(tau(1:end-1), kern, 'valid') ./ nP;
+%     case 'fitting'
+%         if ~exist('nP','var')
+%             nP = 40;
+%         end
+%         dydx = zeros(size(msd,1)-nP, size(msd,2));
+%         tout = nan(length(tau)-nP, 1);
+%         tau = tau(msd > 0); % Careful, if MSD is a matrix this will shit itself
+%         msd = msd(msd > 0);
+%         for jdx = 1:size(msd,2)
+%             for idx = 1:length(tau)-nP
+%                 tdata = tau(idx:idx+nP);
+%                 mdata = msd(idx:idx+nP,jdx);
+%                 
+%                 tout(idx) = mean(tdata);
+%                 
+%                 fo = fit(log(tdata), log(mdata), 'Poly1');
+%                 dydx(idx, jdx) = fo.p1;
+%             end
+%         end
+%     otherwise
+%         error('Choose a correct method')
+% end
+% 
+% if nargout == 2
+%     varargout = {tout};
+% elseif nargout > 2
+%     error('Too many nargouts in msd_gradientor')
+% end
+% 
+% end
 
 function oC = gstar_interceptor(omega, G1, G2, wRange, doPlot, colour)
 % Find the intercepts between G1 and G2 as functions of frequency omega.
 % Uses linear fit over ranges given in cell array wRange.
 
 oC = nan(1,max(1,length(wRange)));
+
+if doPlot
+    h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2);
+    plot(xlim, [1 1], '--','Color',[1 1 1]*0.8, 'LineWidth', 3)
+end
 
 for wRIdx = 1:length(wRange)
     wdx = [0 0];
@@ -352,12 +375,14 @@ for wRIdx = 1:length(wRange)
     end
 end
 if doPlot
-    h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2);
-    plot(xlim, [1 1], '--','Color',[1 1 1]*0.8, 'LineWidth', 3)
     try
         legend(h, 'Fit result', 'Ratio G''''÷G''','Location','best')
-    catch ME
-        error(ME.identifier, 'No wRanges supplied?')
+    catch
+        try
+            legend(h(2), 'Ratio G''''÷G''','Location','best')
+        catch ME
+            error(ME.identifier, 'No idea what happened in gstar_interceptor')
+        end
     end
 end
 end
