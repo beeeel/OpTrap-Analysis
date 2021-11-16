@@ -1,6 +1,6 @@
 function [dydx, varargout] = msd_gradientor(tau, msd, varargin)
 %% Calculates gradients in log-log space
-% [dydx, tout] = msd_gradientor(tau, msd, varargin)
+% [dydx, tout] = msd_gradientor(tau, msd, [method, nP])
 % Can use 2-point average, linear fitting or least squares from Ling 2019
 
 if nargin == 2
@@ -48,7 +48,7 @@ switch method
         end
     case 'lsq'
         if ~exist('nP','var')
-            nP = 5;
+            nP = 15;
         end
         dydx = zeros(size(msd,1)-nP, size(msd,2));
         tout = nan(length(tau)-nP, 1);
