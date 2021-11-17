@@ -36,7 +36,7 @@ if nargin >= 9 && ~isempty(varargin{6})
     errorBars = logical(varargin{6});
 end
 if nargin >= 10 && ~isempty(varargin{7})
-    useField = logical(varargin{7});
+    useField = varargin{7};
 end
 if nargin > 10
     warning('Wrong number of input arguments')
