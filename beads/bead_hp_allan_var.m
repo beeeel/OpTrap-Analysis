@@ -22,8 +22,17 @@ data.opts.([field(1) 'HPSuffix']) = data.raw.suffixes(cRow);
 
 if isfield(data.raw, field)
     centreVec = data.raw.(field);
+    % If we're using raw, we need to apply calibration
+    if isfield(data,'mPerPx')
+        mPerPx = data.mPerPx;
+    else
+        warning('Using default value for pixel size calibration')
+        mPerPx = 0.07e-6;
+    end
 elseif isfield(data.pro, field)
     centreVec = data.pro.(field);
+    % If we're using pro, we mustn't reapply calibration
+    mPerPx = 1;
 else
     error('Could not find field %s in data.raw or data.pro',field)
 end
@@ -61,12 +70,6 @@ YOut = zeros(length(lagTimes), size(centreVec,1), length(fpasses));
 % Cell for legend
 legCell = {'Unfiltered', 'Linear fit subtracted'};
 legOffset = length(legCell);
-if isfield(data,'mPerPx')
-    mPerPx = data.mPerPx;
-else
-    warning('Using default value for pixel size calibration')
-    mPerPx = 0.07e-6;
-end
 
 for fpIdx = 1:length(fpasses)
     fpass = fpasses(fpIdx);
