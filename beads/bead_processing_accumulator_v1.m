@@ -92,7 +92,7 @@ saveDataPro = false;    % Save processed data to file (probably only makes thing
 saveDataRaw = true;     % Save raw data to file (should speed up loading)
 saveAccu = true;        % Save data to file
 dataSuff = '_simple';       % Suffix for filename when saving/loading
-accuFile = 'accumulated_all';
+accuFile = 'accumulated_all_c';
 
 % ARE YOU READY??
 accumulated = cell(size(dayDirs));
@@ -249,7 +249,13 @@ for dayIdx = 1:length(dayDirs)
                 accumulated{dayIdx}{1,cellIdx}(fIdx).fpass = fpass;
                 accumulated{dayIdx}{1,cellIdx}(fIdx).opts = data.opts;
                 
-                data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, true, false, centresRow, false, false, 'centresHP');
+                % Force normMSD to run processing (hacky but it works)
+                fr = data.opts.forceRun;
+                data.opts.forceRun = true;
+                data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, true, false, centresRow, false, false, 'CentresHP');
+                % Restore previous setting
+                data.opts.forceRun = fr;
+                
                 accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             else
                 xStiff = calcStiffness(data.pro.xCentresM(1,:));
@@ -555,6 +561,3 @@ tRanges.d2021_07_27.c1 = {...
 %     {[0.1 0.5] [2 50]} {[1e-2 1] [4 20]}
 %     {[0.1 0.5] [4 50]} {[1e-2 1] [4 20]}};
 end
-
-
-
