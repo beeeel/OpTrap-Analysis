@@ -1,5 +1,5 @@
 function data = bead_normMSD_polyfit(data, direction, offset, varargin)
-%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars])
+%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars, useField])
 % Take data object and use x, y or both from raw data, returning calculated
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work
@@ -16,6 +16,7 @@ end
 num_t = data.nPoints;
 doNorm = true;
 errorBars = false;
+useField = '';
 if nargin >= 4 && ~isempty(varargin{1})
     num_t = varargin{1};
 end
@@ -34,9 +35,12 @@ end
 if nargin >= 9 && ~isempty(varargin{6})
     errorBars = logical(varargin{6});
 end
-if nargin > 9
+if nargin >= 10 && ~isempty(varargin{7})
+    useField = logical(varargin{7});
+end
+if nargin > 10
     warning('Wrong number of input arguments')
-    warning(['Ignoring ' num2str(nargin-9) ' arguments'])
+    warning(['Ignoring ' num2str(nargin-10) ' arguments'])
 end
 
 if length(data.opts.cropT) == 2
@@ -52,10 +56,7 @@ end
 nPerDir = length(offset);
 if isfield(data.opts, 'UseField') && ~useRaw
     % If there's a field we should use, and we're not forced to use raw
-    fn = data.opts.UseField;
-    
-     % Hacky af: set num_t to min of actual num_t and previous value
-    num_t = min(num_t, size(data.pro.(['x' fn]),2));
+    useField = get_Fn;
     
     if isfield(data.opts, 'cropTHPval')
         cropTHPval = data.opts.cropTHPval;
@@ -68,17 +69,26 @@ if isfield(data.opts, 'UseField') && ~useRaw
     tmp = data.raw.timeVecMs(cropT(1):cropT(2));
     tmp = tmp(cropTHP(1):cropTHP(2));
     
-    if (strcmp(direction, 'x') || strcmp(direction, 'y'))
-        centres = data.pro.([direction fn]);
+    if any(strcmp(direction, {'x', 'y'}))
+        centres = data.pro.([direction useField]);
         timeVec = tmp;
         legCell = repmat({direction},nPerDir,1);
+        filtStr = ['using field ' useField];
+        % Hacky af: set num_t to min of actual num_t and previous value
+        num_t = min(num_t, size(data.pro.(['x' useField]),2));
     else
-        centres = [data.pro.(['x' fn]) data.pro.(['y' fn])];
+        centres = [data.pro.(['x' useField{1}]) data.pro.(['y' useField{2}])];
         timeVec = [tmp tmp];
-        offset = [offset (offset + size(data.pro.(['x' fn]),2))];
+        offset = [offset (offset + size(data.pro.(['x' useField{1}]),2))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
+        % Hacky af: set num_t to min of actual num_t and previous value
+        num_t = min(num_t, size(data.pro.(['x' useField{1}]),2));
+        if strcmp(useField{1}, useField{2})
+            filtStr = ['using field ' useField{1}];
+        else
+            filtStr = sprintf('using fields %s and %s',useField{1}, useField{2});
+        end
     end
-    filtStr = ['using field ' fn];
 else
     % Otherwise, if told to, use raw
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
@@ -241,78 +251,113 @@ end
 
 
 if doPlots
-    fh = figure;
-    fh.Name = data.fName;
-    clf
-    hold on
-    
-    if strcmp( direction(1) , 'a')
-        legCell = {[]};
-        for Idx = 1:length(tracks)/2
-            legCell{Idx} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
-        end
-        
-        ax = subplot(2,1,1);
-        if ~isempty(msdStd)
-            errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
-        else
-            plot(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
-        end
-        ax.XScale = 'log';
-        ax.YScale = 'log';
-        % Set X lim to show shortest delay up to half total time
-        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
-        xlabel('Delay (s)')
-        if doNorm
-            ylabel('Normalized MSD')
-            title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-        else
-            ylabel('MSD (μm^2)')
-            title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-        end
-        legend(legCell,'Location','best')
-        
-        ax = subplot(2,1,2);
+    do_plots;
+end
 
-        if ~isempty(msdStd)
-            errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
-        else
-            plot(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end),  'LineWidth',2);
-        end
-        ax.XScale = 'log';
-        ax.YScale = 'log';
-        % Set X lim to show shortest delay up to half total time
-        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
-        xlabel('Delay (s)')
-        if doNorm
-            ylabel('Normalized MSD')
-            title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-        else
-            ylabel('MSD (μm^2)')
-            title({'Mean square Y displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-        end
-        legend(legCell,'Location','best')
-    else
-        ax = gca;
-        errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)
-        ax.XScale = 'log';
-        ax.YScale = 'log';
+%%
+    function fn = get_Fn
         
-        fh.Children.XAxis.Scale = 'log';
-        fh.Children.YAxis.Scale = 'log';
-        
-        % Set X lim to show shortest delay up to half total time
-        xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
-        
-        xlabel('Delay (s)')
-        if doNorm
-            ylabel('Normalized MSD')
-            title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+        if any(strcmp(direction, {'x', 'y'}))
+            if isfield(data.pro, [direction useField])
+                fn = useField;
+            elseif isfield(data.pro, [direction 'CentresM'])
+                warning('Falling back to using CentresM because useField failed to resolve')
+                fn = 'CentresM';
+            else
+                error('Could not decide a field to use, tried %s and CentresM', useField)
+            end
         else
-            ylabel('MSD (μm^2)')
-            title({'Mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            fn = cell(2,1);
+            xy = 'xy';
+            for i = 1:2
+                d = xy(i);
+                if isfield(data.pro, [d useField])
+                    fn{i} = useField;
+                elseif isfield(data.pro, [d 'CentresM'])
+                    fn{i} = 'CentresM';
+                else
+                    error('Could not decide a field to use, tried %s and CentresM', useField)
+                end
+            end
         end
-        legend(legCell, 'Location','best')
+        
     end
-    % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
+
+    function do_plots
+        fh = figure;
+        fh.Name = data.fName;
+        clf
+        hold on
+        
+        if strcmp( direction(1) , 'a')
+            legCell = {[]};
+            for Idx = 1:length(tracks)/2
+                legCell{Idx} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
+            end
+            
+            ax = subplot(2,1,1);
+            if ~isempty(msdStd)
+                errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
+            else
+                plot(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
+            end
+            ax.XScale = 'log';
+            ax.YScale = 'log';
+            % Set X lim to show shortest delay up to half total time
+            xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
+            xlabel('Delay (s)')
+            if doNorm
+                ylabel('Normalized MSD')
+                title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            else
+                ylabel('MSD (μm^2)')
+                title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            end
+            legend(legCell,'Location','best')
+            
+            ax = subplot(2,1,2);
+            
+            if ~isempty(msdStd)
+                errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
+            else
+                plot(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end),  'LineWidth',2);
+            end
+            ax.XScale = 'log';
+            ax.YScale = 'log';
+            % Set X lim to show shortest delay up to half total time
+            xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
+            xlabel('Delay (s)')
+            if doNorm
+                ylabel('Normalized MSD')
+                title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            else
+                ylabel('MSD (μm^2)')
+                title({'Mean square Y displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            end
+            legend(legCell,'Location','best')
+        else
+            ax = gca;
+            errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)
+            ax.XScale = 'log';
+            ax.YScale = 'log';
+            
+            fh.Children.XAxis.Scale = 'log';
+            fh.Children.YAxis.Scale = 'log';
+            
+            % Set X lim to show shortest delay up to half total time
+            xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 end/2],1))])
+            
+            xlabel('Delay (s)')
+            if doNorm
+                ylabel('Normalized MSD')
+                title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            else
+                ylabel('MSD (μm^2)')
+                title({'Mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+            end
+            legend(legCell, 'Location','best')
+        end
+        % legend('20 - 40s','40 - 60s', '3m00s - 3m20s','3m20s - 3m40s','32m00s - 32m20s', '32m20s - 32m40s','Location','best')
+    end
+
 end

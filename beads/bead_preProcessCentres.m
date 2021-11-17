@@ -40,7 +40,7 @@ dims = [1, 3, 2];
 [~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
     permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
 
-if ~isfield(data.opts.downsampleR)
+if ~isfield(data.opts, 'downsampleR')
     data.opts.downsampleR = 1;
 elseif data.opts.downsampleR > 1
     N_downsample
@@ -80,9 +80,10 @@ end
 
     function N_downsample
         % Downsample position and time data, storing the outputs. Untested.
-        
         [nR, ~, nT] = size(xCentres);
         r = data.opts.downsampleR;
+        
+        validateattributes(r, {'numeric'}, {'integer','positive'})
         
         tmp = [xCentres, yCentres];
         Centres = zeros(nR, 2, floor(nT./r));
