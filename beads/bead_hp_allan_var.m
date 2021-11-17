@@ -86,16 +86,19 @@ for fpIdx = 1:length(fpasses)
     
     %% Allan variancing
     
-    [YOut(:,:,fpIdx), Tau] = allanvar(CentresHPcrop', lagTimes, fs);
+%    [YOut(:,:,fpIdx), Tau] = allanvar(CentresHPcrop', lagTimes, fs);
 end
 
 
-data.pro.([field(1) 'AlanVar']) = YOut;
-data.pro.([field(1) 'Tau']) = Tau;
+%data.pro.([field(1) 'AlanVar']) = YOut;
+%data.pro.([field(1) 'Tau']) = Tau;
 data.pro.([field(1) 'CentresHP']) = CentresHPcrop;
 data.opts.UseField = 'CentresHP';
 
 if doPlot
+    warning('skipping plot to avoid calling allanvar (because it''s not installed on string')
+end
+if false
     xCentresM = centreVec(cropT(1):cropT(2)) .* mPerPx;
     dims = [1, 3, 2];
     pOrder = 1;
