@@ -26,7 +26,7 @@ masterDir = '../';             % Where all the data is
 saveDir = 'accumulator_2021_07_21-latB/';        % Where to save processed data
 
 % Which day's data to load
-dayDirs = {'2021_07_27' '2021_07_26' '2021_07_23'};% '2021_07_13' '2021_07_16' '2021_05_17'};
+dayDirs = {'2021_07_27' '2021_07_26' '2021_07_23' '2021_07_13' '2021_07_16' '2021_05_17'};
 
 % This cell contains 1 cell per dayDir above. Within that needs to be
 % indexes for that day's dirList, to choose the correct datasets.
@@ -212,8 +212,8 @@ for dayIdx = 1:length(dayDirs)
 %                 end
             end
             
-%             % Do something with the corners
-%             accumulated{dayIdx}{1,cellIdx}(fIdx).corners = 
+            % Do something with the corners
+            accumulated{dayIdx}{1,cellIdx}(fIdx).corners = [1./tC; oC'];
             
             % Use mean of 1/corner time and intercept frequency. There's
             % definitely scope for mistakes to occur if you want to be

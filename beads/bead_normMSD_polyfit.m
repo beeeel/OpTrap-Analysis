@@ -70,14 +70,14 @@ if isfield(data.opts, 'UseField') && ~useRaw
     tmp = tmp(cropTHP(1):cropTHP(2));
     
     if any(strcmp(direction, {'x', 'y'}))
-        centres = data.pro.([direction useField]);
+        centres = data.pro.([direction useField])(centresRow,:);
         timeVec = tmp;
         legCell = repmat({direction},nPerDir,1);
         filtStr = ['using field ' useField];
         % Hacky af: set num_t to min of actual num_t and previous value
         num_t = min(num_t, size(data.pro.(['x' useField]),2));
     else
-        centres = [data.pro.(['x' useField{1}]) data.pro.(['y' useField{2}])];
+        centres = [data.pro.(['x' useField{1}])(centresRow,:) data.pro.(['y' useField{2}])(centresRow,:)];
         timeVec = [tmp tmp];
         offset = [offset (offset + size(data.pro.(['x' useField{1}]),2))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];

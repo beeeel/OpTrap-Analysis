@@ -1,8 +1,9 @@
 function [alpha, D] = leastSq(x, y, varargin)
-%% [alpha, D] = leastSq(x, y, ax)
+%% [alpha, D] = leastSq(log(x), log(y), ax)
 % Least squares estimator from Ling 2019, eq. 2.4. For regions where
 % log(MSD) is expected to be linear with log(τ). If a third argument is
 % provided, plot the fit (on axis ax if ax is non-empty, or gca otherwise)
+% Note: This gives correct D for 1D case. For 2D ÷ 2, 3D ÷ 3
 validateattributes(x,{'numeric'},{'column'})
 validateattributes(y,{'numeric'},{'column'})
 
