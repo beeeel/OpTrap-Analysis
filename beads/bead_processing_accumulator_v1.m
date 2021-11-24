@@ -69,7 +69,7 @@ ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without da
 %% Processing parameters
 cropTs = {[]};
 fitPoly = 1; % Fit a polynomial to remove drift.
-fitPolyOrder = 1;      % Order of polynomial to be fitted
+fitPolyOrder = 0;      % Order of polynomial to be fitted
 
 angleCorrection = true; % Transform to (r, rθ) co-ordinates
 calcStiff = 1;          % Calculate trap stiffness from position variance
@@ -178,7 +178,7 @@ for dayIdx = 1:length(dayDirs)
             % Look at mean-square displacement (for cell-bead expts)
             if ~isempty(msdOffset)
                 data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, false, msdUseRaw, centresRow, false);
-%                 accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
+                accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             end
             
             % Get wRange from struct
@@ -256,6 +256,9 @@ for dayIdx = 1:length(dayDirs)
                 % Restore previous setting
                 data.opts.forceRun = fr;
                 
+                if isfield(accumulated{dayIdx}{1,cellIdx}(fIdx), 'msd')
+                    accumulated{dayIdx}{1,cellIdx}(fIdx).msdRaw = accumulated{dayIdx}{1,cellIdx}(fIdx).msd;
+                end
                 accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             else
                 xStiff = calcStiffness(data.pro.xCentresM(1,:));
@@ -273,7 +276,7 @@ for dayIdx = 1:length(dayDirs)
     end
 end
 
-if saveAccu
+if 0 %saveAccu
     save(accuFile, 'accumulated', 'dayDirs')
 end
 
@@ -364,7 +367,42 @@ wRanges.d2021_07_23.c1 = {...
     {[1e-2 30]} {[1e-2 8]};
     {[1e-2 1]} {[1e-2 2]};
     {[1e-2 1]} {[1e-2 2]}};
+wRanges.d2021_05_17.c2 = {
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}};
 
+wRanges.d2021_05_17.c1 = {
+    {} {}
+    {} {}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}};
+
+wRanges.d2021_07_16.c1 = {
+    {} {}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}
+    {[0.1 1]} {[0.1 1]}};
+
+wRanges.d2021_07_13.c1 = {...
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 1]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}
+    {[0.1 3]} {[0.1 2]}};
 %% wRanges with 2 corners
 % wRanges.d2021_07_27.c2 = {...
 %     {[2e-2 1] [5 1e2]} {[2e-2 1] [5 1e2]};
@@ -447,7 +485,8 @@ tRanges.d2021_05_17.c1 = {
     {} {}
     {} {}
     {[1e-1 1] [6 20]} {}
-    {[1e-1 1] [6 20]} {[1.4e-2 1] [5 20]}};
+    {[1e-1 1] [6 20]} {[1.4e-2 1] [5 20]}
+    {} {}};
 
 tRanges.d2021_07_16.c1 = {
     {} {}
