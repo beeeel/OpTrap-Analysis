@@ -13,7 +13,13 @@ if strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r')
     centresRow = [1 2];
 end
 
-num_t = data.nPoints;
+if length(data.opts.cropT) == 2
+    cropT = data.opts.cropT;
+else
+    cropT = [1 length(data.raw.timeVecMs)];
+end
+
+num_t = min(data.nPoints, diff(cropT)+1);
 doNorm = true;
 errorBars = false;
 useField = '';
@@ -41,12 +47,6 @@ end
 if nargin > 10
     warning('Wrong number of input arguments')
     warning(['Ignoring ' num2str(nargin-10) ' arguments'])
-end
-
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;
-else
-    cropT = [1 length(data.raw.timeVecMs)];
 end
 
 % A little bit hacky - if both directions are wanted, stick them together
@@ -79,7 +79,7 @@ if isfield(data.opts, 'UseField') && ~useRaw
     else
         centres = [data.pro.(['x' useField{1}])(centresRow,:) data.pro.(['y' useField{2}])(centresRow,:)];
         timeVec = [tmp tmp];
-        offset = [offset (offset + size(data.pro.(['x' useField{1}]),2))];
+        offset = [offset (offset + num_t)];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
         % Hacky af: set num_t to min of actual num_t and previous value
         num_t = min(num_t, size(data.pro.(['x' useField{1}]),2));
@@ -101,8 +101,7 @@ else
         timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
             data.raw.timeVecMs(cropT(1):cropT(2))];
         
-        nP = min(data.nPoints, diff(cropT)+1);
-        offset = [offset (offset + nP)];
+        offset = [offset (offset + num_t)];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['unfiltered'];
