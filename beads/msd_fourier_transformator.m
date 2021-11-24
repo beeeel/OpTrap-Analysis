@@ -14,6 +14,7 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineColour    - line colour to plot
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
+% lowPassFT     - Apply low pass to FT (WIP)
 %
 % Could I make a "hold on" version of this to redraw on same axis?
 
@@ -37,7 +38,7 @@ p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
 p.addParameter('yLims', [2e-6 1e-1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('fh', [], @(x)isa(x,'matlab.ui.Figure'))
-p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x < 1) && length(x) == 3))
+p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 
