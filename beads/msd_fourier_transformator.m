@@ -41,6 +41,7 @@ p.addParameter('fh', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
+p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positive','scalar','nonzero'}))
 
 p.parse(msdObj, obsT, varargin{:});
 
@@ -51,6 +52,7 @@ FF = p.Results.truncFF;
 extrap_mode = p.Results.extrap;
 norm_mode = p.Results.norm;
 show_ints = p.Results.show_int;
+lpFrq = p.Results.lowPassFreq;
 % MSD options
 nSkip = p.Results.nSkip;
 dims = p.Results.dims;
@@ -109,6 +111,13 @@ for dimI = 1:length(dims)
     
     % Do the interpolation and rheoFT
     [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
+    
+    % Lowpass if there's a frequency to use
+    if ~isempty(lpFrq)
+        % (I've actually not written this yet)
+        G1 = lowpass_logspace(omega, G1, lpFrq);
+        G2 = lowpass_logspace(omega, G2, lpFrq);
+    end
     
     FT{dimI} = [omega, G1, G2];
     
