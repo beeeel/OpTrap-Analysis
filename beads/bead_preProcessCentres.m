@@ -7,6 +7,11 @@ else
     mPerPx = 0.07e-6;
 end
 
+% Check cropT has been put in opts
+if ~isfield(data.opts, 'cropT')
+    data.opts.cropT = [1 data.nPoints];
+end
+
 % Do time regularisation?
 if ~isfield(data.opts, 'timeRegularisation')
     data.opts.timeRegularisation = false;
