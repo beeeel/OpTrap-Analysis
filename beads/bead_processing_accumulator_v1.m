@@ -89,10 +89,10 @@ doFFT = false;           % Calculate FFT and maybe plot
 % Data file parameters
 forceRun = false;       % Try to take data from file and reuse as much as possible
 saveDataPro = false;    % Save processed data to file (probably only makes things slower for now)
-saveDataRaw = true;     % Save raw data to file (should speed up loading)
+saveDataRaw = false;     % Save raw data to file (should speed up loading)
 saveAccu = true;        % Save data to file
 dataSuff = '_simple';       % Suffix for filename when saving/loading
-accuFile = 'accumulated_all_c';
+accuFile = 'accumulated_3days';
 
 % ARE YOU READY??
 accumulated = cell(size(dayDirs));
