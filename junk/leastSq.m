@@ -19,6 +19,6 @@ if nargin > 2
     else
         ax = gca;
     end
-    plot(ax, exp(x), 2*D*exp(x).^alpha)
+    plot(ax, exp(x), 2*D*exp(x).^alpha, 'k:','LineWidth',2)
 
 end
