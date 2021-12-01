@@ -1,5 +1,5 @@
-function cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
-%% cTau = msd_cornerator(msdObj, obsT, tRanges, varargin)
+function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
+%% [cTau, fitParams] = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
 % nSkip         - Number of points from MSD to skip
@@ -58,12 +58,16 @@ lS = p.Results.lineStyle;
 mS = p.Results.marker;
 %% Setup
 
-cTau = nan(floor(length(tRanges)/2),length(dims));
+cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
 
-% Just give up if there's no tRanges to work on
-if ~ size(cTau,1) 
-    return
-end
+% % Just give up if there's no tRanges to work on
+% if ~any([length(tRanges{1}), length(tRanges{2})] > 1)
+%     varargout{1} = cTau;
+%     if nargout > 1
+%         varargout{2} = nan(size(cTau));
+%         return
+%     end
+% end
 
 legs = {};
 N_setup_fig;
@@ -120,6 +124,11 @@ for dIdx = dims
     catch ME
         warning(['Couldn''t set legend: ' ME.message])
     end
+end
+
+varargout{1} = cTau;
+if nargout > 1
+    varargout{2} = fps;
 end
 
 %% Function definitions
