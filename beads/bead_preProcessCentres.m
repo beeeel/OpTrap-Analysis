@@ -59,6 +59,11 @@ data.opts.UseField = 'CentresM';
 function N_doAngleCorrection
 
     if isfield(data, 'ImstackFullFoV')
+        % Get ROI position
+        roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
+        data.opts.roi = roi;
+        
+        % Get cell centre position
         cFile = [data.dirPath '/cell_centre.txt'];
         if exist(cFile, 'file')
             % Load previously measured cell centre
@@ -66,10 +71,9 @@ function N_doAngleCorrection
             cCentre = load(cFile, '-ascii');
         else
             % Measure centre function
-            cCentre = measure_cell_centre(data.ImstackFullFoV{1}{1,1}, data.dirPath);
+            cCentre = measure_cell_centre(data.ImstackFullFoV{1}{1,1}, data.dirPath, roi);
         end
-        % Get ROI position
-        roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
+        data.opts.cCentre = cCentre;
         % This is written in my lab book 22/9/2021
         rhoX = xCentres + roi(1) - cCentre(1);
         rhoY = yCentres + roi(2) - cCentre(2);
