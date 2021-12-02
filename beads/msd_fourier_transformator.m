@@ -29,7 +29,7 @@ p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
-p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima'})))%,'FF'
+p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF'})))%
 p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1})}))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
@@ -102,6 +102,15 @@ for dimI = 1:length(dims)
     tau = msdV(2:end-nSkip,1);
     msd = msdV(2:end-nSkip,2);
     
+    % Do the lowpass
+    if ~isempty(lpFrq)
+        msd = lowpass_logspace(tau, msd,lpFrq);
+        if lpFrq > 1
+            idx1 = round(lpFrq/2);
+        end
+    else 
+        idx1 = 1;
+    end
     
     % Determine truncation point
     [idx, eta] = msd_truncator(tau, msd, trunc_mode, FF);
@@ -110,11 +119,8 @@ for dimI = 1:length(dims)
     [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
     
     % Do the interpolation and rheoFT
-    if ~isempty(lpFrq)
-        [omega, G1, G2] = msd_interp_FT(tau(1:idx), lowpass_logspace(tau(1:idx), msd(1:idx),lpFrq), 0, eta, idx, 1e3);
-    else
-        [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
-    end
+    [omega, G1, G2] = msd_interp_FT(tau(idx1:idx), msd(idx1:idx), 0, eta, idx, 1e3);
+    
     
     % Lowpass if there's a frequency to use
 %     if ~isempty(lpFrq)
@@ -146,7 +152,7 @@ for dimI = 1:length(dims)
         'Color', [1 1 1 0.25], 'LineStyle', lS, 'Marker', mS);
     h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
         'Color', colour, 'LineStyle', lS, 'Marker', mS);
-    h(end+1) = plot(nF.*tau(idx), msd(idx), ...
+    h(end+1) = plot(nF.*tau([idx1 idx]), msd([idx1 idx]), ...
         'rx', 'LineWidth', 3, 'MarkerSize', 12);
     
     % Plot inverse of intercept frequencies
@@ -163,10 +169,18 @@ for dimI = 1:length(dims)
     subplot(2+show_ints, length(dims),length(dims)+dimI)
     loglog(omega, ...
         G1, 'LineWidth', 2, ...
-        'Color', colour, 'Marker', mS, 'LineStyle', '-', 'LineWidth', 2);
+        'Color', 'b', 'Marker', 'x', 'LineStyle', 'none', 'LineWidth', 2);
     loglog(omega, ...
         G2, 'LineWidth', 2, ...
-        'Color', colour, 'Marker', mS, 'LineStyle', '--', 'LineWidth', 2);
+        'Color', 'r', 'Marker', 's', 'LineStyle', 'none', 'LineWidth', 2);
+    
+    % % If you wanted to do them custom
+    %     loglog(omega, ...
+    %         G1, 'LineWidth', 2, ...
+    %         'Color', colour, 'Marker', mS, 'LineStyle', '-', 'LineWidth', 2);
+    %     loglog(omega, ...
+    %         G2, 'LineWidth', 2, ...
+    %         'Color', colour, 'Marker', mS, 'LineStyle', '--', 'LineWidth', 2);
     
     % Show Intercept frequency without changing YLims
     yl = ylim;
@@ -175,7 +189,7 @@ for dimI = 1:length(dims)
     
     legend('"Storage"','"Loss"','Intercept frequency','Location','best')
     
-    legend(h, legs,'Final point used in FT','1 ÷ Intercept frequency','Location','best')
+    legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
 end
 
 if nargout == 2
@@ -359,7 +373,10 @@ function oC = gstar_interceptor(omega, G1, G2, wRange, doPlot, colour)
 oC = nan(1,max(1,length(wRange)));
 
 if doPlot
-    h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2);
+    % Do it as points
+    h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2, 'LineStyle', 'none', 'Marker', 'o');
+    % % Do it as a line
+    %     h(2) = loglog(omega, G1.\G2, 'Color', colour, 'LineWidth', 2);
     plot(xlim, [1 1], '--','Color',[1 1 1]*0.8, 'LineWidth', 3)
 end
 

@@ -10,6 +10,11 @@ function G = lowpass_logspace(omega, G, lpFrq, varargin)
 % G1 = interp1(omega, G, omega1);
 
 % G1 = lowpass(G1, lpFrq, 1/diff(omega1([2 1])));
-G = lowpass(G, lpFrq);
-
 % G = interp1(omega1, G1, omega);
+
+% G = lowpass(G, lpFrq);
+
+
+
+kern = ones(1,lpFrq);
+G = conv(G, kern, 'same')./sum(kern);
