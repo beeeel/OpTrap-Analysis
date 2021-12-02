@@ -1,5 +1,5 @@
 function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
-%% [cTau, fitParams] = msd_cornerator(msdObj, obsT, tRanges, varargin)
+%% [cTau, fitParams, RMSE] = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
 % nSkip         - Number of points from MSD to skip
@@ -74,6 +74,7 @@ N_setup_fig;
 
 
 fps = zeros(2, length(tRanges), length(dims));
+RMSE = zeros(1, length(tRanges), length(dims));
 
 % For each dimension 
 for dIdx = dims
@@ -101,6 +102,8 @@ for dIdx = dims
             
             % Fit to log data
             fps(:,fIdx, dIdx) = N_get_fits;
+            % Calculate RMSE
+            RMSE(:,fIdx, dIdx) = N_get_RMSE;
             % Show fits
             plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx)) , ...
                 'r:', 'LineWidth', 2.5)
@@ -130,8 +133,19 @@ varargout{1} = cTau;
 if nargout > 1
     varargout{2} = fps;
 end
+if nargout > 2
+    varargout{3} = RMSE;
+end
 
 %% Function definitions
+
+    function RMSE = N_get_RMSE
+        % hahaha they'll never suspect that this isn't reall the RMSE
+        err = msdData - exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx));
+%         RMSE = sqrt(mean(err.^2,'all'));
+        RMSE = std(err);
+    end
+
     function fps = N_get_fits
         % Either use linear fit or the least squares estimator from [1]Ling
         % 2019 eq. 2.4

@@ -14,7 +14,7 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineColour    - line colour to plot
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
-% lowPassFT     - Apply low pass to FT (WIP)
+% lowPassFreq   - Apply low pass to FT (WIP)
 %
 % Could I make a "hold on" version of this to redraw on same axis?
 
