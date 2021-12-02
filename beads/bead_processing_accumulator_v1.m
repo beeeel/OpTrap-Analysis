@@ -62,6 +62,7 @@ thymes = {
     
 wRanges = get_wRanges_struct(dayDirs);
 tRanges = get_tRanges_struct(dayDirs);
+tRangesLow = get_low_tRanges_struct(dayDirs);
 %% Experiment parameters
 mPerPx = 0.065e-6;           % Camera pixel size calibration
 ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without data)
@@ -82,8 +83,8 @@ loadPics = false;       % Load images from TIFs. May be overriden by angleCorrec
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
 centresRow = 1;      % Row of centres array to use for MSDs (empty for default)
 msdNumT = [];           % Number of time points to use for MSDs (empty for all)
-msdUseRaw = true;      % Use raw or processed data for MSDs (empty for default)
-msdDoNorm = true;       % Normalize MSDs by position variance (empty for default)
+msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
+msdDoNorm = false;       % Normalize MSDs by position variance (empty for default)
 doFFT = false;           % Calculate FFT and maybe plot
 
 % Data file parameters
@@ -92,7 +93,7 @@ saveDataPro = false;    % Save processed data to file (probably only makes thing
 saveDataRaw = false;     % Save raw data to file (should speed up loading)
 saveAccu = true;        % Save data to file
 dataSuff = '_simple';       % Suffix for filename when saving/loading
-accuFile = 'accumulated_3days';
+accuFile = 'accumulated_all_c';
 
 % ARE YOU READY??
 accumulated = cell(size(dayDirs));
@@ -194,7 +195,7 @@ for dayIdx = 1:length(dayDirs)
             % Also fit to the MSD to find corner time equivalent frequency
             tC = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
             
-            if any( isnan( tC ) & isnan( oC' ) )
+            if any([ isnan( tC ) & isnan( oC' ) , isempty(tC)])
                 tr = {'tangential','radial'};
                 if sum( isnan( tC ) & isnan( oC' ) ) == 1
                     % Could give name of file in warning
@@ -202,6 +203,9 @@ for dayIdx = 1:length(dayDirs)
                 else
                     warning('No corner in either direction, skipping highpass.')
                 end
+                % If you've come here looking for answers, I'm sorry.
+                warning('The last warning was not well defined because stuff changes and it''s all a mess')
+                
                 % Could give better warnings:
 %             else
 %                 if any( isnan( tC ) )
@@ -210,6 +214,9 @@ for dayIdx = 1:length(dayDirs)
 %                 if any( isnan( oC ) )
 %                     warning('Got NaN back from msd_fourier_transformator. Highpass only using corner time')
 %                 end
+            end
+            if isempty(tC)
+                tC = nan(1,2);
             end
             
             % Do something with the corners
@@ -267,6 +274,14 @@ for dayIdx = 1:length(dayDirs)
                 accumulated{dayIdx}{1,cellIdx}(fIdx).stiff = data.pro.stiffXY;
             end
             
+            % Get tRange from struct
+            tR = Range_getter(tRangesLow, dayDirs{dayIdx}, cellIdx, fIdx);
+            % Measure the gradient (this function is a bit overkill but
+            % it's easiest to implement)
+            [tC, fps] = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
+            % Store the results
+            accumulated{dayIdx}{1,cellIdx}(fIdx).fits = fps;
+            
             % Save if requested
             if saveDataPro
                 save(dataFile, 'data')
@@ -276,8 +291,8 @@ for dayIdx = 1:length(dayDirs)
     end
 end
 
-if 0 %saveAccu
-    save(accuFile, 'accumulated', 'dayDirs')
+if saveAccu
+    save(accuFile, 'accumulated', 'dayDirs', '-v7.3')
 end
 
 function Range = Range_getter(Ranges, day, cIdx, fIdx)
