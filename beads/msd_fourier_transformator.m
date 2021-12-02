@@ -110,14 +110,18 @@ for dimI = 1:length(dims)
     [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
     
     % Do the interpolation and rheoFT
-    [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
+    if ~isempty(lpFrq)
+        [omega, G1, G2] = msd_interp_FT(tau(1:idx), lowpass_logspace(tau(1:idx), msd(1:idx),lpFrq), 0, eta, idx, 1e3);
+    else
+        [omega, G1, G2] = msd_interp_FT(tau(1:idx), msd(1:idx), 0, eta, idx, 1e3);
+    end
     
     % Lowpass if there's a frequency to use
-    if ~isempty(lpFrq)
-        % (I've actually not written this yet)
-        G1 = lowpass_logspace(omega, G1, lpFrq);
-        G2 = lowpass_logspace(omega, G2, lpFrq);
-    end
+%     if ~isempty(lpFrq)
+%         % (I've actually not written this yet)
+%         G1 = lowpass_logspace(omega, G1, lpFrq);
+%         G2 = lowpass_logspace(omega, G2, lpFrq);
+%     end
     
     FT{dimI} = [omega, G1, G2];
     
