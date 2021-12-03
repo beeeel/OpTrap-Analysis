@@ -68,10 +68,12 @@ mPerPx = 0.065e-6;           % Camera pixel size calibration
 ignoreDirs = {'focal_sweep_with_bead'}; % Directories to ignore (ones without data)
 
 %% Processing parameters
+cropThack = [14e4 1e4]; % I should create another variable to store which sets cropThack will be applied to
 cropTs = {[]};
 fitPoly = 1; % Fit a polynomial to remove drift.
 fitPolyOrder = 0;      % Order of polynomial to be fitted
 
+timeReg = true;         % Fix non-uniform time vector (caused by new version of fast_acq)
 angleCorrection = true; % Transform to (r, rθ) co-ordinates
 calcStiff = 1;          % Calculate trap stiffness from position variance
 stiffIdx = 1;           % Row of centres to store stiffness from
@@ -86,6 +88,8 @@ msdNumT = [];           % Number of time points to use for MSDs (empty for all)
 msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
 msdDoNorm = false;       % Normalize MSDs by position variance (empty for default)
 doFFT = false;           % Calculate FFT and maybe plot
+
+msdFTsmoothF = 40;      % Length of smoothing kernel used before first FT
 
 % Data file parameters
 forceRun = false;       % Try to take data from file and reuse as much as possible
@@ -157,12 +161,19 @@ for dayIdx = 1:length(dayDirs)
                 data.opts.forceRun = forceRun;
             end
 
-            % Record options and calibration
-            data.opts.cropT = cropTs{1};
+            % Record options and calibration - needs to use a variable to store which sets to apply to
+            if false %dayIdx == 3 && cellIdx == 2 && fIdx == 3
+                data.opts.cropT = [cropThack(1) data.nPoints];
+            elseif false %dayIdx == 6 && cellIdx == 1 && fIdx == 3
+                data.opts.cropT = [cropThack(2) data.nPoints];
+            else
+                data.opts.cropT = cropTs{1};
+            end
             data.opts.pOrder = fitPolyOrder*fitPoly;
             data.mPerPx = mPerPx;
             data.opts.angleCorrection = angleCorrection;
             data.opts.centresRow = centresRow;
+            data.opts.timeRegularisation = timeReg;
 
             % Apply scale and do polyfit
             data = bead_preProcessCentres(data);
@@ -187,13 +198,16 @@ for dayIdx = 1:length(dayDirs)
             
             % Do the fourier transform to find intercept frequency
             [FT, oC] = msd_fourier_transformator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), ...
-                'wRange',wR, 'fh', fh);
+                'wRange',wR, 'fh', fh,  'truncFF', msdFTsmoothF/2, 'trunc', 'FF', 'lowPassFreq', msdFTsmoothF);
+            
             oC = cat(1,oC{:});
             
             % Get tRange from struct
             tR = Range_getter(tRanges, dayDirs{dayIdx}, cellIdx, fIdx);
             % Also fit to the MSD to find corner time equivalent frequency
-            tC = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
+            [tC, fps1] = msd_cornerator(data.pro.amsdObj, accumulated{dayIdx}{2,cellIdx}(fIdx), tR);
+            
+            accumulated{dayIdx}{1,cellIdx}(fIdx).fits1 = fps1;
             
             if any([ isnan( tC ) & isnan( oC' ) , isempty(tC)])
                 tr = {'tangential','radial'};
@@ -220,7 +234,7 @@ for dayIdx = 1:length(dayDirs)
             end
             
             % Do something with the corners
-            accumulated{dayIdx}{1,cellIdx}(fIdx).corners = [1./tC; oC'];
+            accumulated{dayIdx}{1,cellIdx}(fIdx).cornerF = [1./tC; oC'];
             
             % Use mean of 1/corner time and intercept frequency. There's
             % definitely scope for mistakes to occur if you want to be
