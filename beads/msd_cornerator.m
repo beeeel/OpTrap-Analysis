@@ -30,6 +30,7 @@ p.addRequired('tRanges',@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
 p.addParameter('yLims', [1e-6 5e1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
+p.addParameter('doPlot', true, @(x) validateattributes(logical(x), {'logical'},{'scalar'}))
 p.addParameter('figHand', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x < 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -51,6 +52,7 @@ dims = p.Results.dims;
 % Estimator
 est = p.Results.estimator;
 % Plot options
+doPlot = p.Results.doPlot;
 yl = p.Results.yLims;
 fh = p.Results.figHand;
 colour = p.Results.lineColour;
@@ -70,8 +72,9 @@ cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
 % end
 
 legs = {};
-N_setup_fig;
-
+if doPlot
+    N_setup_fig;
+end
 
 fps = zeros(2, length(tRanges), length(dims));
 RMSE = zeros(1, length(tRanges), length(dims));
@@ -88,8 +91,10 @@ for dIdx = dims
         taui = logspace(log10(tau(1)), log10(tau(end)), length(tau).*interpF)';
         msdi = interp1(tau, msd, taui, interpM);
         
-        h = plot(taui, msdi, ...
-            'Color',colour, 'LineWidth', 2, 'LineStyle', lS, 'Marker', mS);
+        if doPlot
+            h = plot(taui, msdi, ...
+                'Color',colour, 'LineWidth', 2, 'LineStyle', lS, 'Marker', mS);
+        end
         
         % Fit to interpolated data from all the tRanges
         
@@ -105,27 +110,32 @@ for dIdx = dims
             % Calculate RMSE
             RMSE(:,fIdx, dIdx) = N_get_RMSE;
             % Show fits
-            plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx)) , ...
-                'r:', 'LineWidth', 2.5)
-
+            if doPlot
+                plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx)) , ...
+                    'r:', 'LineWidth', 2.5)
+            end
         end
         % Find corners by intercept of fits. I fucking hope I wrote this in
         % my lab book.... (I probably didn't)
         dfps = diff(fps,1,2);
         cTau(:, dIdx) = exp(-dfps(2,:,dIdx)./dfps(1,:,dIdx));
         
-        for corn = 1:size(cTau,1)
-            h(2) = plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.25], 'LineWidth', 3);
+        if doPlot
+            for corn = 1:size(cTau,1)
+                h(2) = plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.25], 'LineWidth', 3);
+            end
         end
     catch ME
         warning(['caught error: ' ME.message])
     end
     
     % Set legend
-    try
-        legend(h,{legs 'Fit intercept time'}, 'Location', 'northwest');
-    catch ME
-        warning(['Couldn''t set legend: ' ME.message])
+    if doPlot
+        try
+            legend(h,{legs 'Fit intercept time'}, 'Location', 'northwest');
+        catch ME
+            warning(['Couldn''t set legend: ' ME.message])
+        end
     end
 end
 
