@@ -83,7 +83,7 @@ function N_doAngleCorrection
         % This is actually radial co-ordinate
         xCentres = sqrt( rhoX.^2 + rhoY.^2 );
         % This is r times tangential co-ordinate
-        yCentres = xCentres .* atan( rhoY ./ rhoX );
+        yCentres = xCentres .* atan( rhoY ./ rhoX ); % A bug occurs here when tan changes phase. Needs fixing!
     else
         data.opts.angleCorrection = false;
         warning('No image files loaded, skipping angular correction')
