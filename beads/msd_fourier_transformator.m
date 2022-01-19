@@ -265,6 +265,8 @@ dydxfilt = msd_gradientor(tau, msd);
 % Fudge factor extra points to include in FT
 if ~exist('FF','var')
     FF = 40;
+elseif isempty(FF)
+    FF = 40;
 end
 
 switch mode
