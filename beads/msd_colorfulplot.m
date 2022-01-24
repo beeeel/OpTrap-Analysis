@@ -1,4 +1,4 @@
-function msd_colorfulplot(accumulated, dIs, cIs, rIs, varargin)
+function msd_colorfulplot(accumulated, dIs, cIs, rIs, varargin) %#ok<INUSL>
 %% msd_colorfulplot(accumulated, dIs, cIs, rIs, ... )
 % Plot MSDs using nice colourmap according to time. I will add support for
 % name-value pair arguments to help this be good, but not yet.
@@ -9,6 +9,12 @@ if nargin >= 6
     if isa(varargin{1}, 'matlab.graphics.axis.Axes') && isa(varargin{2}, 'matlab.graphics.axis.Axes')
         axs = [varargin{1}, varargin{2}];
     end
+end
+
+if ~exist('rIs','var') && isscalar(dIs) && isscalar(cIs)
+    rIs = 1:size(accumulated{dIs}{1,cIs},2);
+else
+    error('Either dIs and cIs must be scalar, or you must provide rIs')
 end
 % Assume sample temp = room temp = 22 C
 T = 22;
@@ -93,16 +99,15 @@ for cIdx = cIs
         tau = MSDp(1:end-nSkip,1,1);
         msd = squeeze(MSDp(1:end-nSkip,2,:));
         % Calculate derivative
-        tRs = tau(2:end)./tau(1:end-1);
-        mRs = msd(2:end,:)./msd(1:end-1,:);
-        dydx = log(mRs) ./ log(tRs);
-        % Apply rolling average filter
-        kSz = 35;
-        kern = ones(kSz,1);
-        dydxfilt = [conv(dydx(:,1), kern, 'same'), conv(dydx(:,2), kern, 'same')]./kSz;
+        [dydx, tout] = msd_gradientor(tau, msd, 'lsq');
         % Take minima
-        [~, idx] = min(dydxfilt);
-        ind = sub2ind(size(msd), idx, [1 2]);
+        [~, idx] = min(dydx);
+        tmin = tout(idx);
+        tmp = tau > tmin';
+        tmp = tmp(2:end,:) > tmp(1:end-1,:);
+        idx = find(tmp, 2);
+        ind = idx;
+        idx = ind - [0; size(tau,1)];
         p = msd(ind);
         cTau(:,rIdx) = tau(idx);
         if normX

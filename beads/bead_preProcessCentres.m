@@ -32,6 +32,9 @@ elseif data.opts.angleCorrection
     N_doAngleCorrection;
 end
 
+% Store mean and std of co-ordinates AFTER angle correction, BEFORE demean.
+data.pro.meanstd = [mean([xCentres; yCentres], 2) std([xCentres; yCentres], 0, 2)];
+
 if data.opts.pOrder > 0 && data.opts.angleCorrection
     warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
     warning('I have not thought carefully about the implications of this. Continue at own risk')
@@ -80,7 +83,7 @@ function N_doAngleCorrection
         % This is actually radial co-ordinate
         xCentres = sqrt( rhoX.^2 + rhoY.^2 );
         % This is r times tangential co-ordinate
-        yCentres = xCentres .* atan( rhoY ./ rhoX );
+        yCentres = xCentres .* atan( rhoY ./ rhoX ); % A bug occurs here when tan changes phase. Needs fixing!
     else
         data.opts.angleCorrection = false;
         warning('No image files loaded, skipping angular correction')
@@ -99,7 +102,7 @@ end
         for idx = 1:floor(nT/r)
             % Average both rows of the track, using a number of elements
             % equal to R (downsampling factor)
-            Centres(:,:,idx) = mean( tmp( :, :, (idx - 1) * r + 1 : idx * r ));
+            Centres(:,:,idx) = mean( tmp( :, :, (idx - 1) * r + 1 : idx * r ),3);
         end
         xCentres = Centres(:,1,:);
         yCentres = Centres(:,2,:);

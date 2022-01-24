@@ -63,6 +63,10 @@ if loadImages
         data.Imstack  = bfopen([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default.ome.tif']);
         metadata = fileread([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Default_metadata.txt']);
         data.metadata = jsondecode(metadata);
+    elseif exist([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Pos0.ome.tif'], 'file')
+        data.Imstack  = bfopen([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Pos0.ome.tif']);
+        metadata = fileread([data.dirPath '/images_and_metadata/images_and_metadata_MMStack_Pos0_metadata.txt']);
+        data.metadata = jsondecode(metadata);
     elseif exist([data.dirPath '/ROI/ROI_MMStack_Default.ome.tif'], 'file')
         data.Imstack  = bfopen([data.dirPath '/ROI/ROI_MMStack_Default.ome.tif']);
     else
@@ -71,6 +75,8 @@ if loadImages
     
     if exist([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif'], 'file')
         data.ImstackFullFoV  = bfopen([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Default.ome.tif']);
+    elseif exist([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Pos0.ome.tif'], 'file')
+        data.ImstackFullFoV  = bfopen([data.dirPath '/full_images_and_metadata/full_images_and_metadata_MMStack_Pos0.ome.tif']);
     elseif exist([data.dirPath '/full/full_MMStack_Default.ome.tif'], 'file')
         data.ImstackFullFoV  = bfopen([data.dirPath '/full/full_MMStack_Default.ome.tif']);
     else

@@ -11,6 +11,7 @@ function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % marker        - Marker to plot MSD
 % interpM       - Interpolation method for fitting
 % interpF       - Interpolation factor for fitting
+% doPlot        - Exactly what it says.
 
 %% TO DO:
 % Consider whether it's worth making bead_processor_v2 with detailed

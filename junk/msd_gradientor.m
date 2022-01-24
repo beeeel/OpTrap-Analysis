@@ -50,10 +50,11 @@ switch method
         if ~exist('nP','var')
             nP = 15;
         end
+        tau = tau(tau > 0); % Careful, if MSD is a matrix this will shit itself (well, hopefully not any more)
+        msd = reshape(msd(msd > 0), [], size(msd,2));
+        assert(size(tau,1) == size(msd,1), 'Ugh you silly')
         dydx = zeros(size(msd,1)-nP, size(msd,2));
         tout = nan(length(tau)-nP, 1);
-        tau = tau(msd > 0); % Careful, if MSD is a matrix this will shit itself
-        msd = msd(msd > 0);
         for jdx = 1:size(msd,2)
             for idx = 1:length(tau)-nP
                 tdata = tau(idx:idx+nP);
