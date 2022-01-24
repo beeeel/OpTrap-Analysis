@@ -28,6 +28,7 @@ p = inputParser;
 p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
+p.addParameter('nBead',[],@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF'})))%
 p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1})}))
@@ -45,6 +46,7 @@ p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positiv
 
 p.parse(msdObj, obsT, varargin{:});
 
+nB = p.Results.nBead;
 % FT options
 wR = p.Results.wRange;
 trunc_mode = p.Results.trunc;
@@ -69,6 +71,10 @@ if length(dims) == 2
     tits = {'Radial', 'Tangential'};    
 elseif length(dims) == 4
     tits = {'Left Radial', 'Left Tangential', 'Right Radial', 'Right Tangential'};
+elseif length(dims) == nB
+    warning('New code: Use average of MSDs for FT')
+    tits = {'Thing'};
+    dims = 1;
 else
     error('huh, how many beads?');
 end
@@ -98,7 +104,11 @@ for dimI = 1:length(dims)
     dim = dims(dimI);
     
     % Get the MSD
-    msdV = msdObj.msd{dim};
+    if isscalar(dims)
+        msdV = msdObj.getMeanMSD;
+    else
+        msdV = msdObj.msd{dim};
+    end
     tau = msdV(2:end-nSkip,1);
     msd = msdV(2:end-nSkip,2);
     
