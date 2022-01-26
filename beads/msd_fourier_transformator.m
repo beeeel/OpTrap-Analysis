@@ -410,7 +410,7 @@ for wRIdx = 1:length(wRange)
         end
         
         if doPlot
-            h = plot(odata, exp(fo.p1 * log(odata) + fo.p2), 'k:', 'LineWidth', 2.5);
+            h = plot(odata, exp(fo.p1 * log(odata) + fo.p2), 'g:', 'LineWidth', 2.5);
         end
     catch ME
         warning(ME.identifier, 'Fitting failed with error %s\n',ME.message)
