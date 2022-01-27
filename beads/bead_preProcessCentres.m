@@ -18,6 +18,12 @@ if ~isfield(data.opts, 'timeRegularisation')
 elseif data.opts.timeRegularisation
     t = data.raw.timeVecMs;
     dt = median(diff(t));
+    [~, I] = min(diff(t));
+    % Gotta check for split acquisitions! These are characterised by a time
+    % vector that resets to 0 partway, so this should do an okay job
+    if sum(t==0) > 1
+        error('Split acquisition detected! First acquisition ends at %i, second has length %i', I, length(t)-I)
+    end
     data.raw.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
 end
 
