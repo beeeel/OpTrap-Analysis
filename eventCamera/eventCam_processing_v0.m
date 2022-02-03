@@ -14,12 +14,13 @@ else
     addpath('~/junk/prophesee-matlab-scripts');
 
 end
-subDir = 'Event Camera - OpticallyTrappedBead/';
+% subDir = 'Event Camera - OpticallyTrappedBead/';
 % subDir = 'Event Camera - Stage_SineWave/';
+subDir = '2022_01_21/event_data';
 dirList = dir([evtCamDir subDir]);
 ls([evtCamDir subDir])
 
-fileBase = 'TrappedBead_1'; % 1, 2, or 3
+fileBase = 'event_data'; % 1, 2, or 3
 % fileBase = 'Bead_Stage_SineWave'; % Bead or Fluorescence or Fluorescence..._smallsteps
 % fileBase = 'Fluorescence_Stage_SineWave_smallsteps'; 
 
