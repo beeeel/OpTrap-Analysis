@@ -3,8 +3,8 @@ function data = bead_preProcessCentres(data)
 if isfield(data,'mPerPx')
     mPerPx = data.mPerPx;
 else
-    warning('Using default value for pixel size calibration')
-    mPerPx = 0.07e-6;
+    mPerPx = 0.065e-6;
+    warning('Using default value (%s m/px) for pixel size calibration', mPerPx)
 end
 
 % Check cropT has been put in opts
@@ -23,6 +23,9 @@ elseif data.opts.timeRegularisation
     % vector that resets to 0 partway, so this should do an okay job
     if sum(t==0) > 1
         error('Split acquisition detected! First acquisition ends at %i, second has length %i', I, length(t)-I)
+        % A useful command for trimming acquisitions: find . -type f -exec dd if={} of=../{} ibs=8000 count=523 \;
+        % Note: First move data files into a new folder then run this with
+        % either count or skip set as appropriate
     end
     data.raw.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
 end
