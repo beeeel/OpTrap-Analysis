@@ -34,13 +34,15 @@ subplot(4,2,2)
 histogram(cdEvents.ts./60e6)
 xlabel('Time (mins)')
 
-subplot(4,2,4)
+ax = subplot(4,2,4);
 histogram(cdEvents.x, 'BinLimits', prctile(cdEvents.x,[1 99]));
 xlabel('X (px)')
+ax.YScale = 'log';
 
-subplot(4,2,6)
+ax = subplot(4,2,6);
 histogram(cdEvents.y, 'BinLimits', prctile(cdEvents.y,[1 99]));
 xlabel('Y (px)')
+ax.YScale = 'log';
 
 subplot(4,2,8)
 if isfield(cdEvents,'gray')
