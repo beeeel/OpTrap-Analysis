@@ -24,6 +24,11 @@ xIn = xIn .* inROI;
 yIn = yIn .* inROI;
 tIn = tIn .* inROI;
 
+% n_t check - if there's not many events in ROI, you gotta reduce number to
+% be buffered. This should only happen when using eventAnimator because it
+% (potentially) uses a very large n_t
+n_t = min(n_t, sum(inROI));
+
 % Prepare arrays for integration window and centres
 xsum = 0;
 ysum = 0;
@@ -87,4 +92,4 @@ infs = any( isinf( centres ), 1);
 centres(:, infs) = nan(2,sum(infs));
 % Celebrate!
 % fprintf('Integrated %g events into window length %g in %gs\n', length(tIn), n_t, toc)
-fprintf('Ran buffer for %g events, discarded %g events outside of ROI',length(tIn), sum(~inROI))
+%fprintf('Ran buffer for %g events, discarded %g events outside of ROI\n',length(tIn), sum(~inROI))
