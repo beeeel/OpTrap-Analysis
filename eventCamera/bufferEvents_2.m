@@ -18,6 +18,12 @@ xc = ROI(1) + w2;
 yc = ROI(2) + h2;
 % Vectorize the in ROI calculation
 inROI = abs(xIn - xc) < w2 & abs(yIn - yc) < h2;
+if sum(inROI) == 0
+    ts = [];
+    centres = [];
+    ns = [];
+    return
+end
 tIdxs = inROI .* (1:length(tIn))';
 tIdxs = tIdxs(tIdxs ~= 0);
 xIn = xIn .* inROI;
@@ -34,7 +40,11 @@ xsum = 0;
 ysum = 0;
 nsum = 0;
 tsum = 0;
+try
 centres(2, length(tIdxs) + n_t - 1) = 0;% Faster preallocation by implicit sizing
+catch
+    error('')
+end
 ts(1, length(tIdxs) + n_t - 1) = 0;
 ns(1, length(tIdxs) + n_t - 1) = 0;
 
