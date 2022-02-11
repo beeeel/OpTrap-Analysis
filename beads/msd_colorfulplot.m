@@ -59,7 +59,7 @@ if ~exist('axs','var')
         else
             ylabel('MSD (μm^2)')
             %         ylim([8e-6 1e-1])
-            ylim([5e-6 3e-2])
+            ylim([5e-6 3e-1])
         end
         title(tits{plt})
         set(gca,'FontSize',15)

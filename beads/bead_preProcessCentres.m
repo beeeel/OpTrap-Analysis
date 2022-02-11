@@ -4,6 +4,7 @@ if isfield(data,'mPerPx')
     mPerPx = data.mPerPx;
 else
     mPerPx = 0.065e-6;
+    data.mPerPx = mPerPx;
     warning('Using default value (%s m/px) for pixel size calibration', mPerPx)
 end
 
