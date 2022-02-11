@@ -66,7 +66,7 @@ if loadImages
         imList = dirList(endsWith({dirList.name}, '.tif'));
         if isscalar(imList)
             fPath = strjoin({imList.folder imList.name}, '/');
-            data.ImstackFullFoV  = bfopen(fPath);
+            data.Imstack = bfopen(fPath);
         else
             error('Found multiple (or 0) TIFs in ROI folder')
         end
