@@ -73,7 +73,7 @@ if loadImages
         txtList = dirList(endsWith({dirList.name}, 'metadata.txt'));
         
         if isscalar(txtList)
-            fPath = strjoin({imList.folder imList.name}, '/');
+            fPath = strjoin({txtList.folder txtList.name}, '/');
             metadata = fileread(fPath);
             data.metadata = jsondecode(metadata);
         else
