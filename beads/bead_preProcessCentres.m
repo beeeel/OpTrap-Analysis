@@ -8,15 +8,20 @@ else
     warning('Using default value (%s m/px) for pixel size calibration', mPerPx)
 end
 
-% Check cropT has been put in opts
-if ~isfield(data.opts, 'cropT')
-    data.opts.cropT = [1 data.nPoints];
+% Check essential fields have been put in opts
+fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', ...
+    'timeRegularisation', 'downsampleR'};
+defaults = {[1 data.nPoints], 0, 0, false, ...
+    true, 1};
+for fi = 1:length(fnames)
+    if ~isfield(data.opts, fnames{fi})
+        data.opts.(fnames{fi}) = defaults{fi};
+    end
 end
 
+
 % Do time regularisation?
-if ~isfield(data.opts, 'timeRegularisation')
-    data.opts.timeRegularisation = false;
-elseif data.opts.timeRegularisation
+if data.opts.timeRegularisation
     t = data.raw.timeVecMs;
     dt = median(diff(t));
     [~, I] = min(diff(t));
@@ -36,9 +41,7 @@ xCentres = data.raw.xCentresPx;
 yCentres = data.raw.yCentresPx;
 
 % Do angular correction?
-if ~isfield(data.opts, 'angleCorrection')
-    data.opts.angleCorrection = false;
-elseif data.opts.angleCorrection
+if data.opts.angleCorrection
     N_doAngleCorrection;
 end
 
@@ -58,9 +61,7 @@ dims = [1, 3, 2];
 [~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
     permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
 
-if ~isfield(data.opts, 'downsampleR')
-    data.opts.downsampleR = 1;
-elseif data.opts.downsampleR > 1
+if data.opts.downsampleR > 1
     N_downsample
 end
 
