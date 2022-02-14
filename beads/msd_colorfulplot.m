@@ -11,8 +11,8 @@ if nargin >= 6
     end
 end
 
-if exist('rIs','var')
-elseif ~exist('rIs','var') && isscalar(dIs) && isscalar(cIs)
+if exist('rIs','var') && ~isempty(rIs)
+elseif (~exist('rIs','var') || isempty(rIs)) && isscalar(dIs) && isscalar(cIs)
     rIs = 1:size(accumulated{dIs}{1,cIs},2);
 else
     error('Either dIs and cIs must be scalar, or you must provide rIs')
@@ -28,11 +28,11 @@ a = 2.5e-6;
 % Ignore the last n points of MSD
 nSkip = 40;
 % LineStyles - default to solid line
-lsty = {'-','-','-','-','-','-'}; 
+lsty = repmat({'-'},1,20); 
 % MarkerStyles - default to solid line
-msty = {'.','.','.','.','.','.'}; 
+msty = repmat({'.'},1,20); 
 % Color scale factors - multiply RGB triplet by this
-cF = [1 1 1 1 1 1];
+cF = ones(1,20);
 % Normalize the MSDs? (use MSDp to normalize)
 normY = false;
 normX = false;
