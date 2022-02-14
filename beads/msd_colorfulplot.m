@@ -11,7 +11,8 @@ if nargin >= 6
     end
 end
 
-if ~exist('rIs','var') && isscalar(dIs) && isscalar(cIs)
+if exist('rIs','var')
+elseif ~exist('rIs','var') && isscalar(dIs) && isscalar(cIs)
     rIs = 1:size(accumulated{dIs}{1,cIs},2);
 else
     error('Either dIs and cIs must be scalar, or you must provide rIs')
