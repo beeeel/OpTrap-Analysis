@@ -7,6 +7,12 @@ function data = bead_normMSD_polyfit(data, direction, offset, varargin)
 % Parse the inputs
 doPlots = true;
 useRaw = false;
+
+if nargin == 1
+    direction = 'a';
+    offset = 1;
+end
+
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = 1;
 if strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r')
@@ -20,7 +26,7 @@ else
 end
 
 num_t = min(data.nPoints, diff(cropT)+1);
-doNorm = true;
+doNorm = false;
 errorBars = false;
 useField = '';
 if nargin >= 4 && ~isempty(varargin{1})
