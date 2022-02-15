@@ -1,7 +1,13 @@
-function bead_imageAndScatter(data)
+function bead_imageAndScatter(data, fh)
 
-figure
+if ~exist('fh','var')
+    fh = figure;
+else
+    figure(fh.Number)
+end
 clf
+fn = strsplit(data.dirPath,'/');
+fh.Name = sprintf('Image and scatter for %s',fn{end});
 
 % To get a black and white image, first choose display range by percentile
 % and then give imagesc an [m,n,3] matrix.
