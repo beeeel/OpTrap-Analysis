@@ -11,6 +11,7 @@ useRaw = false;
 if nargin == 1
     direction = 'a';
     offset = 1;
+    doPlots = false;
 end
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
@@ -120,7 +121,7 @@ end
 clear tmp
 
 
-if data.opts.forceRun || (~isfield(data.pro, 'amsdObj') && ~isfield(data.pro, [direction(1) 'msdObj']))
+if data.opts.forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1) 'msdObj'])
     
     % % Dimension order for polynomial fitting
     % dims = [1, 3, 2];
@@ -226,9 +227,15 @@ end
 %%
     function fn = get_Fn
         
+        if isempty(useField) && isfield(data.opts, 'UseField')
+            useField = data.opts.UseField;
+            fprintf('data.opts says use %s for MSD calculation.\n',useField)
+        end
+        
         if any(strcmp(direction, {'x', 'y'}))
             if isfield(data.pro, [direction useField])
                 fn = useField;
+                fprintf('Going to calculate MSD using field: %s%s\n',direction,useField)
             elseif isfield(data.pro, [direction 'CentresM'])
                 warning('Falling back to using CentresM because useField failed to resolve')
                 fn = 'CentresM';
@@ -242,8 +249,10 @@ end
                 d = xy(i);
                 if isfield(data.pro, [d useField])
                     fn{i} = useField;
+                    fprintf('Going to calculate MSD using field: %s%s\n',d,fn{i})
                 elseif isfield(data.pro, [d 'CentresM'])
                     fn{i} = 'CentresM';
+                    fprintf('Falling back to calculating MSD using field: %s%s\n',d,fn{i})
                 else
                     error('Could not decide a field to use, tried %s and CentresM', useField)
                 end
