@@ -25,13 +25,13 @@ nargoutchk(1,2);
 
 p = inputParser;
 
-p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
+p.addRequired('msdObj',@(x)(isa(x,'msdanalyzer')&&isscalar(x)) || (false));
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
 p.addParameter('nBead',[],@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF'})))%
-p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1})}))
+p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1}), 'integer'}))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
@@ -117,6 +117,8 @@ for dimI = 1:length(dims)
         msd = lowpass_logspace(tau, msd,lpFrq);
         if lpFrq > 1
             idx1 = round(lpFrq/2);
+        else
+            idx1 = 1;
         end
     else 
         idx1 = 1;
