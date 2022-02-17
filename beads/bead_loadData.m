@@ -17,6 +17,10 @@ end
 idx = 1;
 errMsg = '';
 
+if ~exist(data.dirPath,'dir')
+    error('Folder %s does not exist!',data.dirPath)
+end
+
 for suff = {'Centres', '', 'simple', 'quart', 'gauss', 'l', 'r', 'b', 's', 'v', 'lq', 'rq'}
     fNameX = [data.dirPath '/X' suff{:} '.dat'];
     fNameY = [data.dirPath '/Y' suff{:} '.dat'];
@@ -76,6 +80,10 @@ if loadImages
             fPath = strjoin({txtList.folder txtList.name}, '/');
             metadata = fileread(fPath);
             data.metadata = jsondecode(metadata);
+            
+            % Get ROI position
+            roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
+            data.opts.roi = roi;
         else
             error('Found multiple (or 0) files ending with metadata.txt in ROI folder')
         end
