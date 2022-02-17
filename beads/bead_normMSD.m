@@ -1,5 +1,5 @@
 function data = bead_normMSD(data, direction, offset, varargin)
-%% data = bead_normMSD_polyfit(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars, useField])
+%% data = bead_normMSD(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars, useField])
 % Take data object and use x, y or both from raw data, returning calculated
 % MSD and the MSD object in complete data struct. Uses Tinevez's
 % msdanalyzer for the bulk of the work

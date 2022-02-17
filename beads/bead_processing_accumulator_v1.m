@@ -189,7 +189,7 @@ for dayIdx = 1:length(dayDirs)
 
             % Look at mean-square displacement (for cell-bead expts)
             if ~isempty(msdOffset)
-                data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, false, msdUseRaw, centresRow, false);
+                data = bead_normMSD(data, msdDim, msdOffset, msdNumT, false, msdUseRaw, centresRow, false);
                 accumulated{dayIdx}{1,cellIdx}(fIdx).msd = data.pro.amsdObj;
             end
             
@@ -273,7 +273,7 @@ for dayIdx = 1:length(dayDirs)
                 % Force normMSD to run processing (hacky but it works)
                 fr = data.opts.forceRun;
                 data.opts.forceRun = true;
-                data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, true, false, centresRow, false, false, 'CentresHP');
+                data = bead_normMSD(data, msdDim, msdOffset, msdNumT, true, false, centresRow, false, false, 'CentresHP');
                 % Restore previous setting
                 data.opts.forceRun = fr;
                 
