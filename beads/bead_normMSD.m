@@ -1,59 +1,61 @@
-function data = bead_normMSD(data, direction, offset, varargin)
-%% data = bead_normMSD(data, direction, offset, [num_t, doPlots, useRaw, centresRow, doNorm, errorBars, useField])
-% Take data object and use x, y or both from raw data, returning calculated
-% MSD and the MSD object in complete data struct. Uses Tinevez's
-% msdanalyzer for the bulk of the work
+function data = bead_normMSD(data, varargin)
+%% data = bead_normMSD(data, ...)
+% Take data struct and calculate MSD for processed or raw data, returning
+% calculated MSD and the MSD object in complete data struct. Uses Tinevez's
+% msdanalyzer for the bulk of the work.
+%
+% Additional parameters in the form of name-value pairs. Possible options:
+%   direction       - Direction used for MSD calculation. 'x','y', or 'a'
+%   offset          - Offset from start. Default 1
+%   num_t           - Number of time points to use. Default all
+%   doPlots         - Do the plots if true, else just the calculations
+%   useRaw          - Use raw data instead of processed (you probably don't want this)
+%   centresRow      - Which row of the centres matrix to use. Default 1.
+%   doNorm          - Normalize (divide) the MSD by the variance of the position
+%   errorBars       - Plot errorbars (+/- 1 s.d.) on the MSD
+%   useField        - Specify which processed data field to use.
+
 
 % Parse the inputs
-doPlots = true;
-useRaw = false;
+p = inputParser;
 
-if nargin == 1
-    direction = 'a';
-    offset = 1;
-    doPlots = false;
-end
+p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
+
+p.addParameter('direction','a',@(x)any(strcmp(x,{'a','x','y'})))
+p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'scalar','<',data.nPoints}))
+p.addParameter('num_t',[],@(x)validateattributes(x,{'numeric'},{'scalar','<',data.nPoints}))
+p.addParameter('doPlots',true, @(x)islogical(x))
+p.addParameter('useRaw',false,@(x)islogical(x))
+p.addParameter('centresRow',1,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
+p.addParameter('doNorm',false,@(x)islogical(x))
+p.addParameter('errorBars', false, @(x)islogical(x))
+p.addParameter('useField', data.opts.UseField, @(x)any(isfield(data.pro,x),isfield(data.raw,x)))
+
+% p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
+% p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
+% p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
+
+p.parse(data, varargin{:});
+
+direction = p.Results.direction;
+offset = p.Results.offset;
+doPlots = p.Results.doPlots;
+useRaw = p.Results.useRaw;
+doNorm = p.Results.doNorm;
+errorBars = p.Results.errorBars;
+useField = p.Results.useField;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
-centresRow = 1;
-if strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r')
-    centresRow = [1 2];
+centresRow = p.Results.centresRow;
+if strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r') && isscalar(centresRow)
+    warning('Looks like you have 2 bead data, but I''m only using 1 of them')
 end
 
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;
-else
-    cropT = [1 length(data.raw.timeVecMs)];
-end
+cropT = data.opts.cropT;
 
-num_t = min(data.nPoints, diff(cropT)+1);
-doNorm = false;
-errorBars = false;
-useField = '';
-if nargin >= 4 && ~isempty(varargin{1})
-    num_t = varargin{1};
-end
-if nargin >= 5 && ~isempty(varargin{2})
-    doPlots = varargin{2};
-end
-if nargin >= 6 && ~isempty(varargin{3})
-    useRaw = varargin{3};
-end
-if nargin >= 7 && ~isempty(varargin{4})
-    centresRow = varargin{4};
-end
-if nargin >= 8 && ~isempty(varargin{5})
-    doNorm = logical(varargin{5});
-end
-if nargin >= 9 && ~isempty(varargin{6})
-    errorBars = logical(varargin{6});
-end
-if nargin >= 10 && ~isempty(varargin{7})
-    useField = varargin{7};
-end
-if nargin > 10
-    warning('Wrong number of input arguments')
-    warning(['Ignoring ' num2str(nargin-10) ' arguments'])
+num_t = min([p.Results.num_t, data.nPoints, diff(cropT)+1]);
+if ~isempty(p.Results.num_t) && num_t ~= p.Results.num_t
+    warning('Number of time points overriden')
 end
 
 % A little bit hacky - if both directions are wanted, stick them together
