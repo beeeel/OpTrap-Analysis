@@ -43,7 +43,9 @@ end
 
 cmaps = {'spring','winter','cool'};
 
-fh.Name = data.fName;
+if isfield(data,'fName')
+    fh.Name = data.fName;
+end
 clf
 
 if size(xCentresM, 1) == 1
