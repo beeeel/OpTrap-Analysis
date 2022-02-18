@@ -43,6 +43,10 @@ yCentres = data.raw.yCentresPx;
 % Do angular correction?
 if data.opts.angleCorrection
     N_doAngleCorrection;
+elseif isfield(data, 'metadata')
+    % Get ROI position
+    roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
+    data.opts.roi = roi;
 end
 
 % Store mean and std of co-ordinates AFTER angle correction, BEFORE demean.
