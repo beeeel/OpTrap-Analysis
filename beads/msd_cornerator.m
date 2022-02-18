@@ -39,7 +39,7 @@ p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'squ
 p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'next', 'previous', 'spline', 'pchip', 'cubic', 'v5cubic', 'makima'})))
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
-
+p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == 2 && all(x < msdObj.msd{1}(1,end)) && all(x > 0))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
 
@@ -59,6 +59,7 @@ fh = p.Results.figHand;
 colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
+normT = p.Results.normT;
 %% Setup
 
 cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
@@ -93,7 +94,7 @@ for dIdx = dims
         msdi = interp1(tau, msd, taui, interpM);
         
         if doPlot
-            h = plot(taui, msdi, ...
+            h = plot(taui./normT(d), msdi, ...
                 'Color',colour, 'LineWidth', 2, 'LineStyle', lS, 'Marker', mS);
         end
         
@@ -103,7 +104,7 @@ for dIdx = dims
             % Get the indexes for the specified time range
             msdIdx = find(taui > tRanges{d}{fIdx}(1), 1) ...
                 : find(taui < tRanges{d}{fIdx}(2), 1, 'last');
-            tauData = taui(msdIdx);
+            tauData = taui(msdIdx)./normT(d);
             msdData = msdi(msdIdx);
             
             % Fit to log data
