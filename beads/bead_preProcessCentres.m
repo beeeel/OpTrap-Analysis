@@ -8,17 +8,24 @@ else
     warning('Using default value (%s m/px) for pixel size calibration', mPerPx)
 end
 
+% Check opts exists before checking its contents
+if ~isfield(data,'opts')
+    data.opts = struct();
+end
 % Check essential fields have been put in opts
 fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', ...
-    'timeRegularisation', 'downsampleR'};
+    'timeRegularisation', 'downsampleR', 'UseField'};
 defaults = {[1 data.nPoints], 0, 0, false, ...
-    true, 1};
+    true, 1, ''};
 for fi = 1:length(fnames)
     if ~isfield(data.opts, fnames{fi})
         data.opts.(fnames{fi}) = defaults{fi};
     end
 end
-
+% We also should have an fName
+if ~isfield(data,'fName')
+    data.fName = '';
+end
 
 % Do time regularisation?
 if data.opts.timeRegularisation

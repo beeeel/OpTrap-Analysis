@@ -166,8 +166,8 @@ for fileIdx = 27:35%length(dirList)
     
     % Look at mean-square displacement (for cell-bead expts)
     if ~isempty(msdOffset)
-%         data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
-        data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm, msdErrorBars);
+%         data = bead_normMSD(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
+        data = bead_normMSD(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm, msdErrorBars);
         out(fileIdx).msdObj = data.pro.amsdObj;
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
