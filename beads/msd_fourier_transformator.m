@@ -43,6 +43,7 @@ p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positive','scalar','nonzero'}))
+p.addParameter('interpF', 1e3, @(x)validateattributes(x, {'numeric'},{'positive','scalar'}))
 
 p.parse(msdObj, obsT, varargin{:});
 
@@ -64,6 +65,7 @@ fh = p.Results.fh;
 colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
+interpF = p.Results.interpF;
 
 %% Preparatory
 % hee hee
@@ -129,7 +131,7 @@ for dimI = 1:length(dims)
     [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
     
     % Do the interpolation and rheoFT
-    [omega, G1, G2] = msd_interp_FT(tau(idx1:idx), msd(idx1:idx), 0, eta, idx, 1e3);
+    [omega, G1, G2] = msd_interp_FT(tau(idx1:idx), msd(idx1:idx), 0, eta, idx, interpF); % Need a smart way of changing nPoints (idx)
     
     
     % Lowpass if there's a frequency to use
