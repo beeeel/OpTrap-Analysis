@@ -21,15 +21,16 @@ p = inputParser;
 
 p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 
-p.addParameter('direction','a',@(x)any(strcmp(x,{'a','x','y'})))
+p.addParameter('forceRun',false, @(x)islogical(x))
+p.addParameter('direction','a',@(x)any(strcmp(x,{'a','all','x','y'})))
 p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'scalar','<',data.nPoints}))
-p.addParameter('num_t',[],@(x)validateattributes(x,{'numeric'},{'scalar','<',data.nPoints}))
+p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
 p.addParameter('centresRow',1,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
 p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('errorBars', false, @(x)islogical(x))
-p.addParameter('useField', data.opts.UseField, @(x)any(isfield(data.pro,x),isfield(data.raw,x)))
+p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -44,6 +45,7 @@ useRaw = p.Results.useRaw;
 doNorm = p.Results.doNorm;
 errorBars = p.Results.errorBars;
 useField = p.Results.useField;
+forceRun = p.Results.forceRun || data.opts.forceRun;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
@@ -53,8 +55,8 @@ end
 
 cropT = data.opts.cropT;
 
-num_t = min([p.Results.num_t, data.nPoints, diff(cropT)+1]);
-if ~isempty(p.Results.num_t) && num_t ~= p.Results.num_t
+num_t = min([p.Results.numT, data.nPoints, diff(cropT)+1]);
+if ~isempty(p.Results.numT) && num_t ~= p.Results.numT
     warning('Number of time points overriden')
 end
 
@@ -90,7 +92,7 @@ if isfield(data.opts, 'UseField') && ~useRaw
             centres = [data.pro.(['x' useField{1}])(centresRow,cropT(1):cropT(2)) data.pro.(['y' useField{2}])(centresRow,cropT(1):cropT(2))];
         else
             centres = [data.pro.(['x' useField{1}])(centresRow,:) data.pro.(['y' useField{2}])(centresRow,:)];
-            warning(['Didn''t apply cropT because it looks like data.pro.x' useField{1} ' has already been cropped']) 
+            %warning(['Didn''t apply cropT because it looks like data.pro.x' useField{1} ' has already been cropped']) 
         end
         timeVec = [tmp tmp];
         offset = [offset (offset + num_t)];
@@ -123,7 +125,7 @@ end
 clear tmp
 
 
-if data.opts.forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1) 'msdObj'])
+if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1) 'msdObj'])
     
     % Store which row of centres we're using
     if ~isfield(data.raw,'suffixes')
@@ -225,12 +227,14 @@ end
         if isempty(useField) && isfield(data.opts, 'UseField')
             useField = data.opts.UseField;
             fprintf('data.opts says use %s for MSD calculation.\n',useField)
+        elseif any(strcmp(useField(1), {'x','y'}))
+            useField = useField(2:end);
         end
         
         if any(strcmp(direction, {'x', 'y'}))
             if isfield(data.pro, [direction useField])
                 fn = useField;
-                fprintf('Going to calculate MSD using field: %s%s\n',direction,useField)
+                %fprintf('Going to calculate MSD using field: %s%s\n',direction,useField)
             elseif isfield(data.pro, [direction 'CentresM'])
                 warning('Falling back to using CentresM because useField failed to resolve')
                 fn = 'CentresM';
@@ -244,7 +248,7 @@ end
                 d = xy(i);
                 if isfield(data.pro, [d useField])
                     fn{i} = useField;
-                    fprintf('Going to calculate MSD using field: %s%s\n',d,fn{i})
+                    %fprintf('Going to calculate MSD using field: %s%s\n',d,fn{i})
                 elseif isfield(data.pro, [d 'CentresM'])
                     fn{i} = 'CentresM';
                     fprintf('Falling back to calculating MSD using field: %s%s\n',d,fn{i})
@@ -265,10 +269,11 @@ end
         if strcmp( direction(1) , 'a')
             legCell = {[]};
             for Idx = 1:length(tracks)/2
-                legCell{Idx} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
+                legCell{Idx,1} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
             end
             
-            ax = subplot(2,1,1);
+            ax = gca;%subplot(2,1,1);
+            hold on
             if ~isempty(msdStd)
                 errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
             else
@@ -281,14 +286,16 @@ end
             xlabel('Delay (s)')
             if doNorm
                 ylabel('Normalized MSD')
-                title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+%                 title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+                title({'Normalized mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             else
                 ylabel('MSD (μm^2)')
-                title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+                title({'Mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+%                 title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             end
-            legend(legCell,'Location','best')
+%             legend(legCell,'Location','best')
             
-            ax = subplot(2,1,2);
+%             ax = subplot(2,1,2);
             
             if ~isempty(msdStd)
                 errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
@@ -302,12 +309,13 @@ end
             xlabel('Delay (s)')
             if doNorm
                 ylabel('Normalized MSD')
-                title({'Normalized mean square Y displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+                title({'Normalized mean square displacement',filtStr, ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             else
                 ylabel('MSD (μm^2)')
-                title({'Mean square Y displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
+                title({'Mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             end
-            legend(legCell,'Location','best')
+%             legend(legCell,'Location','best')
+            legend('X','Y')
         else
             ax = gca;
             errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)
@@ -330,6 +338,7 @@ end
             end
             legend(legCell, 'Location','best')
         end
+        drawnow
     end
 
 end
