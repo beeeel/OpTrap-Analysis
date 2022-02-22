@@ -1,10 +1,14 @@
 function data = bead_loadData(data, varargin)
-%% data = loadBeadData(data, [loadImages])
+%% data = loadBeadData(data/dirPath, [loadImages])
 % Load centres, times, images and metadata for a given dataset
 
 loadImages = true;
 if nargin > 1
     loadImages = varargin{1};
+end
+
+if ~isstruct(data)
+    data = struct('dirPath',data);
 end
 
 % New method: Find anything with a suffix and then record it and what
