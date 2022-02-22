@@ -18,9 +18,12 @@ fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', ...
 defaults = {[1 data.nPoints], 0, 0, false, ...
     true, 1, ''};
 for fi = 1:length(fnames)
-    if ~isfield(data.opts, fnames{fi})
+    if ~isfield(data.opts, fnames{fi}) 
         data.opts.(fnames{fi}) = defaults{fi};
     end
+end
+if isempty(data.opts.cropT)
+    data.opts.cropT = [1 data.nPoints];
 end
 % We also should have an fName
 if ~isfield(data,'fName')
