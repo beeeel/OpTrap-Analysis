@@ -23,7 +23,6 @@ hold on
 
 roi = data.opts.roi;
 plot(roi(1) * ones(1,5) + roi(3) * [0 1 1 0 0], roi(2) * ones(1,5) + roi(4) * [0 0 1 1 0], 'r-','LineWidth',2)
-
 if isfield(data.opts, 'cCentre')
     plot(data.opts.cCentre(1), data.opts.cCentre(2), 'kx','LineWidth',3)
 end
