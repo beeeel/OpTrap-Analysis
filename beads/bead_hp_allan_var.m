@@ -27,7 +27,7 @@ if isfield(data.raw, field)
         mPerPx = data.mPerPx;
     else
         warning('Using default value for pixel size calibration')
-        mPerPx = 0.07e-6;
+        mPerPx = 0.065e-6;
     end
 elseif isfield(data.pro, field)
     centreVec = data.pro.(field);
@@ -62,11 +62,13 @@ N_input_validator();
 %% Preallocate
 % Crop indices for after high-passing (remove ringing)
 cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
-% Number of points in final HP vector
-nPoints = diff(cropT) - 2 * cropTHPval + 2;
-% Lag times
-lagTimes = calcLagTimes(nPoints);
-YOut = zeros(length(lagTimes), size(centreVec,1), length(fpasses));
+
+% % Number of points in final HP vector
+% %nPoints = diff(cropT) - 2 * cropTHPval + 2;
+% % Lag times
+% %lagTimes = calcLagTimes(nPoints);
+% %YOut = zeros(length(lagTimes), size(centreVec,1), length(fpasses));
+
 % Cell for legend
 legCell = {'Unfiltered', 'Linear fit subtracted'};
 legOffset = length(legCell);
