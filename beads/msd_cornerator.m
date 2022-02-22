@@ -112,13 +112,14 @@ for dIdx = dims
             RMSE(:,fIdx, dIdx) = N_get_RMSE;
             % Show fits
             if doPlot
-                plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx)) , ...
+                plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + log(fps(2,fIdx, dIdx))) , ...
                     'r:', 'LineWidth', 2.5)
             end
         end
         % Find corners by intercept of fits. I fucking hope I wrote this in
         % my lab book.... (I probably didn't)
         dfps = diff(fps,1,2);
+        dfps(2,:,:) = diff(log(fps(2,:,:)),1,2);
         cTau(:, dIdx) = exp(-dfps(2,:,dIdx)./dfps(1,:,dIdx));
         
         if doPlot
@@ -133,7 +134,8 @@ for dIdx = dims
     % Set legend
     if doPlot
         try
-            legend(h,{legs 'Fit intercept time'}, 'Location', 'northwest');
+%             legend(h,{legs 'Fit intercept time'}, 'Location', 'northwest');
+            legend('MSD',sprintf('α = %.2g, D = %.2gμm^2/s',fps(:,1,dIdx)),sprintf('α = %.2g, D = %.2gμm^2',fps(:,2,dIdx)))
         catch ME
             warning(['Couldn''t set legend: ' ME.message])
         end
@@ -165,7 +167,7 @@ end
                 [alpha, D] = leastSq(log(tauData), log(msdData));
                 % This needs to output the gradient (alpha) and y-intercept
                 % of the linear fit, whereas 2D is the MSD at τ=1. [1]
-                fps = [alpha; log(2*D)];
+                fps = [alpha; (2*D)];
                 % Truth is I couldn't tell you how this works, but it does.
             case 'fit'
                 % Fit to log data
@@ -180,7 +182,11 @@ end
     function N_setup_fig
         % Titles for X and Y directions
         if length(dims) == 2
-            tits = {'Radial','Tangential'};
+            if obsT ~= 0
+                tits = {'Radial','Tangential'};
+            else
+                tits = {'X','Y'};
+            end
         elseif length(dims) == 4
             tits = {'left bead Radial','left bead Tangential', 'right bead Radial', 'right bead Tangential'};
         else
@@ -224,7 +230,7 @@ end
             ylim(yl)
             
             xlabel('Delay time \tau (s)')
-            ylabel('Mean-squared displacement (\mu m^2)')
+            ylabel('MSD (\mu m^2)')
             
             title(sprintf('%s direction',tits{plt}))
             
