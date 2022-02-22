@@ -50,6 +50,8 @@ end
 % error and gives an empty list if not.
 % checkCropTs(cropTs, dirList);
 
+tmp = {dirList.name}'; for idx = 1:length(tmp); tmp{idx} = sprintf('%i: %s', idx, tmp{idx}); end
+disp(tmp)
 out = struct();
 out(1).stiff = nan;
 %
