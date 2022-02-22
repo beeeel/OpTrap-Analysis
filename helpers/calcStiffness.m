@@ -23,7 +23,7 @@ elseif nargin > 2
 end
 centresVectorM = conversionFactor .* centresVector;
 
-Kb = 1.38064852e-23; % Boltzmann constant
+Kb = 1.380649e-23; % Boltzmann constant
 T = 273 + 20; % Assume trap at room temperature - maybe I should model this?
 % From Sarshar et al 2014 eq 4. This gives stiffness in N/m.
 stiffness = Kb * T ./ var(centresVectorM, 1, 2);
