@@ -1,5 +1,5 @@
 function data = bead_fft_scaled(data, doPlots, varargin)
-%% data = bead_fft_scaled(data, doPlots, [setLims, fh])
+%% data = bead_fft_scaled(data, doPlots, [useField, setLims, fh])
 % Calculate Fourier transform of centres data in both directions, store
 % one-sided spectra in data struct along with frequency vector in Hz.
 %
@@ -11,8 +11,8 @@ if nargin == 1
 end
 
 % Don't ask.
-argN = 1;
-if nargin > 2 && ~ isempty(varargin{argN})
+argN = 2;
+if nargin > 3 && ~ isempty(varargin{argN})
     % help give better errors when misused!
     setLims = varargin{argN};
     validateattributes(setLims,{'numeric'},{'numel',2},...
@@ -39,11 +39,27 @@ else
     cRow = 1:size(data.raw.xCentresPx,1);
 end
 
+if isfield(data.opts,'UseField')
+    useField = data.opts.UseField;
+end
+if nargin > 2 && ~isempty(varargin{1})
+    if isfield(data.pro, ['x' varargin{1}])
+        useField = varargin{1};
+    end
+end
+
 %% Calculation
 for direction = 'xy'
     % Get the FFT. Copied from MATLAB's example of scaling FFT to physical
     % units
-    X = fft(data.mPerPx * data.raw.([ direction 'CentresPx'])(cRow,cropT(1):cropT(2)), [], 2);
+    if isfield(data.pro, [direction useField])
+        x = data.pro.([ direction useField])(cRow,cropT(1):cropT(2));
+    elseif isfield(data.raw, [direction useField])
+        x = data.mPerPx * data.raw.([ direction useField])(cRow,cropT(1):cropT(2));
+    else
+        error('Could not find specified field: %s%s',direction, useField)
+    end
+    X = fft(x, [], 2);
     P = abs(X/n_points);
     P = P(:,1:floor(end/2)+1);
     P(:,2:end-1) = 2*P(:,2:end-1);
@@ -56,7 +72,7 @@ data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(data.raw.timeVecMs([cropT(1)
 
 %% Plot
 if doPlots
-    argN = 2;
+    argN = 3;
     if nargin >= 4 && ~ isempty(varargin{argN})
         fh = varargin{argN};
     else
@@ -81,6 +97,8 @@ if doPlots
         plot(data.pro.fftFreqHz, 1e9 * data.pro.yfftM)
         if ~isempty(setLims)
             ylim(setLims)
+        else
+            xlim([10 fh.Children(1).XLim(2)])
         end
         
         title('Y centres frequency spectrum')
