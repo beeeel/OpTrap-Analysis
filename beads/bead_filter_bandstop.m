@@ -73,10 +73,10 @@ end
 
 % centres = centres(cropT(2)+1:2*cropT(2),:);
 
-data.pro.xCentresBS = centres(:,1);
-data.pro.yCentresBS = centres(:,2);
+data.pro.xCentresBS = centres(:,1)';
+data.pro.yCentresBS = centres(:,2)';
 
-data.opts.useField = 'CentresBS';
+data.opts.UseField = 'CentresBS';
 
 if doPlots
     t = data.raw.timeVecMs*1e-3;
@@ -97,7 +97,8 @@ if doPlots
         fft_scaled(t, 1e6 * centres(:, plt)', true, ax);
         ax.XLim(1) = 10;
         ylabel('Amplitude (nm)')
+        drawnow
     end
-     
+    
 end
 end
