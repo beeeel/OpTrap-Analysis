@@ -47,11 +47,13 @@ xlabel('Time (s)')
 ylabel('Intensity (Arb. U.)')
 title('Mean brightness of ROI')
 
-subplot(2,1,2)
+ax = subplot(2,1,2);
 fft_scaled(1e-3*timeVec, DC, true, gca);
 ylabel('Amplitude (Arb. U.)')
 if ~isempty(fftLims)
     ylim(fftLims)
+else
+    xlim([10 ax.XLim(2)])
 end
 
 end
