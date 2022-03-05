@@ -306,10 +306,10 @@ function [tau, msde, eta, idx] = msd_extrapolator(tau, msd, idx, eta, mode)
 switch mode
     case 'linear'
         nP = 30;
-        % fo = fit(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)), 'Poly1');
+%         fo = fit(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)), 'Poly1');
         
-        [a, b] = leastSq(log(odata), log(Gdata));
-        
+        [a, b] = leastSq(real(log(odata)), real(log(Gdata)));
+%         
         fo = struct('p1',a,'p2',log(2*b));
         
         msde = msd;
@@ -410,10 +410,10 @@ for wRIdx = 1:length(wRange)
     Gdata = G1(wdx(1):wdx(2)).\G2(wdx(1):wdx(2));
     
     try
-        % fo = fit(log(odata), log(Gdata), 'Poly1');
+%         fo = fit(log(odata), log(Gdata), 'Poly1');
         
-        [a, b] = leastSq(log(odata), log(Gdata));
-        
+        [a, b] = leastSq(real(log(odata)), real(log(Gdata)));
+%         
         fo = struct('p1',a,'p2',log(2*b));
         
         oC(wRIdx) = exp(- fo.p1 \ fo.p2);
