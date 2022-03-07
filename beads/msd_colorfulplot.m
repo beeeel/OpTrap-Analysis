@@ -25,6 +25,9 @@ eta =  0.9544e-3; % need to copy equation for eta(T)
 % Bead radius is ~2.5um (maybe as much as 3)
 a = 2.5e-6;
 
+% Number of points for gradient calculation
+nP = 25;
+
 % Ignore the last n points of MSD
 nSkip = 40;
 % LineStyles - default to solid line
@@ -100,7 +103,7 @@ for cIdx = cIs
         tau = MSDp(1:end-nSkip,1,1);
         msd = squeeze(MSDp(1:end-nSkip,2,:));
         % Calculate derivative
-        [dydx, tout] = msd_gradientor(tau, msd, 'lsq');
+        [dydx, tout] = msd_gradientor(tau, msd, 'lsq', nP);
         % Take minima
         [~, idx] = min(dydx);
         tmin = tout(idx);
