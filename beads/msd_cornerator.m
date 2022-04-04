@@ -1,5 +1,5 @@
 function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
-%% [cTau, fitParams, RMSE] = msd_cornerator(msdObj, obsT, tRanges, varargin)
+%% [cTau, fitParams, fitErr] = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
 % nSkip         - Number of points from MSD to skip
@@ -79,7 +79,7 @@ if doPlot
 end
 
 fps = zeros(2, length(tRanges), length(dims));
-RMSE = zeros(1, length(tRanges), length(dims));
+fitErr = zeros(1, length(tRanges), length(dims));
 
 % For each dimension 
 for dIdx = dims
@@ -107,10 +107,11 @@ for dIdx = dims
             tauData = taui(msdIdx)./normT(d);
             msdData = msdi(msdIdx);
             
-            % Fit to log data
-            fps(:,fIdx, dIdx) = N_get_fits;
-            % Calculate RMSE
-            RMSE(:,fIdx, dIdx) = N_get_RMSE;
+            % Fit to log data (and get errors)
+            [fps(:,fIdx, dIdx), fitErr(:,fIdx, dIdx)] = N_get_fits;
+            % % Errors now come from fit function above
+            %             % Calculate fitErr
+            %             fitErr(:,fIdx, dIdx) = N_get_RMSE;
             % Show fits
             if doPlot
                 plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + log(fps(2,fIdx, dIdx))) , ...
@@ -148,19 +149,19 @@ if nargout > 1
     varargout{2} = fps;
 end
 if nargout > 2
-    varargout{3} = RMSE;
+    varargout{3} = fitErr;
 end
 
 %% Function definitions
 
-    function RMSE = N_get_RMSE
+    function fitErr = N_get_RMSE
         % hahaha they'll never suspect that this isn't reall the RMSE
         err = msdData - exp(fps(1,fIdx, dIdx) * log(tauData) + fps(2,fIdx, dIdx));
-%         RMSE = sqrt(mean(err.^2,'all'));
-        RMSE = std(err);
+%         fitErr = sqrt(mean(err.^2,'all'));
+        fitErr = std(err);
     end
 
-    function fps = N_get_fits
+    function [fps, fitErr] = N_get_fits
         % Either use linear fit or the least squares estimator from [1]Ling
         % 2019 eq. 2.4
         switch est
@@ -170,11 +171,17 @@ end
                 % of the linear fit, whereas 2D is the MSD at τ=1. [1]
                 fps = [alpha; (2*D)];
                 % Truth is I couldn't tell you how this works, but it does.
+                
+                % hahaha they'll never suspect that this isn't reall the RMSE
+                err = msdData - exp(fps(1) * log(tauData) + fps(2));
+                %         fitErr = sqrt(mean(err.^2,'all'));
+                fitErr = std(err); % So this is actually the standard devi
             case 'fit'
                 % Fit to log data
                 fo = fit(log(tauData), log(msdData), 'poly1');
                 % Store the data for later
                 fps = [fo.p1; fo.p2];
+                fitErr = diff(confint(fo))';
         end
         
     end
