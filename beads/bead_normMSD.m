@@ -23,7 +23,7 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('direction','a',@(x)any(strcmp(x,{'a','all','x','y'})))
-p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'scalar','<',data.nPoints}))
+p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
 p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
@@ -95,7 +95,7 @@ if isfield(data.opts, 'UseField') && ~useRaw
             %warning(['Didn''t apply cropT because it looks like data.pro.x' useField{1} ' has already been cropped']) 
         end
         timeVec = [tmp tmp];
-        offset = [offset (offset + num_t)];
+        offset = [offset (offset + length(tmp))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
         % Hacky af: set num_t to min of actual num_t and previous value
         num_t = min(num_t, size(data.pro.(['x' useField{1}]),2));
@@ -117,7 +117,7 @@ else
         timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
             data.raw.timeVecMs(cropT(1):cropT(2))];
         
-        offset = [offset (offset + num_t)];
+        offset = [offset (offset + length(tmp))];
         legCell = [repmat({'X'},1,nPerDir) repmat({'Y'},1,nPerDir)];
     end
     filtStr = ['unfiltered'];
