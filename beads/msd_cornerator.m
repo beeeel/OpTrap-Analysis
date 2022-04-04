@@ -79,7 +79,7 @@ if doPlot
 end
 
 fps = zeros(2, length(tRanges), length(dims));
-fitErr = zeros(1, length(tRanges), length(dims));
+fitErr = zeros(2, length(tRanges), length(dims));
 
 % For each dimension 
 for dIdx = dims
