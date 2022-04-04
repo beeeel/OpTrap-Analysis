@@ -3,7 +3,7 @@ function [dydx, varargout] = msd_gradientor(tau, msd, varargin)
 % [dydx, tout] = msd_gradientor(tau, msd, [method, nP])
 % Can use 2-point average, linear fitting or least squares from Ling 2019
 
-if nargin == 2
+if isempty(varargin) || isempty(varargin{1})
     method = 'lsq';
 else
     method = varargin{1};
