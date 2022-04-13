@@ -15,6 +15,7 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
 % lowPassFreq   - Apply low pass to FT (WIP)
+% msdNorm       - Normalize MSD before FT.
 %
 % Could I make a "hold on" version of this to redraw on same axis?
 
@@ -44,6 +45,8 @@ p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positive','scalar','nonzero'}))
 p.addParameter('interpF', 1e3, @(x)validateattributes(x, {'numeric'},{'positive','scalar'}))
+p.addParameter('msdNorm', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
+
 
 p.parse(msdObj, obsT, varargin{:});
 
@@ -59,6 +62,10 @@ lpFrq = p.Results.lowPassFreq;
 % MSD options
 nSkip = p.Results.nSkip;
 dims = p.Results.dims;
+msdNorm = p.Results.msdNorm;
+if numel(msdNorm) ~= numel(dims)
+    error('Normalisation and dimensions mismatch that you thought wouldn''t happen. Well guess what. It has happened');
+end
 % Plot options
 yLs = p.Results.yLims;
 fh = p.Results.fh;
@@ -112,7 +119,7 @@ for dimI = 1:length(dims)
         msdV = msdObj.msd{dim};
     end
     tau = msdV(2:end-nSkip,1);
-    msd = msdV(2:end-nSkip,2);
+    msd = msdV(2:end-nSkip,2)./msdNorm(dimI);
     
     % Do the lowpass
     if ~isempty(lpFrq)
