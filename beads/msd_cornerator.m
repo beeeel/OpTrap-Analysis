@@ -12,6 +12,8 @@ function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % interpM       - Interpolation method for fitting
 % interpF       - Interpolation factor for fitting
 % doPlot        - Exactly what it says.
+% normT         - Normalize in time domain
+% normR         - Normalize in spatial domain
 
 %% TO DO:
 % Consider whether it's worth making bead_processor_v2 with detailed
@@ -28,7 +30,7 @@ p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 p.addRequired('tRanges',@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 
-p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
+p.addParameter('nSkip', 20, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
 p.addParameter('yLims', [1e-6 5e1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('doPlot', true, @(x) validateattributes(logical(x), {'logical'},{'scalar'}))
@@ -40,6 +42,7 @@ p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'nex
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
 p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x < msdObj.msd{1}(1,end)) && all(x > 0))
+p.addParameter('normR', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
 
@@ -60,6 +63,7 @@ colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
 normT = p.Results.normT;
+normR = p.Results.normR;
 %% Setup
 
 cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
@@ -94,7 +98,7 @@ for dIdx = dims
         msdi = interp1(tau, msd, taui, interpM);
         
         if doPlot
-            h = plot(taui./normT(d), msdi, ...
+            h = plot(taui./normT(d), msdi./normR(d), ...
                 'Color',colour, 'LineWidth', 2, 'LineStyle', lS, 'Marker', mS);
         end
         
@@ -105,7 +109,7 @@ for dIdx = dims
             msdIdx = find(taui > tRanges{d}{fIdx}(1), 1) ...
                 : find(taui < tRanges{d}{fIdx}(2), 1, 'last');
             tauData = taui(msdIdx)./normT(d);
-            msdData = msdi(msdIdx);
+            msdData = msdi(msdIdx)./normR(d);
             
             % Fit to log data (and get errors)
             [fps(:,fIdx, dIdx), fitErr(:,fIdx, dIdx)] = N_get_fits;
