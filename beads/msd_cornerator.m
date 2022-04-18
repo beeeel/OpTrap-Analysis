@@ -2,7 +2,7 @@ function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
 %% [cTau, fitParams, fitErr] = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
-% nSkip         - Number of points from MSD to skip
+% nSkip         - Number of points from end of MSD to skip
 % dims          - Indices within msdObj.msd to use
 % yLims         - Y limits when plotting MSDs
 % figHand       - Figure handle to plot upon
@@ -48,7 +48,7 @@ tRanges = p.Results.tRanges;
 interpM = p.Results.interpM;
 interpF = p.Results.interpF;
 % MSD options
-nSkip = p.Results.nSkip;
+endSkip = p.Results.nSkip;
 dims = p.Results.dims;
 % Estimator
 est = p.Results.estimator;
@@ -87,8 +87,8 @@ for dIdx = dims
     subplot(length(dims)/2,2,dIdx)
     try
         % get the tau and msd, interpolate 
-        tau = msdObj.msd{d}(2:end-nSkip,1);
-        msd = msdObj.msd{d}(2:end-nSkip,2);
+        tau = msdObj.msd{d}(2:end-endSkip,1);
+        msd = msdObj.msd{d}(2:end-endSkip,2);
         
         taui = logspace(log10(tau(1)), log10(tau(end)), length(tau).*interpF)';
         msdi = interp1(tau, msd, taui, interpM);
