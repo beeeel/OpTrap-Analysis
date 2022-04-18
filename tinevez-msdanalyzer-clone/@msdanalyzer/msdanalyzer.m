@@ -35,6 +35,8 @@ classdef msdanalyzer
         time_units
         % Stores the MSD
         msd
+        % Stores the displacement distribution
+        Ddist
         % Stores the velocty correlation
         vcorr
         % Stores the linear fit of MSD vs t
