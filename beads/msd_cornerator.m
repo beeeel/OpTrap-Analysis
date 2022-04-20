@@ -2,7 +2,7 @@ function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
 %% [cTau, fitParams, fitErr] = msd_cornerator(msdObj, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
-% nSkip         - Number of points from MSD to skip
+% nSkip         - Number of points from end of MSD to skip
 % dims          - Indices within msdObj.msd to use
 % yLims         - Y limits when plotting MSDs
 % figHand       - Figure handle to plot upon
@@ -41,7 +41,7 @@ p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'squ
 p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'next', 'previous', 'spline', 'pchip', 'cubic', 'v5cubic', 'makima'})))
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
-p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x < msdObj.msd{1}(1,end)) && all(x > 0))
+p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x(~isnan(x)) < msdObj.msd{1}(1,end)) && all(x(~isnan(x)) > 0))
 p.addParameter('normR', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
@@ -51,7 +51,7 @@ tRanges = p.Results.tRanges;
 interpM = p.Results.interpM;
 interpF = p.Results.interpF;
 % MSD options
-nSkip = p.Results.nSkip;
+endSkip = p.Results.nSkip;
 dims = p.Results.dims;
 % Estimator
 est = p.Results.estimator;
@@ -63,6 +63,7 @@ colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
 normT = p.Results.normT;
+normT(isnan(normT)) = 1;
 normR = p.Results.normR;
 %% Setup
 
@@ -91,8 +92,8 @@ for dIdx = dims
     subplot(length(dims)/2,2,dIdx)
     try
         % get the tau and msd, interpolate 
-        tau = msdObj.msd{d}(2:end-nSkip,1);
-        msd = msdObj.msd{d}(2:end-nSkip,2);
+        tau = msdObj.msd{d}(2:end-endSkip,1);
+        msd = msdObj.msd{d}(2:end-endSkip,2);
         
         taui = logspace(log10(tau(1)), log10(tau(end)), length(tau).*interpF)';
         msdi = interp1(tau, msd, taui, interpM);
