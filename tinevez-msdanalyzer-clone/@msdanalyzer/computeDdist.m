@@ -36,7 +36,7 @@ if ~isempty(obj.drift)
 end
 
 fprintf('%5d/%5d', 0, n_tracks);
-
+warning('off','stats:lillietest:OutOfRangePLow')
 for i = 1 : n_tracks
     
     fprintf('\b\b\b\b\b\b\b\b\b\b\b%5d/%5d', i, n_tracks);
@@ -51,11 +51,13 @@ for i = 1 : n_tracks
     
     n_detections = size(X, 1);
     
-    % Calculate indices
+    % Calculate indices (alldTs needs to be in indexing units!)
     lb = 2; % Logbase
     minInd = 10; % Minimum independent observations of maxDelay
     
-    alldTs = unique([0 ceil(lb.^(0:(size(t,1)-2)))]);
+%     alldTs = unique([0 ceil(lb.^(0:(size(t,1)-2)))])/dt;
+    % Actually, just do these 4 (if available).
+    alldTs = round([1e-3 1e-2 1 10 50]/dt);
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
     % Number of histogram bins
@@ -65,6 +67,8 @@ for i = 1 : n_tracks
     counts      = zeros(nBins, n_delays);
     edges       = zeros(nBins + 1, n_delays);
     n_msd       = zeros(n_delays, 1);
+    pvals       = zeros(n_delays, 2);
+    covs        = cell(n_delays, 1);
 
     % Determine drift correction
     if ~isempty(obj.drift)
@@ -79,7 +83,7 @@ for i = 1 : n_tracks
     end
     
     % Calculate increment distribution
-    for j = 2:n_delays
+    for j = 1:n_delays
         dT = alldTs(j);
         % Calculate all square displacements for this delay
         dX = X(dT+1:end,:) - X(1:end-dT,:);
@@ -87,20 +91,30 @@ for i = 1 : n_tracks
         % Bin like a histogram
         [N, edg] = histcounts(dX, nBins);
         
+        % Calculate autocorrelation (covariance)
+        C = xcorr(dX);
+        tau = dt*(1:ceil(size(C,1)/2))'; % Delay time for covariance
+        
         n_msd(j) = size(dX,1);
         counts(:,j) = N;
         edges(:,j) = edg;
+        [~, pvals(j,1)] = ttest(dX);
+        [~, pvals(j,2)] = lillietest(dX);
+        covs{j} = [tau, C(ceil(end/2):end)];
     end
     
-    n_msd(1) = n_detections;
     
-    obj.Ddist{index,1} = [ alldTs*dt n_msd ];
+    obj.Ddist{index,1} = [ alldTs*dt n_msd pvals ];
+    % First cell contains the increment times queries, number of points and
+    % probabilities that 1) Mean == 0, 2) Distribution == normal.
     obj.Ddist{index,2} = [ counts; edges ]; % Sorry about how this looks.
     % This way to access the counts and edges for a given dT, you get the
     % fast slice indexing and predictable sizes: 2×nBins+1 by n_delays
+    obj.Ddist{index,3} = covs;
+    % Autocorrelation vectors are in cells because different sizes.
 end
 fprintf('\b\b\b\b\b\b\b\b\bDone.\n')
-
+warning('on','stats:lillietest:OutOfRangePLow')
 obj.msd_valid = true;
 
 end
