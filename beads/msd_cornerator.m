@@ -41,7 +41,7 @@ p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'squ
 p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'next', 'previous', 'spline', 'pchip', 'cubic', 'v5cubic', 'makima'})))
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
-p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x < msdObj.msd{1}(1,end)) && all(x > 0))
+p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x(~isnan(x)) < msdObj.msd{1}(1,end)) && all(x(~isnan(x)) > 0))
 p.addParameter('normR', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
@@ -63,6 +63,7 @@ colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
 normT = p.Results.normT;
+normT(isnan(normT)) = 1;
 normR = p.Results.normR;
 %% Setup
 
