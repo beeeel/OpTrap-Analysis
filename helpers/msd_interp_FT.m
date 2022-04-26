@@ -14,11 +14,10 @@ if ~exist('nF', 'var')
     nF = length(tau);
 end
 if ~exist('interpF','var')
-    interpF = 1e4;
-    warning('Default interpolation factor increased by factor of 10')
+    interpF = 1e3;
 end
 if ~exist('interpM','var')
-    interpM = 'pchip';
+    interpM = 'spline';
 end
 
 taui = logspace(log10(tau(1)), log10(tau(end)), length(tau).*interpF)';
