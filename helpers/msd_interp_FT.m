@@ -14,7 +14,8 @@ if ~exist('nF', 'var')
     nF = length(tau);
 end
 if ~exist('interpF','var')
-    interpF = 1e3;
+    interpF = 1e4;
+    warning('Default interpolation factor increased by factor of 10')
 end
 if ~exist('interpM','var')
     interpM = 'pchip';
