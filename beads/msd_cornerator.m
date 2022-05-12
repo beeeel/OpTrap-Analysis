@@ -87,9 +87,11 @@ fps = zeros(2, length(tRanges), length(dims));
 fitErr = zeros(2, length(tRanges), length(dims));
 
 % For each dimension 
-for dIdx = dims
+for dIdx = 1:length(dims)
     d = dims(dIdx);
-    subplot(length(dims)/2,2,dIdx)
+    if length(dims) > 1
+        subplot(length(dims)/2,2,dIdx)
+    end
     try
         % get the tau and msd, interpolate 
         tau = msdObj.msd{d}(2:end-endSkip,1);
@@ -131,7 +133,7 @@ for dIdx = dims
         
         if doPlot
             for corn = 1:size(cTau,1)
-                h(2) = plot(cTau(corn,dIdx) * [1 1], yl, 'color', [0 0 0 0.25], 'LineWidth', 3);
+                h(2) = xline(cTau(corn,dIdx),'color', [0.6 0.6 0.6 0.05], 'LineWidth', 2);
             end
         end
     catch ME
@@ -202,12 +204,17 @@ end
             end
         elseif length(dims) == 4
             tits = {'left bead Radial','left bead Tangential', 'right bead Radial', 'right bead Tangential'};
+        elseif length(dims) == 1
+            if obsT ~= 0
+                tits = {'Radial','Tangential'};
+            else
+                tits = {'X','Y'};
+            end
+            tits = tits(dims);
+            warning('weird features may occur when plotting 1 dim')
         else
-            error('Length of dimensions needs to be 2 or 4 because I''m lazy')
-        end
-        % Font size
-        fSz = 16;
-        
+            error('Length of dimensions needs to be 1 or 2 or 4 because I''m lazy')
+        end        
         
         if isempty(fh)
             fh = figure(203);
@@ -223,9 +230,14 @@ end
         end
         
         for pIdx = dims
-            plt = dims(pIdx);
-            
-            ax = subplot(length(dims)/2,2,plt);
+            if length(dims) > 1
+                plt = dims(pIdx);
+                
+                ax = subplot(length(dims)/2,2,plt);
+            else
+                plt = 1;
+                ax = gca;
+            end
             
             hold on
             clear h
@@ -235,6 +247,8 @@ end
             ax.XScale = 'log';
             ax.YScale = 'log';
             
+            % Font size
+            fSz = 16;
             ax.FontSize = fSz;
             
             [xl1, xl2] = bounds(msdObj.msd{1}(:,1));
