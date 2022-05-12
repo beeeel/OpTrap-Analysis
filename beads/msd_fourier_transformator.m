@@ -45,8 +45,8 @@ p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
 p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positive','scalar','nonzero'}))
 p.addParameter('interpF', 1e3, @(x)validateattributes(x, {'numeric'},{'positive','scalar'}))
-p.addParameter('msdNorm', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
-
+p.addParameter('msdNorm', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
+p.addParameter('showLeg', true, @(x) isa(x,'logical'))
 
 p.parse(msdObj, obsT, varargin{:});
 
@@ -64,7 +64,11 @@ nSkip = p.Results.nSkip;
 dims = p.Results.dims;
 msdNorm = p.Results.msdNorm;
 if numel(msdNorm) ~= numel(dims)
-    error('Normalisation and dimensions mismatch that you thought wouldn''t happen. Well guess what. It has happened');
+    try 
+        msdNorm = msdNorm(dims);
+    catch
+        error('Normalisation and dimensions mismatch that you thought wouldn''t happen. Well guess what. It has happened');
+    end
 end
 % Plot options
 yLs = p.Results.yLims;
@@ -73,6 +77,7 @@ colour = p.Results.lineColour;
 lS = p.Results.lineStyle;
 mS = p.Results.marker;
 interpF = p.Results.interpF;
+showLeg = p.Results.showLeg;
 
 %% Preparatory
 % hee hee
@@ -84,6 +89,9 @@ elseif length(dims) == nB
     warning('New code: Use average of MSDs for FT')
     tits = {'Thing'};
     dims = 1;
+elseif length(dims) == 1
+    tits = {'Radial', 'Tangential'};    
+    tits = tits(dims);
 else
     error('huh, how many beads?');
 end
@@ -208,9 +216,10 @@ for dimI = 1:length(dims)
     plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
     ylim(yl);
     
-    legend('"Storage"','"Loss"','Intercept frequency','Location','best')
-    
-    legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
+    if showLeg
+        legend('"Storage"','"Loss"','Intercept frequency','Location','best')       
+        legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
+    end
 end
 
 if nargout == 2
@@ -221,7 +230,7 @@ for wI = 1:length(warns)
     warning(st(wI).state, warns{wI});
 end
 % End of main function
-end
+
 %% Sub-function definitions
 
 function prep_figure(fh, tits, fSz, yLs, n_dim, show_ints, norm_mode)
@@ -439,13 +448,18 @@ for wRIdx = 1:length(wRange)
 end
 if doPlot
     try
-        legend(h, 'Fit result', 'Ratio G''''÷G''','Location','best')
+        if showLeg
+            legend(h, 'Fit result', 'Ratio G''''÷G''','Location','best')
+        end
     catch
         try
-            legend(h(2), 'Ratio G''''÷G''','Location','best')
+            if showLeg
+                legend(h(2), 'Ratio G''''÷G''','Location','best')
+            end
         catch ME
             error(ME.identifier, 'No idea what happened in gstar_interceptor')
         end
     end
+end
 end
 end
