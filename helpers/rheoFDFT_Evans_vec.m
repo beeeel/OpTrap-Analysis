@@ -1,4 +1,4 @@
-function [omega, Y] = rheoFDFT_Evans_vec(tau, msd, nOmegas, J0, eta)
+function [varargout] = rheoFDFT_Evans_vec(tau, msd, nOmegas, J0, eta)
 %Y = rheoFDFT_Evans_vec(tau, msd, J0, eta)
 %% Compute finite discrete fourier transform using Evans et al 2009
 % Requires consideration of the long-time limit of the gradient = 1/η
@@ -75,18 +75,27 @@ Y = 1i * omega * J0 ... % First term
     + exp(-1i * omega * tau(end)) / eta; % Third term
 
 % Summation term
-while idx <= N
+while idx < N
     
     fprintf('\r %i:%i / %i', idx, edx, N)
-    Y = Y + sum(( diff(msd(idx:edx))' ) ...
+    Y = Y + sum( diff(msd(idx:edx))' ...
         .* ( exp(-1i * omega .* tau(idx:edx - 1)') - exp(-1i * omega .* tau(idx+1:edx)') ) ...
         ./ ( diff(tau(idx:edx))' ), 2);
-    idx = edx + 1;
+    idx = edx;
     edx = min(idx + nEl, N);
 end
 
 
-Y = 1i .* omega ./ Y;
+Z = Y./(-omega.^2); % The Fourier transform of MSD
+Y = 1 ./ ( 1i * omega .* Z ); % The complex modulus encoded in MSD
+
+if nargout == 2
+    varargout = {omega, Y};
+elseif nargout == 3
+    varargout = {omega, Y, Z};
+else
+    error('Wrong number of nargouts: %i. Should be 2 or 3', nargout)
+end
 
 fprintf('\rDone!\n')
 
