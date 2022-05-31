@@ -10,7 +10,7 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % nSkip         - number of MSD points to skip (default 40)
 % dims          - which dimensions to do FT on (indexes to msdObj.msd)
 % yLims         - y limits on MSD plot
-% figHand       - figure handle to plot upon (automatically holds existing plots if correct axes are present)
+% fh            - figure handle to plot upon (automatically holds existing plots if correct axes are present)
 % lineColour    - line colour to plot
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
