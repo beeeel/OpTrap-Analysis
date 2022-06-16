@@ -8,6 +8,10 @@ else
     warning('Using default value (%s m/px) for pixel size calibration', mPerPx)
 end
 
+if ~isfield(data, 'nPoints')
+    data.nPoints = numel(data.raw.timeVecMs);
+end
+
 % Check opts exists before checking its contents
 if ~isfield(data,'opts')
     data.opts = struct();
