@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Hardiman"
   given-names: "William"
-  orcid: "https://orcid.org/0000-0002-2452-4752 
+  orcid: "https://orcid.org/0000-0002-2452-4752" 
 title: "OpTrap-Analysis"
 version: 1.0.0
 url: "https://github.com/beeeel/OpTrap-Analysis"
