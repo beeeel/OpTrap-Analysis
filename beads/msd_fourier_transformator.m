@@ -3,7 +3,9 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % Do Fourier transform of MSD and find intercept frequency(s) if given.
 % Takes parameters in name-value pairs. Possible options:
 % wRange        - cell row vector with 1 element per dimension to be FT'd
+% nBead         - numerical scalar for number of beads in dataset
 % trunc         - truncation mode ('none', or 'minima')
+% truncFF       - fudge factor for truncation (points skipped)
 % extrap        - extrapolation mode ('none', or 'linear')
 % norm          - which corner to normalise time to ('none','low', or 'high')
 % show_int      - show plots with tan(δ) used for intercept finding
@@ -15,9 +17,10 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
 % lowPassFreq   - Apply low pass to FT (WIP)
+% interpF       - Variable interpolation factor (default 1000)
 % msdNorm       - Normalize MSD before FT.
-%
-% Could I make a "hold on" version of this to redraw on same axis?
+% showLeg       - Show legend on plots
+% doPlot        - What it says
 
 %% Parse inputs
 % If you're troubleshooting this bit, don't bother. Much easier to give up.
@@ -47,6 +50,7 @@ p.addParameter('lowPassFreq',[],@(x) validateattributes(x, {'numeric'},{'positiv
 p.addParameter('interpF', 1e3, @(x)validateattributes(x, {'numeric'},{'positive','scalar'}))
 p.addParameter('msdNorm', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
 p.addParameter('showLeg', true, @(x) isa(x,'logical'))
+p.addParameter('doPlot', true, @(x) isa(x,'logical'))
 
 p.parse(msdObj, obsT, varargin{:});
 
@@ -78,6 +82,7 @@ lS = p.Results.lineStyle;
 mS = p.Results.marker;
 interpF = p.Results.interpF;
 showLeg = p.Results.showLeg;
+doPlot = p.Results.doPlot;
 
 %% Preparatory
 % hee hee
@@ -111,9 +116,10 @@ for wI = 1:length(warns)
     warning('off', warns{wI});
 end
 
-prep_figure(fh, tits, fSz, yLs, length(dims), show_ints, norm_mode);
-clear h
-
+if doPlot
+    prep_figure(fh, tits, fSz, yLs, length(dims), show_ints, norm_mode);
+    clear h
+end
 allOCs = {};
 FT = cell(length(dims),1);
 
@@ -161,64 +167,68 @@ for dimI = 1:length(dims)
     FT{dimI} = [omega, G1, G2];
     
     % Find and show intercepts
-    subplot(2+show_ints, length(dims),length(dims)* (1 + show_ints) + dimI)
-    oC = gstar_interceptor(omega, G1, G2, wR{dimI}, show_ints, colour);
+    if doPlot && show_ints
+        subplot(2+show_ints, length(dims),length(dims)* (1 + show_ints) + dimI)
+    end
+    oC = gstar_interceptor(omega, G1, G2, wR{dimI}, show_ints && doPlot, colour);
     
     allOCs{dim} = oC;
     
     % Plot MSD
-    subplot(2+show_ints, length(dims),dimI)
-    
-    switch norm_mode
-        case 'intercept'
-            nF = oC(end);
-            xlim auto
-        otherwise
-            nF = 1;
-    end
-    
-    loglog(nF.*msdV(2:end,1), msdV(2:end,2), 'LineWidth', 2, ...
-        'Color', [1 1 1 0.25], 'LineStyle', lS, 'Marker', mS);
-    h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
-        'Color', colour, 'LineStyle', lS, 'Marker', mS);
-    h(end+1) = plot(nF.*tau([idx1 idx]), msd([idx1 idx]), ...
-        'rx', 'LineWidth', 3, 'MarkerSize', 12);
-    
-    % Plot inverse of intercept frequencies
-    yl = ylim;
-    tmp = plot(nF.*[1; 1]./oC, yl, '--',...
-        'Color',0.7*[1 1 1 0.8], 'LineWidth', 2);
-    h(end+1) = tmp(1);
-    ylim(yl);
-    
-    %     legend('MSD','1 ÷ Intercept frequency','Location','best')
-    
-    
-    % Plot the FT with intercept frequencies
-    subplot(2+show_ints, length(dims),length(dims)+dimI)
-    loglog(omega, ...
-        G1, 'LineWidth', 2, ...
-        'Color', 'b', 'Marker', 'x', 'LineStyle', 'none', 'LineWidth', 2);
-    loglog(omega, ...
-        G2, 'LineWidth', 2, ...
-        'Color', 'r', 'Marker', 's', 'LineStyle', 'none', 'LineWidth', 2);
-    
-    % % If you wanted to do them custom
-    %     loglog(omega, ...
-    %         G1, 'LineWidth', 2, ...
-    %         'Color', colour, 'Marker', mS, 'LineStyle', '-', 'LineWidth', 2);
-    %     loglog(omega, ...
-    %         G2, 'LineWidth', 2, ...
-    %         'Color', colour, 'Marker', mS, 'LineStyle', '--', 'LineWidth', 2);
-    
-    % Show Intercept frequency without changing YLims
-    yl = ylim;
-    plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
-    ylim(yl);
-    
-    if showLeg
-        legend('"Storage"','"Loss"','Intercept frequency','Location','best')       
-        legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
+    if doPlot
+        subplot(2+show_ints, length(dims),dimI)
+        
+        switch norm_mode
+            case 'intercept'
+                nF = oC(end);
+                xlim auto
+            otherwise
+                nF = 1;
+        end
+        
+        loglog(nF.*msdV(2:end,1), msdV(2:end,2), 'LineWidth', 2, ...
+            'Color', [1 1 1 0.25], 'LineStyle', lS, 'Marker', mS);
+        h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
+            'Color', colour, 'LineStyle', lS, 'Marker', mS);
+        h(end+1) = plot(nF.*tau([idx1 idx]), msd([idx1 idx]), ...
+            'rx', 'LineWidth', 3, 'MarkerSize', 12);
+        
+        % Plot inverse of intercept frequencies
+        yl = ylim;
+        tmp = plot(nF.*[1; 1]./oC, yl, '--',...
+            'Color',0.7*[1 1 1 0.8], 'LineWidth', 2);
+        h(end+1) = tmp(1);
+        ylim(yl);
+        
+        %     legend('MSD','1 ÷ Intercept frequency','Location','best')
+        
+        
+        % Plot the FT with intercept frequencies
+        subplot(2+show_ints, length(dims),length(dims)+dimI)
+        loglog(omega, ...
+            G1, 'LineWidth', 2, ...
+            'Color', 'b', 'Marker', 'x', 'LineStyle', 'none', 'LineWidth', 2);
+        loglog(omega, ...
+            G2, 'LineWidth', 2, ...
+            'Color', 'r', 'Marker', 's', 'LineStyle', 'none', 'LineWidth', 2);
+        
+        % % If you wanted to do them custom
+        %     loglog(omega, ...
+        %         G1, 'LineWidth', 2, ...
+        %         'Color', colour, 'Marker', mS, 'LineStyle', '-', 'LineWidth', 2);
+        %     loglog(omega, ...
+        %         G2, 'LineWidth', 2, ...
+        %         'Color', colour, 'Marker', mS, 'LineStyle', '--', 'LineWidth', 2);
+        
+        % Show Intercept frequency without changing YLims
+        yl = ylim;
+        plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
+        ylim(yl);
+        
+        if showLeg
+            legend('"Storage"','"Loss"','Intercept frequency','Location','best')
+            legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
+        end
     end
 end
 
@@ -321,10 +331,11 @@ function [tau, msde, eta, idx] = msd_extrapolator(tau, msd, idx, eta, mode)
 % the same tau values
 switch mode
     case 'linear'
-        nP = 30;
+        nP = 10;
 %         fo = fit(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)), 'Poly1');
         
-        [a, b] = leastSq(real(log(odata)), real(log(Gdata)));
+%         [a, b] = leastSq(real(log(odata)), real(log(Gdata)));
+        [a, b] = leastSq(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)));
 %         
         fo = struct('p1',a,'p2',log(2*b));
         
