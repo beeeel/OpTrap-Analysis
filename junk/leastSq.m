@@ -7,6 +7,14 @@ function [alpha, D] = leastSq(x, y, varargin)
 validateattributes(x,{'numeric'},{'column'})
 validateattributes(y,{'numeric'},{'column'})
 
+% First remove NaNs
+NN = ~isnan(x)&~isnan(y);
+if any(~NN)
+    warning('leastSq ignoring a NaN value')
+end
+x = x(NN);
+y = y(NN);
+
 xbar = mean(x);
 ybar = mean(y);
 
