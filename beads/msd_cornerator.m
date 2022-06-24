@@ -132,8 +132,10 @@ for dIdx = 1:length(dims)
         cTau(:, dIdx) = exp(-dfps(2,:,dIdx)./dfps(1,:,dIdx));
         
         if doPlot
+            yL = ylim;
             for corn = 1:size(cTau,1)
-                h(2) = xline(cTau(corn,dIdx),'color', [0.6 0.6 0.6 0.05], 'LineWidth', 2);
+                msdI = find(taui > cTau(corn,dIdx),1,'first');
+                h(2) = plot([1 1]*cTau(corn,dIdx), [yL(1) msdi(msdI)], 'color', [0.6 0.6 0.6], 'LineWidth', 2);
             end
         end
     catch ME
