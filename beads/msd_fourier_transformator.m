@@ -41,7 +41,7 @@ p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
 p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
-p.addParameter('yLims', [2e-6 1e-1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
+p.addParameter('yLims', [], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('fh', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -265,8 +265,10 @@ end
             ylabel('MSD (\mum^2)')
             title([tits{plt} ' MSD'])
             set(gca,'FontSize',fSz)
-            xlim([1e-4 2e2])
-            ylim(yLs)
+            if ~isempty(yLs)
+                xlim([1e-4 2e2])
+                ylim(yLs)
+            end
             
             subplot(2+show_ints, n_dim,plt+n_dim)
             hold on
