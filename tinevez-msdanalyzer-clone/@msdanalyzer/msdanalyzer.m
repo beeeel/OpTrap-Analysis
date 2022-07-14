@@ -17,6 +17,8 @@ classdef msdanalyzer
     %
     % Jean-Yves Tinevez - Institut Pasteur, 2013 - 2014 
     % <tinevez at pasteur dot fr>
+    %
+    % msdanalyzer(n_dim, space_units, time_units, sampling, time_dup)
     properties (Constant)
         % Tolerance for binning delays together. Two delays will be binned
         % together if they differ in absolute value by less than
