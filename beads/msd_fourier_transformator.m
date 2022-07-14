@@ -3,7 +3,9 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % Do Fourier transform of MSD and find intercept frequency(s) if given.
 % Takes parameters in name-value pairs. Possible options:
 % wRange        - cell row vector with 1 element per dimension to be FT'd
+% nBead         - numerical scalar for number of beads in dataset
 % trunc         - truncation mode ('none', or 'minima')
+% truncFF       - fudge factor for truncation (points skipped)
 % extrap        - extrapolation mode ('none', or 'linear')
 % norm          - which corner to normalise time to ('none','low', or 'high')
 % show_int      - show plots with tan(δ) used for intercept finding
@@ -15,10 +17,10 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % lineStyle     - line style to plot MSD with (FT is always storage '-' and loss '--'
 % marker        - line marker to plot MSD and FT with
 % lowPassFreq   - Apply low pass to FT (WIP)
+% interpF       - Variable interpolation factor (default 1000)
 % msdNorm       - Normalize MSD before FT.
+% showLeg       - Show legend on plots
 % doPlot        - What it says
-%
-% Could I make a "hold on" version of this to redraw on same axis?
 
 %% Parse inputs
 % If you're troubleshooting this bit, don't bother. Much easier to give up.
@@ -39,7 +41,7 @@ p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
 p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
-p.addParameter('yLims', [2e-6 1e-1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
+p.addParameter('yLims', [], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('fh', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -166,17 +168,16 @@ for dimI = 1:length(dims)
     FT{dimI} = [omega, G1, G2];
     
     % Find and show intercepts
-    if doPlot
+    if doPlot && show_ints
         subplot(2+show_ints, length(dims),length(dims)* (1 + show_ints) + dimI)
     end
-    oC = gstar_interceptor(omega, G1, G2, wR{dimI}, show_ints&&doPlot, colour);
+    oC = gstar_interceptor(omega, G1, G2, wR{dimI}, show_ints && doPlot, colour);
     
     allOCs{dim} = oC;
     
     % Plot MSD
     if doPlot
         subplot(2+show_ints, length(dims),dimI)
-        
         
         switch norm_mode
             case 'intercept'
@@ -264,8 +265,10 @@ end
             ylabel('MSD (\mum^2)')
             title([tits{plt} ' MSD'])
             set(gca,'FontSize',fSz)
-            xlim([1e-4 2e2])
-            ylim(yLs)
+            if ~isempty(yLs)
+                xlim([1e-4 2e2])
+                ylim(yLs)
+            end
             
             subplot(2+show_ints, n_dim,plt+n_dim)
             hold on

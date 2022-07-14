@@ -4,8 +4,17 @@ function [alpha, D] = leastSq(x, y, varargin)
 % log(MSD) is expected to be linear with log(τ). If a third argument is
 % provided, plot the fit (on axis ax if ax is non-empty, or gca otherwise)
 % Note: This gives correct D for 1D case. For 2D ÷ 2, 3D ÷ 3
+% N.B.: Intended for power law y = 0.5 D x^(alpha)
 validateattributes(x,{'numeric'},{'column'})
 validateattributes(y,{'numeric'},{'column'})
+
+% First remove NaNs
+NN = ~isnan(x)&~isnan(y);
+if any(~NN)
+    warning('leastSq ignoring a NaN value')
+end
+x = x(NN);
+y = y(NN);
 
 xbar = mean(x);
 ybar = mean(y);
