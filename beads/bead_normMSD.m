@@ -275,33 +275,13 @@ end
             ax = gca;%subplot(2,1,1);
             hold on
             if ~isempty(msdStd)
-                errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
+                h(1) = errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
+                h(2) = errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
             else
-                plot(dTs(:,1:end/2), MSDnorm(:,1:end/2), 'LineWidth',2);
+                h = plot(dTs(:,1:end/2), MSDnorm(:,1:end/2), ...
+                    dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), 'LineWidth',2);
             end
-            ax.XScale = 'log';
-            ax.YScale = 'log';
-            % Set X lim to show shortest delay up to half total time
-            xlim([diff(tracks{1}([1 2])) diff(tracks{1}([1 round(size(tracks{1},1)/2)],1))])
-            xlabel('Delay (s)')
-            if doNorm
-                ylabel('Normalized MSD')
-%                 title({'Normalized mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-                title({'Normalized mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-            else
-                ylabel('MSD (μm^2)')
-                title({'Mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-%                 title({'Mean square X displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
-            end
-%             legend(legCell,'Location','best')
-            
-%             ax = subplot(2,1,2);
-            
-            if ~isempty(msdStd)
-                errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
-            else
-                plot(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end),  'LineWidth',2);
-            end
+
             ax.XScale = 'log';
             ax.YScale = 'log';
             % Set X lim to show shortest delay up to half total time
@@ -314,8 +294,21 @@ end
                 ylabel('MSD (μm^2)')
                 title({'Mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             end
-%             legend(legCell,'Location','best')
-            legend('X','Y')
+            
+            x = {dTs(:,1:end/2), dTs(:,1+end/2:end)};
+            y = {MSDnorm(:,1:end/2), MSDnorm(:,1+end/2:end)};
+            hold(ax, 'on')
+            cols = {[0 0.447 0.741] [0.85 0.325 0.098]};
+            for Idx = 1:2
+                [dydx, tout] = msd_gradientor(x{Idx}, y{Idx}, 'lsq', 2);
+                yyaxis(ax, 'right')
+                semilogx(ax, tout, dydx, '--','LineWidth',2, 'Color',cols{Idx})
+            end
+            plot(ax, xlim(ax), [1 1], ':','Color',0.75*[1 1 1], 'LineWidth', 3)
+            ylim(ax, [0 2])
+            
+            %             legend(legCell,'Location','best')
+            legend(h, 'X','Y')
         else
             ax = gca;
             errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)

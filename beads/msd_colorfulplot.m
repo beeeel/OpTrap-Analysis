@@ -19,14 +19,16 @@ if nargin >= 7
         axs = [varargin{1}, varargin{2}];
     end
     if isnumeric(varargin{1})
-        validateattributes(varargin{1}, {'numeric'}, {'nrows',2,'ncols',max(rIs)},'msd_colorfulplot','time domain normalisation',5)
+        validateattributes(varargin{1}, {'numeric'}, {'nrows',2,'ncols',max(rIs)},'msd_colorfulplot','time domain normalisation',6)
         lambda = varargin{1};
         normX = true;
     else
         normX = false;
     end
-    if islogical(varargin{2})
-        normY = varargin{2};
+    if isnumeric(varargin{1})
+        validateattributes(varargin{2}, {'numeric'}, {'nrows',2,'ncols',max(rIs)},'msd_colorfulplot','space domain normalisation',7)
+        normF = varargin{2};
+        normY = true;
     end
 end
 
@@ -39,7 +41,7 @@ eta =  0.9544e-3; % need to copy equation for eta(T)
 a = 2.5e-6;
 
 % Number of points for gradient calculation
-nP = 25;
+nP = 15;
 
 % Ignore the last n points of MSD
 nSkip = 40;
@@ -99,19 +101,15 @@ for dIdx = dIs
         MSDs = [accumulated{1,dIdx}{1,cIdx}.msd];
         ts = accumulated{1,dIdx}{2,cIdx};
         
-        %         colormap cool
-        %         colourmap = colormap;
-        %     min(ceil(size(colourmap,1)*(ts-ts(1)+1e-6)/(allTs(end) - allTs(1)+1e-6)))
-        %     max(ceil(size(colourmap,1)*(ts-ts(1)+1e-6)/(allTs(end) - allTs(1)+1e-6)))
-        
         nNeg = sum(ts < 0);
+        colormap(zeros(64,3));
         colormap winter
         colourmap = colormap;
         colour = colourmap(16+ceil(0.75*size(colourmap,1)*(ts(1:nNeg)-ts(1)+1e-6)/(abs(ts(1))+1e-6)),:);
         colormap autumn
         colourmap = flipud(colormap);
         colour = [colour; colourmap(ceil(size(colourmap,1)*(ts(nNeg+1:end)+1e-6)/(ts(end)+1e-6)),:)];
-        
+        colormap(colour)
         %     legCell = {};
         for rIdx = rIs
             legCell{pC} = sprintf('%.2g min', ts(rIdx));
@@ -141,19 +139,18 @@ for dIdx = dIs
                 lambda = repmat([1;1],1,max(rIs));
             end
             if normY
-                normF = p;
+                %             normF = p;
             else
-                normF = [1 1];
+                normF(:, rIdx) = [1;1];
             end
-            
             
             for plt = 1:2
                 h(pC) = loglog(axs(plt), ...
                     lambda(plt,rIdx).*MSDs(rIdx).msd{plt}(1:end-nSkip,1), ...
-                    MSDs(rIdx).msd{plt}(1:end-nSkip,2)./normF(plt), 'LineWidth', 2, ...
+                    MSDs(rIdx).msd{plt}(1:end-nSkip,2)./normF(plt,rIdx), 'LineWidth', 2, ...
                     'Color', colour(rIdx,:).*cF(dIdx), 'LineStyle', lsty{dIdx}, ...
                     'Marker', msty{dIdx});
-                h(1) = plot(axs(plt), lambda(plt,rIdx).*tau(idx(plt)), p(plt)./normF(plt), 'kx','LineWidth', 2);
+                h(1) = plot(axs(plt), lambda(plt,rIdx).*tau(idx(plt)), p(plt)./normF(plt,rIdx), 'kx','LineWidth', 2);
                 %             h(1) = plot([1 1], ylim, '--', 'Color', 0.8 * [1 1 1 0.8],...
                 %                 'LineWidth', 3);
                 if exist('tRanges','var') && size(tRanges,1) >= rIdx
@@ -164,7 +161,7 @@ for dIdx = dIs
                         msdIdx = find(taui > tRanges{rIdx,plt}{fIdx}(1), 1) ...
                             : find(taui < tRanges{rIdx,plt}{fIdx}(2), 1, 'last');
                         tauData = taui(msdIdx).*lambda(plt,rIdx);
-                        msdData = msdi(msdIdx)./normF(plt);
+                        msdData = msdi(msdIdx)./normF(plt,rIdx);
                         
                         % Fit to log data (and get errors)
                         [fps(:,fIdx, dIdx), fitErr(:,fIdx, dIdx)] = N_get_fits;
@@ -176,8 +173,8 @@ for dIdx = dIs
                             'k:', 'LineWidth', 2.5)
                     end
                 end
+                pC = pC + 1;
             end
-            pC = pC + 1;
         end
     end
 end
