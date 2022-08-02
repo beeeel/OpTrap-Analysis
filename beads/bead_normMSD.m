@@ -24,7 +24,7 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('direction','a',@(x)any(strcmp(x,{'a','all','x','y'})))
 p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
-p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
+p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<=',data.nPoints}))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
 p.addParameter('centresRow',1,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
@@ -144,13 +144,15 @@ if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1)
     % for one bead, followed by all the data for the second.
     tracks = cell(length(offset), length(centresRow));
     for idx = 1:length(offset)
-        % Crop data, then demean.
-        centresCrop = centres(:, offset(idx) : offset(idx) + num_t - 1);
-        centresCrop = centresCrop - mean(centresCrop,2);
-
-        for row = 1:length(centresRow)
-            tracks{idx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
-                1e6 .* centresCrop(row,:)'];
+        for jdx = 1:length(num_t)
+            % Crop data, then demean.
+            centresCrop = centres(:, offset(idx) : offset(idx) + num_t(jdx) - 1);
+            centresCrop = centresCrop - mean(centresCrop,2);
+            
+            for row = 1:length(centresRow)
+                tracks{idx, jdx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t(jdx) - 1)' ...
+                    1e6 .* centresCrop(row,:)'];
+            end
         end
     end
     
