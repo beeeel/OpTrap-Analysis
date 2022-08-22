@@ -7,7 +7,7 @@ function data = bead_normMSD(data, varargin)
 % Additional parameters in the form of name-value pairs. Possible options:
 %   direction       - Direction used for MSD calculation. 'x','y', or 'a'
 %   offset          - Offset from start. Default 1
-%   num_t           - Number of time points to use. Default all
+%   numT           - Number of time points to use. Default all
 %   doPlots         - Do the plots if true, else just the calculations
 %   useRaw          - Use raw data instead of processed (you probably don't want this)
 %   centresRow      - Which row of the centres matrix to use. Default 1.
@@ -49,6 +49,9 @@ forceRun = p.Results.forceRun || data.opts.forceRun;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
+if isempty(centresRow)
+    centresRow = 1:length(data.raw.suffixes);
+end
 if isfield(data.raw,'suffixes') && strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r') && isscalar(centresRow)
     warning('Looks like you have 2 bead data, but I''m only using 1 of them')
 end
@@ -142,7 +145,7 @@ if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1)
     % Prepare data to go into msdanalyzer
     % When taking multiple centresRows, i.e.: 2 beads, we want all the data
     % for one bead, followed by all the data for the second.
-    tracks = cell(length(offset), length(centresRow));
+    tracks = cell(length(offset), length(num_t), length(centresRow));
     for idx = 1:length(offset)
         for jdx = 1:length(num_t)
             % Crop data, then demean.
