@@ -110,7 +110,7 @@ for i = 1 : n_tracks
     elseif strcmp(obj.sampling, 'log')
             %             n = 0 : n_detection - 1;
             %             delays = ceil(obj.logbase.^n);
-            alldTs = unique([0 ceil(obj.logbase.^(0:(size(t,1)-2)))]);
+            alldTs = unique([0:10 ceil(obj.logbase.^(0:(size(t,1)-2)))]);
             alldTs = alldTs( alldTs < size(t,1) );
             for j = 2:length(alldTs)
                 dT = alldTs(j);

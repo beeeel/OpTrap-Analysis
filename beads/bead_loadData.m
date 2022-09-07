@@ -25,31 +25,49 @@ if ~exist(data.dirPath,'dir')
     error('Folder %s does not exist!',data.dirPath)
 end
 
-for suff = {'Centres', '', 'simple', 'quart', 'gauss', 'l', 'r', 'b', 's', 'v', 'lq', 'rq'}
-    fNameX = [data.dirPath '/X' suff{:} '.dat'];
-    fNameY = [data.dirPath '/Y' suff{:} '.dat'];
-    if exist(fNameX, 'file') && exist(fNameY, 'file')
+if idx == 1
+    dl = dir(data.dirPath);
+    dl = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'X', 'Y'}));
+    nx = sum(startsWith({dl.name}, 'X'));
+    ny = sum(startsWith({dl.name}, 'Y'));
+    if nx ~= ny
+        error('Found mismatched number of X (%i) and Y (%i) data', nx, ny)
+    elseif isempty(dl)
+        fprintf(errMsg);
+        error('Could not find any centres data');
+    end
+    xdx = 1;
+    ydx = 1;
+    for idx = 1:nx+ny
+        fName = sprintf('%s/%s', data.dirPath, dl(idx).name);
+        suff = strsplit(dl(idx).name, {'X', 'Y','.dat'});
+        suff = suff{end-1};
         % Screen for NaNs
-        tmp = byteStreamToDouble(fNameX);
-        warnNaN(tmp, fNameX);
+        tmp = byteStreamToDouble(fName);
+        warnNaN(tmp, fName);
         tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
-        data.raw.xCentresPx(idx,:) = tmp;
-        
-        tmp = byteStreamToDouble(fNameY);
-        warnNaN(tmp, fNameY);
-        tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
-        data.raw.yCentresPx(idx,:) = tmp;
-        
-        data.raw.suffixes = [data.raw.suffixes, suff];
-        idx = idx + 1;
-    else
-        errMsg = [errMsg 'File ' fNameX ' does not exist\n'];
+        if contains(dl(idx).name, 'X') && ~contains(dl(idx).name, 'Y')
+            data.raw.xCentresPx(xdx,:) = tmp;
+            if length(data.raw.suffixes)<xdx || strcmp(data.raw.suffixes{xdx}, suff)
+                data.raw.suffixes{xdx} = suff;
+            else
+                error('Suffix mismatch like you said wouldn''t happen')
+            end
+            xdx = xdx + 1;
+        else
+            data.raw.yCentresPx(ydx,:) = tmp;
+            if length(data.raw.suffixes)<ydx || strcmp(data.raw.suffixes{ydx}, suff)
+                data.raw.suffixes{ydx} = suff;
+            else
+                error('Suffix mismatch like you said wouldn''t happen')
+            end
+            ydx = ydx + 1;
+        end
     end
 end
 
-if idx == 1
-    fprintf(errMsg);
-    error('Could not find any centres data');
+if exist([data.dirPath '/subWidth.dat'],'file')
+    data.raw.subWidth = byteStreamToDouble([data.dirPath '/subWidth.dat']);
 end
 
 if exist([data.dirPath '/I.dat'], 'file')

@@ -26,7 +26,7 @@ for i = 1 : n_tracks
         case 'linear'
             dT = tStep .* (0:size(t,1)-1)';
         case 'log'
-            dT = tStep .* [0 ceil(obj.logbase.^(0:(size(t,1)-2)))];
+            dT = tStep .* [0:10 ceil(obj.logbase.^(0:(size(t,1)-2)))];
             dT = dT( dT < max(t) )';
         case 'original'
             [T1, T2] = meshgrid(t, t);

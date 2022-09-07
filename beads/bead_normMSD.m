@@ -7,7 +7,7 @@ function data = bead_normMSD(data, varargin)
 % Additional parameters in the form of name-value pairs. Possible options:
 %   direction       - Direction used for MSD calculation. 'x','y', or 'a'
 %   offset          - Offset from start. Default 1
-%   num_t           - Number of time points to use. Default all
+%   numT           - Number of time points to use. Default all
 %   doPlots         - Do the plots if true, else just the calculations
 %   useRaw          - Use raw data instead of processed (you probably don't want this)
 %   centresRow      - Which row of the centres matrix to use. Default 1.
@@ -24,7 +24,7 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('direction','a',@(x)any(strcmp(x,{'a','all','x','y'})))
 p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
-p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<',data.nPoints}))
+p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<=',data.nPoints}))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
 p.addParameter('centresRow',1,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
@@ -49,6 +49,9 @@ forceRun = p.Results.forceRun || data.opts.forceRun;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
+if isempty(centresRow)
+    centresRow = 1:length(data.raw.suffixes);
+end
 if isfield(data.raw,'suffixes') && strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r') && isscalar(centresRow)
     warning('Looks like you have 2 bead data, but I''m only using 1 of them')
 end
@@ -142,15 +145,17 @@ if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1)
     % Prepare data to go into msdanalyzer
     % When taking multiple centresRows, i.e.: 2 beads, we want all the data
     % for one bead, followed by all the data for the second.
-    tracks = cell(length(offset), length(centresRow));
+    tracks = cell(length(offset), length(num_t), length(centresRow));
     for idx = 1:length(offset)
-        % Crop data, then demean.
-        centresCrop = centres(:, offset(idx) : offset(idx) + num_t - 1);
-        centresCrop = centresCrop - mean(centresCrop,2);
-
-        for row = 1:length(centresRow)
-            tracks{idx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t - 1)' ...
-                1e6 .* centresCrop(row,:)'];
+        for jdx = 1:length(num_t)
+            % Crop data, then demean.
+            centresCrop = centres(:, offset(idx) : offset(idx) + num_t(jdx) - 1);
+            centresCrop = centresCrop - mean(centresCrop,2);
+            
+            for row = 1:length(centresRow)
+                tracks{idx, jdx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t(jdx) - 1)' ...
+                    1e6 .* centresCrop(row,:)'];
+            end
         end
     end
     

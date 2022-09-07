@@ -1,26 +1,27 @@
 %% Process multiple sets of bead data sequentially
+close all
 % Experiment parameters
 mPerPx = 0.065e-6;           % Camera pixel size calibration
 laserPowers = 0;      % Laser power in % for the datasets used
 ignoreDirs = {}; % Directories to ignore (ones without data)
 
 % Processing parameters
-angleCorrection = true; % Convert cartesian co-ordinates into polar (r, r.*theta)
+angleCorrection = false; % Convert cartesian co-ordinates into polar (r, r.*theta)
 timeRegularise = true;  % Regularise time vector (for data acquired with fast_acq_v9 onwards)
 cropTs = {[]};
 fitPoly = [1]; % Fit a polynomial to remove drift
-fitPolyOrder = 1;       % Order of polynomial to be fitted
-calcStiff = 0;          % Calculate trap stiffness from position variance
+fitPolyOrder = 0;       % Order of polynomial to be fitted
+calcStiff = 1;          % Calculate trap stiffness from position variance
 fpass = 0;              % Pass frequency
 cropTHPval = 1;       % Frames to crop after HP filter
-msdOffset = 1;          % Offset from start when taking data to calculate mean-square displacements
+msdOffset = 1;+[0 3e5];          % Offset from start when taking data to calculate mean-square displacements
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
-msdCentresRow = 1;      % Row of centres array to use for MSDs (empty for default)
-msdNumT = [];           % Number of time points to use for MSDs (empty for all)
+msdCentresRow = [];      % Row of centres array to use for MSDs (empty for default)
+msdNumT = [];7e5;           % Number of time points to use for MSDs (empty for all)
 msdUseRaw = false;      % Use raw or processed data for MSDs (empty for default)
 msdDoNorm = false;       % Normalize MSDs by position variance (empty for default)
 msdErrorBars = false;    % Plot errorbars on MSD (empty for default)
-doFFT = true;           % Calculate FFT and maybe plot
+doFFT = false;           % Calculate FFT and maybe plot
 
 % Data file parameters
 forceRun = false;       % Try to take data from file and reuse as much as possible
@@ -28,16 +29,18 @@ saveData = false;        % Save data to file
 dataSuff = '_120k_28min';       % Suffix for filename when saving/loading
 
 % Plotting parameters
-loadPics = true;    % Load the TIF images
+loadPics = false;    % Load the TIF images
 saveFigs = false;
 showStack = false;   % Open the image data in ImageJ
 doPlots = true;      % Plot the centres data
 compCentres = false; % Show the Imstack with live calculated and offline calculated centres
-setLims = [-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
+setLims = [];[-1 1] * 0.2;     % Set axis limits in um on position plots, empty for auto limit
 fftYlim = [0 1];    % Set limits in units amplitude for FFT plots, empty for auto limit
 plotDC = false;
 plotRaw = false;
 setDCLims = [0 0.1];  % Set limits in units pixel brightness for DC plots, empty for auto limit
+
+%while true
 
 % Get all the children directories in a struct
 dirList = dir;
@@ -50,12 +53,15 @@ end
 % error and gives an empty list if not.
 % checkCropTs(cropTs, dirList);
 
+% Output names
 tmp = {dirList.name}'; for idx = 1:length(tmp); tmp{idx} = sprintf('%i: %s', idx, tmp{idx}); end
 disp(tmp)
+
 out = struct();
 out(1).stiff = nan;
-%
-for fileIdx = 27:35%length(dirList)
+newIdx = find(max([dirList.datenum]) == [dirList.datenum], 1, 'first');
+%%
+for    fileIdx = newIdx%length(dirList)-2
     %% Load and pre-process
     % Either create a new struct or load one named dataFile
     dataFile = [dirList(fileIdx).name '_processed' dataSuff '.mat'];
@@ -168,11 +174,28 @@ for fileIdx = 27:35%length(dirList)
     
     % Look at mean-square displacement (for cell-bead expts)
     if ~isempty(msdOffset)
-%         data = bead_normMSD(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
-        data = bead_normMSD(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm, msdErrorBars);
+%         data = bead_normMSD_polyfit(data, msdDim, msdOffset, msdNumT, doPlots, msdUseRaw, msdCentresRow, msdDoNorm);
+        data = bead_normMSD(data, 'direction', msdDim, 'offset', msdOffset, 'numT', msdNumT, 'doPlots', doPlots, 'useRaw', msdUseRaw, 'centresRow', msdCentresRow, 'doNorm', msdDoNorm, 'errorBars', msdErrorBars);
         out(fileIdx).msdObj = data.pro.amsdObj;
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
+        end
+        fh = gcf;
+        fh.Position = [404          42        1296         954];
+        for idx = 1:length(fh.Children)
+            ax = fh.Children(idx);
+            if isa(ax, 'matlab.graphics.axis.Axes') && isscalar(ax.Children)
+                h = ax.Children;
+                x = ax.Children.XData';
+                y = ax.Children.YData';
+                [dydx, tout] = msd_gradientor(x, y, 'lsq', 5);
+                yyaxis(ax, 'right')
+                semilogx(ax, tout, dydx, 'k--','LineWidth',2)
+                hold(ax, 'on')
+                plot(ax, xlim(ax), [1 1], ':','Color',0.75*[1 1 1], 'LineWidth', 3)
+                ylim(ax, [0 2])
+                
+            end
         end
     end
     
@@ -180,6 +203,8 @@ for fileIdx = 27:35%length(dirList)
     if saveData
         save(dataFile, 'data')
     end
+    %pause(60)
+    %close all
 end
 %%
 
