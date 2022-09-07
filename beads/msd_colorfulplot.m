@@ -77,7 +77,7 @@ if ~exist('axs','var')
             xlabel('Lag time \tau (s)')
         end
         if normY
-            ylabel('normalized MSD')
+            ylabel('NMSD')
             ylim([5e-4 5e2])
         else
             ylabel('MSD (μm^2)')
@@ -150,7 +150,7 @@ for dIdx = dIs
                     MSDs(rIdx).msd{plt}(1:end-nSkip,2)./normF(plt,rIdx), 'LineWidth', 2, ...
                     'Color', colour(rIdx,:).*cF(dIdx), 'LineStyle', lsty{dIdx}, ...
                     'Marker', msty{dIdx});
-                h(1) = plot(axs(plt), lambda(plt,rIdx).*tau(idx(plt)), p(plt)./normF(plt,rIdx), 'kx','LineWidth', 2);
+%                 h(1) = plot(axs(plt), lambda(plt,rIdx).*tau(idx(plt)), p(plt)./normF(plt,rIdx), 'kx','LineWidth', 2);
                 %             h(1) = plot([1 1], ylim, '--', 'Color', 0.8 * [1 1 1 0.8],...
                 %                 'LineWidth', 3);
                 if exist('tRanges','var') && size(tRanges,1) >= rIdx
@@ -178,7 +178,7 @@ for dIdx = dIs
         end
     end
 end
-legend(h, legCell, 'Location','best')
+% legend(h, legCell, 'Location','best') % Sorry future me!
 
     function [fps, fitErr] = N_get_fits
         % Either use linear fit or the least squares estimator from [1]Ling
