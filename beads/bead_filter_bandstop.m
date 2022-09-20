@@ -79,7 +79,7 @@ data.pro.yCentresBS = centres(:,2)';
 data.opts.UseField = 'CentresBS';
 
 if doPlots
-    t = data.raw.timeVecMs*1e-3;
+    t = data.raw.timeVecMs(cropT(1):cropT(2))*1e-3;
     xy = 'XY';
     
     figure
