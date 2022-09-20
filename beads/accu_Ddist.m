@@ -27,12 +27,12 @@ for dIdx = 1:size(accumulated,2)
             % Janky but it should work
             dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
                 ./accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
-            [tErr, tInd] = min(abs(dt - dtnorm(1)));
-            fprintf('tErr = %gs, or %g%% \n', tErr, tErr./dtnorm(1))
+            [tErr, tInd] = min(abs(dt - dtnorm(1,:)'), [], 2);
+            fprintf('tErr = %gs, or %g%% \n', tErr, tErr./dtnorm(1,:)')
             
             % Look I'm really sorry about this, I just couldn't think of a
             % better way to make it robust to unexpected size of Ddist.
-            ddsz = size(m.Ddist{1,2}(1:floor(end/2),:))+[0, tInd];
+            ddsz = size(m.Ddist{1,2}(1:floor(end/2),:))+[0, max(tInd)];
             larger = ddsz > size(rho(:,:,1));
             if any(larger)
                 warning('Resizing rho to [%i %i]', ddsz(1), ddsz(2))
@@ -47,7 +47,7 @@ for dIdx = 1:size(accumulated,2)
             % Add the counts to the total
             for dim = 1:2
                 ind = size(m.Ddist{dim,2},2);
-                rho(:,tInd+(1:ind),dim) = rho(:,tInd+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
+                rho(:,tInd(dim)+(1:ind),dim) = rho(:,tInd(dim)+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
             end
         end
     end
