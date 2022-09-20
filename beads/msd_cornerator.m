@@ -41,8 +41,8 @@ p.addParameter('marker','none', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'squ
 p.addParameter('interpM', 'pchip', @(x) any(strcmp(x, {'linear', 'nearest', 'next', 'previous', 'spline', 'pchip', 'cubic', 'v5cubic', 'makima'})))
 p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}))
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
-p.addParameter('normT', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x(~isnan(x)) < msdObj.msd{1}(1,end)) && all(x(~isnan(x)) > 0))
-p.addParameter('normR', [1 1], @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
+p.addParameter('normT', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x(~isnan(x)) < msdObj.msd{1}(1,end)) && all(x(~isnan(x)) > 0))
+p.addParameter('normR', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
 
@@ -83,8 +83,8 @@ if doPlot
     N_setup_fig;
 end
 
-fps = zeros(2, length(tRanges), length(dims));
-fitErr = zeros(2, length(tRanges), length(dims));
+fps = zeros(2, length(tRanges{1}), length(dims));
+fitErr = zeros(2, length(tRanges{1}), length(dims));
 
 % For each dimension 
 for dIdx = 1:length(dims)
