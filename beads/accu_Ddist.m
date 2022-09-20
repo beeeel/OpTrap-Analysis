@@ -1,4 +1,4 @@
-function [z, rho, ngp] = accu_Ddist(accumulated, normT)
+function [z, rho, ngp, N] = accu_Ddist(accumulated, normT)
 %% [z, rho, ngp] = accu_Ddist(accumulated, [normT])
 % Calculate Ddist for all data in accumulated and return the normalised
 % increments, z, the p.d.f., rho, and the non-gaussian parameter α with lag
@@ -9,7 +9,9 @@ if ~exist('normT', 'var')
 end
 
 % This is a guess at the size we'll need
-rho = zeros(140, 19, 2);
+rho = zeros(140, 28, 2);
+% Record the number of samples at each normalised delay
+N = zeros(1,size(rho,2)); 
 % All scenarios
 dt = [1; 2; 4; 6] .* logspace(-4, 3, 8);
 dt = dt(:);
@@ -42,12 +44,19 @@ for dIdx = 1:size(accumulated,2)
             end
             if larger(2)
                 rho(1,ddsz(2),1) = 0;
+                N(1,ddsz(2)) = 0;
             end
         
             % Add the counts to the total
             for dim = 1:2
                 ind = size(m.Ddist{dim,2},2);
                 rho(:,tInd+(1:ind),dim) = rho(:,tInd+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
+            end
+            % Count how many samples we've added
+            try
+                N(tInd+(1:ind)) = N(tInd+(1:ind)) + m.Ddist{1}(:,2)';
+            catch
+                warning('huh')
             end
         end
     end
@@ -64,7 +73,7 @@ alpha = @(z, rho) sum(rho.*(z.^4),1) ./ (3 .* sum(rho.*(z.^2),1) .^2) - 1;
 ngp = alpha(z, rho);
 
 try
-    ngp = [ngp; repmat(dt',1,1,2)];
+    ngp = [ngp; repmat(dt(1:size(ngp,2))',1,1,2)];
 catch
     warning('Size mismatch in ngp?')
 end
