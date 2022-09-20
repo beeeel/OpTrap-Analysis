@@ -27,8 +27,14 @@ for dIdx = 1:size(accumulated,2)
             m = m.computeDdist;
             
             % Janky but it should work
+            if normT
+                tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+            else
+                tnorm = 1;
+            end
+            
             dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
-                ./accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                ./tnorm;
             [tErr, tInd] = min(abs(dt - dtnorm(1)));
             fprintf('tErr = %gs, or %g%% \n', tErr, tErr./dtnorm(1))
             
