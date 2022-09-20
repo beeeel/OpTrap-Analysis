@@ -64,7 +64,7 @@ for i = 1 : n_tracks
     minInd = 10; % Minimum independent observations of maxDelay
     
     % Write the dTs you want, in seconds.
-    alldTs = round([1e-3 2e-3 4e-3 6e-3 1e-2 2e-2 4e-2 6e-2 0.1 0.2 0.4 0.6 1 2 4 6 10 30 100 400] / dt); % Ends up in indexing units!
+    alldTs = round(obj.dTs / dt); % Ends up in indexing units!
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
     % Number of histogram bins
