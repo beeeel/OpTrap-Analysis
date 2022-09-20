@@ -51,24 +51,22 @@ for i = 1 : n_tracks
     t = track(:,1);
     t = msdanalyzer.roundn(t, msdanalyzer.TOLERANCE);
     X = track(:, 2:end);
-    
-    nD = normD(i);
-    
+        
     dt = t(2) - t(1);
     
     %%% Calculate indices (alldTs needs to be in indexing units!)
     
-    % Don't need this if only doing 4 ΔD    lb = 2; % Logbase
+    % Don't need this if only doing preset ΔD    lb = 2; % Logbase
     % A bit overkill!    alldTs = unique([0 ceil(lb.^(0:(size(t,1)-2)))])/dt;
     
     minInd = 10; % Minimum independent observations of maxDelay
     
-    % Write the dTs you want, in seconds.
+    % Take the dTs from the object.
     alldTs = round(obj.dTs / dt); % Ends up in indexing units!
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
     % Number of histogram bins
-    edg = (-7:0.1:7)';
+    edg = 0.05 + (-7:0.1:7)';
     nBins = numel(edg) - 1;
     
     n_delays    = numel(alldTs);
