@@ -1,4 +1,4 @@
-function [z, rho, ngp] = accu_Ddist(accumulated, normT)
+function [z, rho, ngp, N] = accu_Ddist(accumulated, normT)
 %% [z, rho, ngp] = accu_Ddist(accumulated, [normT])
 % Calculate Ddist for all data in accumulated and return the normalised
 % increments, z, the p.d.f., rho, and the non-gaussian parameter α with lag
@@ -8,11 +8,12 @@ if ~exist('normT', 'var')
     normT = false;
 end
 
-% This is a guess at the size we'll need
-rho = zeros(140, 19, 2);
 % All scenarios
 dt = [1; 2; 4; 6] .* logspace(-4, 3, 8);
-dt = dt(:);
+dt = dt(:)';
+% This is a guess at the size we'll need
+rho = zeros(140, length(dt), 2);
+N = zeros(length(dt),2);
 
 % Loop over everything we have here
 for dIdx = 1:size(accumulated,2)
@@ -25,10 +26,17 @@ for dIdx = 1:size(accumulated,2)
             m = m.computeDdist;
             
             % Janky but it should work
-            dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
-                ./accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
-            [tErr, tInd] = min(abs(dt - dtnorm(1,:)'), [], 2);
-            fprintf('tErr = %gs, or %g%% \n', tErr, tErr./dtnorm(1,:)')
+            if normT
+                tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
+                    ./tnorm;
+                [tErr, tInd] = min(abs(dt - dtnorm(1,:)'), [], 2);
+                [~, ind] = max(tErr);
+                fprintf('tErr = %gs, or %g%% \n', tErr(ind), tErr(ind)./dtnorm(1,ind))
+            else
+                % "should work"
+                tInd = [1 1];
+            end
             
             % Look I'm really sorry about this, I just couldn't think of a
             % better way to make it robust to unexpected size of Ddist.
@@ -47,6 +55,7 @@ for dIdx = 1:size(accumulated,2)
             % Add the counts to the total
             for dim = 1:2
                 ind = size(m.Ddist{dim,2},2);
+                N(tInd(dim)+(1:ind),dim) = N(tInd(dim)+(1:ind),dim) + m.Ddist{1}(:,2);
                 rho(:,tInd(dim)+(1:ind),dim) = rho(:,tInd(dim)+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
             end
         end
@@ -64,7 +73,7 @@ alpha = @(z, rho) sum(rho.*(z.^4),1) ./ (3 .* sum(rho.*(z.^2),1) .^2) - 1;
 ngp = alpha(z, rho);
 
 try
-    ngp = [ngp; repmat(dt',1,1,2)];
+    ngp = [ngp; repmat(dt,1,1,2)];
 catch
     warning('Size mismatch in ngp?')
 end
