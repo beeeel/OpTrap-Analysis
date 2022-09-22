@@ -8,13 +8,12 @@ if ~exist('normT', 'var')
     normT = false;
 end
 
-% This is a guess at the size we'll need
-rho = zeros(140, 28, 2);
-% Record the number of samples at each normalised delay
-N = zeros(1,size(rho,2)); 
 % All scenarios
 dt = [1; 2; 4; 6] .* logspace(-4, 3, 8);
-dt = dt(:);
+dt = dt(:)';
+% This is a guess at the size we'll need
+rho = zeros(140, length(dt), 2);
+N = zeros(length(dt),2);
 
 % Loop over everything we have here
 for dIdx = 1:size(accumulated,2)
@@ -29,18 +28,20 @@ for dIdx = 1:size(accumulated,2)
             % Janky but it should work
             if normT
                 tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
+                    ./tnorm;
+                [tErr, tInd] = min(abs(dt - dtnorm(1,:)'), [], 2);
+                [~, ind] = max(tErr);
+                fprintf('tErr = %gs, or %g%% \n', tErr(ind), tErr(ind)./dtnorm(1,ind))
             else
-                tnorm = 1;
+                % "should work"
+                tInd = [1 1];
             end
-            
-            dtnorm = round(m.Ddist{1,1}(:,1),1, 'significant')...
-                ./tnorm;
-            [tErr, tInd] = min(abs(dt - dtnorm(1)));
-            fprintf('tErr = %gs, or %g%% \n', tErr, tErr./dtnorm(1))
+
             
             % Look I'm really sorry about this, I just couldn't think of a
             % better way to make it robust to unexpected size of Ddist.
-            ddsz = size(m.Ddist{1,2}(1:floor(end/2),:))+[0, tInd];
+            ddsz = size(m.Ddist{1,2}(1:floor(end/2),:))+[0, max(tInd)];
             larger = ddsz > size(rho(:,:,1));
             if any(larger)
                 warning('Resizing rho to [%i %i]', ddsz(1), ddsz(2))
@@ -56,13 +57,8 @@ for dIdx = 1:size(accumulated,2)
             % Add the counts to the total
             for dim = 1:2
                 ind = size(m.Ddist{dim,2},2);
-                rho(:,tInd+(1:ind),dim) = rho(:,tInd+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
-            end
-            % Count how many samples we've added
-            try
-                N(tInd+(1:ind)) = N(tInd+(1:ind)) + m.Ddist{1}(:,2)';
-            catch
-                warning('huh')
+                N(tInd(dim)+(1:ind),dim) = N(tInd(dim)+(1:ind),dim) + m.Ddist{1}(:,2);
+                rho(:,tInd(dim)+(1:ind),dim) = rho(:,tInd(dim)+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
             end
         end
     end
@@ -79,7 +75,7 @@ alpha = @(z, rho) sum(rho.*(z.^4),1) ./ (3 .* sum(rho.*(z.^2),1) .^2) - 1;
 ngp = alpha(z, rho);
 
 try
-    ngp = [ngp; repmat(dt(1:size(ngp,2))',1,1,2)];
+    ngp = [ngp; repmat(dt,1,1,2)];
 catch
     warning('Size mismatch in ngp?')
 end

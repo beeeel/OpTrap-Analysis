@@ -59,7 +59,7 @@ for i = 1 : n_tracks
     % Don't need this if only doing preset ΔD    lb = 2; % Logbase
     % A bit overkill!    alldTs = unique([0 ceil(lb.^(0:(size(t,1)-2)))])/dt;
     
-    minInd = 10; % Minimum independent observations of maxDelay
+    minInd = 1; % Minimum independent observations of maxDelay
     
     % Take the dTs from the object.
     alldTs = round(obj.dTs / dt); % Ends up in indexing units!
