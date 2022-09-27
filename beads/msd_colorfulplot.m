@@ -99,7 +99,7 @@ for dIdx = dIs
     for cIdx = cIs
         
         MSDs = [accumulated{1,dIdx}{1,cIdx}.msd];
-        ts = accumulated{1,dIdx}{2,cIdx};
+        ts = sort(accumulated{1,dIdx}{2,cIdx});
         
         nNeg = sum(ts < 0);
         colormap(zeros(64,3));
