@@ -73,7 +73,7 @@ for i = 1 : n_tracks
     counts      = zeros(nBins, n_delays);
     edges       = repmat(edg, 1, n_delays);
     n_msd       = zeros(n_delays, 1);
-    pvals       = zeros(n_delays, 2);
+%     pvals       = zeros(n_delays, 2);
     %covs        = cell(n_delays, 1);
 
     % Determine drift correction
@@ -100,12 +100,12 @@ for i = 1 : n_tracks
         
         n_msd(j) = size(dX,1);
         counts(:,j) = N;
-        [~, pvals(j,1)] = ttest(dX);
-        [~, pvals(j,2)] = lillietest(dX);
+%         [~, pvals(j,1)] = ttest(dX);
+%         [~, pvals(j,2)] = lillietest(dX);
     end
     
     
-    obj.Ddist{index,1} = [ alldTs*dt n_msd pvals ];
+    obj.Ddist{index,1} = [ alldTs*dt n_msd];% pvals ];
     % First cell contains the increment times queries, number of points and
     % probabilities that 1) Mean == 0, 2) Distribution == normal.
     
