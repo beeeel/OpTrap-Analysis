@@ -40,7 +40,7 @@ classdef msdanalyzer
         % Stores the displacement distribution
         Ddist
         % Query times to calculate Ddist at (in time_units)
-        dTs = [1e-3 2e-3 4e-3 6e-3 1e-2 2e-2 4e-2 6e-2 0.1 0.2 0.4 0.6 1 2 4 6 10 30 100 400];
+        dTs = reshape([1; 2; 4; 6] .* logspace(-4, 4, 9), 1, []);
         % Stores the velocty correlation
         vcorr
         % Stores the linear fit of MSD vs t
