@@ -49,14 +49,12 @@ if ~isfield(data.opts, 'UseField')
     centres(:,2) = tmp;
 else
     fN = data.opts.UseField;
-    tmp = mPerPx * ...[data.pro.(['x' fN ])(centresRow, cropT(2):-1:cropT(1)) ...
-        data.pro.(['x' fN ])(centresRow, cropT(1):cropT(2)) ...
-        ;%data.pro.(['x' fN ])(centresRow, cropT(2):-1:cropT(1))];
+    % Gotta assume that pixel calibration has already been applied - after
+    % all we're taking the data from pro!
+    tmp = data.pro.(['x' fN ])(centresRow, cropT(1):cropT(2));
     centres(:,1) = tmp;
     
-    tmp = mPerPx * ...[data.pro.(['y' fN ])(centresRow, cropT(2):-1:cropT(1)) ...
-        data.pro.(['y' fN ])(centresRow, cropT(1):cropT(2)) ...
-        ;%data.pro.(['y' fN ])(centresRow, cropT(2):-1:cropT(1))];
+    tmp = data.pro.(['y' fN ])(centresRow, cropT(1):cropT(2));
     centres(:,2) = tmp;
 end
 
