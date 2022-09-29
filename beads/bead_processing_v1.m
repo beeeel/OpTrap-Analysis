@@ -10,9 +10,10 @@ angleCorrection = false; % Convert cartesian co-ordinates into polar (r, r.*thet
 timeRegularise = true;  % Regularise time vector (for data acquired with fast_acq_v9 onwards)
 cropTs = {[]};
 fitPoly = [1]; % Fit a polynomial to remove drift
-fitPolyOrder = 0;       % Order of polynomial to be fitted
+fitPolyOrder = 1;       % Order of polynomial to be fitted
 calcStiff = 1;          % Calculate trap stiffness from position variance
-fpass = 0;              % Pass frequency
+fpass = 0;              % High-pass frequency
+fstop = [124.5 125.5];  % Bandstop frequencies - one range per row.
 cropTHPval = 1;       % Frames to crop after HP filter
 msdOffset = 1;+[0 3e5];          % Offset from start when taking data to calculate mean-square displacements
 msdDim = 'all';         % Direction to calculate MSD in - 'x', 'y', or 'all'
@@ -61,7 +62,7 @@ out = struct();
 out(1).stiff = nan;
 newIdx = find(max([dirList.datenum]) == [dirList.datenum], 1, 'first');
 %%
-for    fileIdx = newIdx%length(dirList)-2
+for    fileIdx = [2 5 7 8]%length(dirList)-2
     %% Load and pre-process
     % Either create a new struct or load one named dataFile
     dataFile = [dirList(fileIdx).name '_processed' dataSuff '.mat'];
@@ -134,6 +135,11 @@ for    fileIdx = newIdx%length(dirList)-2
         end
     end
     
+    if ~isempty(fstop)
+        data.opts.bandstop = fstop;
+        data = bead_filter_bandstop(data);
+    end
+    
     % Compare MATLAB calculated centres with live (Java) calculated centres
     if compCentres
         bead_plotCompareCentres(data)
@@ -180,23 +186,23 @@ for    fileIdx = newIdx%length(dirList)-2
         if saveFigs
             saveas(gcf, [data.fName '_MSD.png'])
         end
-        fh = gcf;
-        fh.Position = [404          42        1296         954];
-        for idx = 1:length(fh.Children)
-            ax = fh.Children(idx);
-            if isa(ax, 'matlab.graphics.axis.Axes') && isscalar(ax.Children)
-                h = ax.Children;
-                x = ax.Children.XData';
-                y = ax.Children.YData';
-                [dydx, tout] = msd_gradientor(x, y, 'lsq', 5);
-                yyaxis(ax, 'right')
-                semilogx(ax, tout, dydx, 'k--','LineWidth',2)
-                hold(ax, 'on')
-                plot(ax, xlim(ax), [1 1], ':','Color',0.75*[1 1 1], 'LineWidth', 3)
-                ylim(ax, [0 2])
-                
-            end
-        end
+%         fh = gcf;
+%         fh.Position = [404          42        1296         954];
+%         for idx = 1:length(fh.Children)
+%             ax = fh.Children(idx);
+%             if isa(ax, 'matlab.graphics.axis.Axes') && isscalar(ax.Children)
+%                 h = ax.Children;
+%                 x = ax.Children.XData';
+%                 y = ax.Children.YData';
+%                 [dydx, tout] = msd_gradientor(x, y, 'lsq', 5);
+%                 yyaxis(ax, 'right')
+%                 semilogx(ax, tout, dydx, 'k--','LineWidth',2)
+%                 hold(ax, 'on')
+%                 plot(ax, xlim(ax), [1 1], ':','Color',0.75*[1 1 1], 'LineWidth', 3)
+%                 ylim(ax, [0 2])
+%                 
+%             end
+%         end
     end
     
     % Save if requested
