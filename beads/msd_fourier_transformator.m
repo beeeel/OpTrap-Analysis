@@ -102,9 +102,9 @@ else
 end
 
 if obsT < 0
-    legs = sprintf('%i min before drug',abs(round(obsT)));
+    legs = sprintf('%i min before',abs(round(obsT)));
 else
-    legs = sprintf('%i min after drug',round(obsT));
+    legs = sprintf('%i min after',round(obsT));
 end
 
 fSz = 16;
