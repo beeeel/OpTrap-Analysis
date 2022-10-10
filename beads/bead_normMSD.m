@@ -304,6 +304,7 @@ end
 %             y = {MSDnorm(:,1:end/2), MSDnorm(:,1+end/2:end)};
             hold(ax, 'on')
             cols = {ax.Children.Color}; %{[0 0.447 0.741] [0.85 0.325 0.098]};
+            cols = cols(end:-1:1);
             for Idx = 1:size(dTs,2)
                 [dydx, tout] = msd_gradientor(dTs(:,Idx), MSDnorm(:,Idx), 'lsq', 2);
                 yyaxis(ax, 'right')

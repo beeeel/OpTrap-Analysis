@@ -37,7 +37,7 @@ end
 
 % Take 1 row of centres and sandwich it with mirrored versions to reduce
 % artefacts is commented out
-if ~isfield(data.opts, 'useField')
+if ~isfield(data.opts, 'UseField')
     tmp = mPerPx * ...[data.raw.xCentresPx(centresRow, cropT(2):-1:cropT(1)) ...
         data.raw.xCentresPx(centresRow, cropT(1):cropT(2)) ...
         ;% data.raw.xCentresPx(centresRow, cropT(2):-1:cropT(1))];
@@ -48,15 +48,13 @@ if ~isfield(data.opts, 'useField')
         ;%data.raw.yCentresPx(centresRow, cropT(2):-1:cropT(1))];
     centres(:,2) = tmp;
 else
-    fN = data.opts.useField;
-    tmp = mPerPx * ...[data.pro.(['x' fN ])(centresRow, cropT(2):-1:cropT(1)) ...
-        data.pro.(['x' fN ])(centresRow, cropT(1):cropT(2)) ...
-        ;%data.pro.(['x' fN ])(centresRow, cropT(2):-1:cropT(1))];
+    fN = data.opts.UseField;
+    % Gotta assume that pixel calibration has already been applied - after
+    % all we're taking the data from pro!
+    tmp = data.pro.(['x' fN ])(centresRow, cropT(1):cropT(2));
     centres(:,1) = tmp;
     
-    tmp = mPerPx * ...[data.pro.(['y' fN ])(centresRow, cropT(2):-1:cropT(1)) ...
-        data.pro.(['y' fN ])(centresRow, cropT(1):cropT(2)) ...
-        ;%data.pro.(['y' fN ])(centresRow, cropT(2):-1:cropT(1))];
+    tmp = data.pro.(['y' fN ])(centresRow, cropT(1):cropT(2));
     centres(:,2) = tmp;
 end
 
