@@ -4,9 +4,12 @@ function msd_colorfulplot(accumulated, dIs, cIs, rIs, tRanges, varargin) %#ok<IN
 % name-value pair arguments to help this be good, but not yet.
 % You can either supply two axis for the plots to go on (radial and
 % tangential), or you can supply normX and normY
+
 %% TO DO
 % Name-value pair inputs
 % Fix normalisation, including supply of normalization times/frequencies
+% Set colour scale so that colorbar show accurate times.
+% Tidy up code
 if exist('rIs','var') && ~isempty(rIs)
 elseif (~exist('rIs','var') || isempty(rIs)) && isscalar(dIs) && isscalar(cIs)
     rIs = 1:size(accumulated{1,dIs}{1,cIs},2);
@@ -32,13 +35,13 @@ if nargin >= 7
     end
 end
 
-% Assume sample temp = room temp = 22 C
-T = 22;
-kbT = (272+T).*1.38064852e-23;
-% Viscosity of water at 22 C
-eta =  0.9544e-3; % need to copy equation for eta(T)
-% Bead radius is ~2.5um (maybe as much as 3)
-a = 2.5e-6;
+% % Assume sample temp = room temp = 22 C
+% T = 22;
+% kbT = (272+T).*1.38064852e-23;
+% % Viscosity of water at 22 C
+% eta =  0.9544e-3; % need to copy equation for eta(T)
+% % Bead radius is ~2.5um (maybe as much as 3)
+% a = 2.5e-6;
 
 % Number of points for gradient calculation
 nP = 15;
