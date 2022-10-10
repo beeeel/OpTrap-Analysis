@@ -20,7 +20,7 @@ normT = p.Results.normT;
 posiT = p.Results.posiT;
 
 % All scenarios
-dt = [1; 2; 4; 6] .* logspace(-4, 4, 9);
+dt = [1; 2; 4; 6] .* logspace(-4, 6, 11);
 dt = dt(:)';
 % This is a guess at the size we'll need
 rho = zeros(140, length(dt), 2);
@@ -41,6 +41,9 @@ for dIdx = 1:size(accumulated,2)
                 % Janky but it might now work
                 if normT
                     tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                    if any(isnan(tnorm))
+                        warning('found %i NaNs in tnorm for day %i cell %i rep %i', sum(isnan(tnorm)), dIdx, cIdx, rIdx)
+                    end
                 else
                     tnorm = [1 1];
                 end
@@ -69,9 +72,11 @@ for dIdx = 1:size(accumulated,2)
                 try 
                     % Add the counts to the total
                     for dim = 1:2
-                        ind = size(m.Ddist{dim,2},2);
-                        N(tInd(dim)+(1:ind),dim) = N(tInd(dim)+(1:ind),dim) + m.Ddist{1}(:,2);
-                        rho(:,tInd(dim)+(1:ind),dim) = rho(:,tInd(dim)+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
+                        if ~isnan(tnorm(dim))
+                            ind = size(m.Ddist{dim,2},2);
+                            N(tInd(dim)+(1:ind),dim) = N(tInd(dim)+(1:ind),dim) + m.Ddist{1}(:,2);
+                            rho(:,tInd(dim)+(1:ind),dim) = rho(:,tInd(dim)+(1:ind),dim) + m.Ddist{dim,2}(1:floor(end/2),1:ind);
+                        end
                     end
 %                     disp('dt and N this time:')
 %                     str = repmat('\n%.1g\t\t%g\t\t%g\n',1,size(N,1));

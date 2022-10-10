@@ -63,6 +63,7 @@ for i = 1 : n_tracks
     
     % Take the dTs from the object.
     alldTs = round(obj.dTs / dt); % Ends up in indexing units!
+    alldTs = alldTs(alldTs ~= 0);
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
     % Number of histogram bins
