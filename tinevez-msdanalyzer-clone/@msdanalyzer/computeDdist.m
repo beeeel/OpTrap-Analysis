@@ -1,4 +1,4 @@
-function obj = computeDdist(obj, indices, normD)
+function obj = computeDdist(obj, indices, normR)
 %%COMPUTEDdist Compute the displacement distribution for this object.
 %
 % obj = obj.computeDdist computes the displacement distribution for all the
@@ -21,12 +21,8 @@ if obj.n_dim > 1
     error('Ddist only works in 1D')
 end
 
-if ~exist('normD','var')
-    normD = ones(size(indices));
-end
-
-if numel(indices) ~= numel(normD)
-    error('Need 1 normD for each track')
+if exist('normR','var') && numel(indices) ~= numel(normR)
+    error('Need 1 normR for each track')
 end
 
 n_tracks = numel(indices);
@@ -59,7 +55,7 @@ for i = 1 : n_tracks
     % Don't need this if only doing preset ΔD    lb = 2; % Logbase
     % A bit overkill!    alldTs = unique([0 ceil(lb.^(0:(size(t,1)-2)))])/dt;
     
-    minInd = 1; % Minimum independent observations of maxDelay
+    minInd = 10; % Minimum independent observations of maxDelay
     
     % Take the dTs from the object.
     alldTs = round(obj.dTs / dt); % Ends up in indexing units!
@@ -68,7 +64,14 @@ for i = 1 : n_tracks
     
     % Number of histogram bins
     edg = 0.05 + (-7:0.1:7)';
+%     edg = 0.05 + (-20:0.01:20)';
     nBins = numel(edg) - 1;
+    
+    if ~exist('normR', 'var')
+        norm = @(x) (x - mean(x,'all')) ./ std(x);
+    else
+        norm = @(x) (x - mean(x,'all')) ./ normR(i);
+    end
     
     n_delays    = numel(alldTs);
     counts      = zeros(nBins, n_delays);
@@ -93,7 +96,6 @@ for i = 1 : n_tracks
         dT = alldTs(j);
         % Calculate all displacements for this delay
         dX = X(dT+1:end,:) - X(1:end-dT,:);
-        norm = @(x) (x - mean(x,'all')) ./ std(x);
         dX = norm(dX); % Perform normalisation as per Bursac et al 2005
         
         % Bin like a histogram
