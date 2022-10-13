@@ -6,17 +6,20 @@ function [z, rho, ngp, N] = accu_Ddist(accumulated, varargin)
 % 
 % Additional options as name-value pairs. Possibilities:
 %  normT        Normalise time domain before calculating increments
+%  normR        How to normalise spatial domain - either std (Weeks 2002) or bG (me!)
 %  posiT        Which times in accumulated to use (-1 for -ve, 0 for all, +1 for +ve)
 
 p = inputParser;
 
 addRequired(p, 'accumulated', @(x) isa(x, 'cell'));
-addOptional(p, 'normT', false, @(x) islogical(x) );
+addOptional(p, 'normT', false, @(x) islogical(x) || any(strcmp(x, {'lowT', 'alphaMin', 'highT'})));
+addOptional(p, 'normR', 'std', @(x) any(strcmp(x, {'std', 'bG'})));
 addOptional(p, 'posiT', 0, @(x) x == -1 || x == 0 || x == 1);
 
 parse(p, accumulated, varargin{:});
 
 normT = p.Results.normT;
+normR = p.Results.normR;
 posiT = p.Results.posiT;
 
 % All scenarios
@@ -25,6 +28,9 @@ dt = dt(:)';
 % This is a guess at the size we'll need
 rho = zeros(140, length(dt), 2);
 N = zeros(length(dt),2);
+% Count number of nans
+nnans = [0 0];
+nC = 0;
 
 % Loop over everything we have here
 for dIdx = 1:size(accumulated,2)
@@ -32,17 +38,37 @@ for dIdx = 1:size(accumulated,2)
         for rIdx = 1:size(accumulated{1,dIdx}{1,cIdx},2)
             obsT = accumulated{1,dIdx}{2,cIdx}(rIdx);
             if ~posiT || sign(obsT) == posiT
+                nC = nC + 1;
                 % Get the track and calculate the Ddist in a fresh msdanalyzer
                 t = accumulated{1,dIdx}{1,cIdx}(rIdx).msd.tracks;
                 m = msdanalyzer(1, 'um', 's', 'log');
                 m = m.addAll(t);
-                m = m.computeDdist;
+                if strcmp(normR, 'std')
+                    m = m.computeDdist;
+                else
+                    normR = kBT(293) ./ accumulated{1,dIdx}{1,cIdx}(rIdx).stiff2(:,1,1);
+                    m = m.computeDdist([], normR);
+                end
                 
                 % Janky but it might now work
                 if normT
-                    tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                    if islogical(normT) || strcmp(normT, 'lowT')
+                        tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tnorm;
+                    elseif strcmp(normT, 'highT')
+                        tnorm = accumulated{1,dIdx}{1,cIdx}(rIdx).tCH;
+                    elseif strcmp(normT, 'alphaMin')
+                        msd = cat(3, accumulated{1,dIdx}{1,cIdx}(rIdx).msd.msd{:});
+                        msd = msd(1:round(0.8*end), :, :);
+                        tau = msd(:,1,1);
+                        msd = squeeze(msd(:,2,:));
+                        [dydx, tout] = msd_gradientor(tau, msd);
+                        [ind, ~] = find(dydx == min(dydx));
+                        tnorm = tout(ind)';
+                    end
+                    
                     if any(isnan(tnorm))
                         warning('found %i NaNs in tnorm for day %i cell %i rep %i', sum(isnan(tnorm)), dIdx, cIdx, rIdx)
+                        nnans = nnans + isnan(tnorm);
                     end
                 else
                     tnorm = [1 1];
@@ -100,6 +126,10 @@ end
 rho = rho ./ reshape(N,1,[],2);
 z = m.Ddist{1,2}(ceil(end/2):end,1);
 z = z(1:end-1) + diff(z(1:2))/2;
+
+if any(nnans > 0)
+    fprintf('\n\n\t\tFailed time normalisation for [%i, %i] out of %i in respective dimensions\n\n', nnans, nC)
+end
 
 % NGP - see Bursac 2005 Nat.Mat. or Weeks 2002 PRL.
 %  <z^4> / (3 <z^2> ^2 ) - 1
