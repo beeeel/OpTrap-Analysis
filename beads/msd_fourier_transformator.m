@@ -4,7 +4,7 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % Takes parameters in name-value pairs. Possible options:
 % wRange        - cell row vector with 1 element per dimension to be FT'd
 % nBead         - numerical scalar for number of beads in dataset
-% trunc         - truncation mode ('none', or 'minima')
+% trunc         - truncation mode ('none', 'minima', or 'FF')
 % truncFF       - fudge factor for truncation (points skipped)
 % extrap        - extrapolation mode ('none', or 'linear')
 % norm          - which corner to normalise time to ('none','low', or 'high')
@@ -37,6 +37,7 @@ p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSD
 p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF'})))%
 p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1}), 'integer'}))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
+p.addParameter('eta',[], @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero'}))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
 p.addParameter('show_int',false,@(x)islogical(x))
 p.addParameter('nSkip', 40, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
@@ -60,6 +61,7 @@ wR = p.Results.wRange;
 trunc_mode = p.Results.trunc;
 FF = p.Results.truncFF;
 extrap_mode = p.Results.extrap;
+etaIn = p.Results.eta;
 norm_mode = p.Results.norm;
 show_ints = p.Results.show_int;
 lpFrq = p.Results.lowPassFreq;
@@ -152,8 +154,12 @@ for dimI = 1:length(dims)
     [idx, eta] = msd_truncator(tau, msd, trunc_mode, FF);
     
     % Extrapolate if necessary
-    [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode);
+    [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode, etaIn);
     
+    if ~isempty(etaIn)
+        warning('Manually overriding eta (1/long time MSD gradient) for FT')
+        eta = etaIn;
+    end
     % Do the interpolation and rheoFT
     [omega, G1, G2] = msd_interp_FT(tau(idx1:idx), msd(idx1:idx), 0, eta, idx, interpF); % Need a smart way of changing nPoints (idx)
     
@@ -329,7 +335,7 @@ end
         end
     end
 
-    function [tau, msde, eta, idx] = msd_extrapolator(tau, msd, idx, eta, mode)
+    function [tau, msde, eta, idx] = msd_extrapolator(tau, msd, idx, eta, mode, etaIn)
         % Needs to extrapolate MSD, replacing some points with (log) linear fit for
         % the same tau values
         switch mode
@@ -337,8 +343,11 @@ end
                 nP = 30;
                 %         fo = fit(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)), 'Poly1');
                 
-                [a, b] = leastSq(real(log(odata)), real(log(Gdata)));
+                [a, b] = leastSq(log(tau(idx-nP:idx)), log(msd(idx-nP:idx)));
                 %
+                if ~isempty(etaIn)
+                    a = 1/etaIn;
+                end
                 fo = struct('p1',a,'p2',log(2*b));
                 
                 msde = msd;
