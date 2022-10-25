@@ -124,13 +124,13 @@ public static double[] getDarkCentroid(short[] pixels, int width, int height) {
 }
 
 
-public static double getMean(short[] pixels, int width, int height) {
+public static double getMean(short[] pixels, int width, int height, int YSkip) {
     // Finds mean of image
     double mean;
     int i, count = 0;
     double v, sum = 0.0;
     
-    for (int y = 0; y < height; y++) {
+    for (int y = YSkip; y < height-YSkip; y++) {
         i = y * width;
         for (int x = 0; x < width; x++) {
              v = pixels[i];
@@ -283,7 +283,7 @@ public static double[] getTwoCentroidsBasicSqROI(short[] pixels, int width, int 
     double vl, v2l, suml = 0.0, sum2l = 0.0, x2suml=0.0, y2suml=0.0;
     double vr, v2r,             sum2r = 0.0, x2sumr=0.0, y2sumr=0.0;
     
-    mean = getMean(pixels, width, height);
+    mean = getMean(pixels, width, height, 0);
 
     for (int y=0; y<(height); y++) {
 		i = y*width;
