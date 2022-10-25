@@ -49,7 +49,7 @@ public static double[] getNCentroidsBasic(short[] pixels, int width, int height,
 }
 
 // Calculate centroids by basic centre of darkness measure
-public static double[] getNCentroidsDark(short[] pixels, int width, int height, int[] subWidth, short thresh, int YSkip)) 
+public static double[] getNCentroidsDark(short[] pixels, int width, int height, int[] subWidth, short thresh, int YSkip) 
 {
     // Finds centroid for each object based on darkness
     int i, j, count[], nB = subWidth.length; // Number of beads is number of subwidths - last one being the fullwidth
