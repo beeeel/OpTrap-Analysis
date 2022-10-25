@@ -13,6 +13,7 @@ int n = 1e4; // number of frames
 int saveInterval = 1e3; // How often to save an image (in frames)
 float expMs = 0.1;		// Exposure time (ms)
 int[] subWidth = {300, 400, 200, 540}; // Number of px on each side to calculate CofM
+int YSkip = 2;      // Number of rows to skip at top and bottom (symmetrically)
 
 // START YOUR ENGINES! (jk)
 startTime = System.nanoTime();
@@ -159,13 +160,13 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
    	}
    	
    	// Calculate centre of mass
-		centres = nCentroids.getNCentroidsBasic(pixels, width, height, subWidth, thresh);
+		centres = nCentroids.getNCentroidsBasic(pixels, width, height, subWidth, thresh, YSkip);
 		for ( int j = 0; j < 2*nB; j++ )
 		{
 			XYs[j][i] = centres[j];
 		}
 		
-		Is[i] = Static_Image_Math.getMean(pixels, width, height);
+		Is[i] = Static_Image_Math.getMean(pixels, width, height, YSkip);
 		
 		if (i%saveInterval == 0 || i == n-1) // Every [saveInterval] frames, print this frame's info
 		{
