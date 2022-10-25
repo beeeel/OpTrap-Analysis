@@ -4,7 +4,7 @@ import java.lang.Math;
 public class nCentroids{
 
 // Calculate centroids by basic centre of brightness measure
-public static double[] getNCentroidsBasic(short[] pixels, int width, int height, int[] subWidth, short thresh) 
+public static double[] getNCentroidsBasic(short[] pixels, int width, int height, int[] subWidth, short thresh, int YSkip) 
 {
     // Finds centroid for each object based on brightness
     int i, j, count[], nB = subWidth.length; // Number of beads is number of subwidths - last one being the fullwidth
@@ -16,7 +16,7 @@ public static double[] getNCentroidsBasic(short[] pixels, int width, int height,
     xsum = new double[ nB ];
     ysum = new double[ nB ];
 
-    for (int y=0; y<(height); y++) // Iterator over the rows
+    for (int y=YSkip; y<(height-YSkip); y++) // Iterator over the rows
     {
         // Start pixel count at the beginning of the row
 		i = y*width;
@@ -31,8 +31,8 @@ public static double[] getNCentroidsBasic(short[] pixels, int width, int height,
 
             // Running totals
             sum[b]  += v;
-	    xsum[b] += x*v;
-	    ysum[b] += y*v;
+    	    xsum[b] += x*v;
+	        ysum[b] += y*v;
 			
             // Increment pixel count
 			i++;
@@ -49,7 +49,7 @@ public static double[] getNCentroidsBasic(short[] pixels, int width, int height,
 }
 
 // Calculate centroids by basic centre of darkness measure
-public static double[] getNCentroidsDark(short[] pixels, int width, int height, int[] subWidth, short thresh) 
+public static double[] getNCentroidsDark(short[] pixels, int width, int height, int[] subWidth, short thresh, int YSkip)) 
 {
     // Finds centroid for each object based on darkness
     int i, j, count[], nB = subWidth.length; // Number of beads is number of subwidths - last one being the fullwidth
@@ -61,7 +61,7 @@ public static double[] getNCentroidsDark(short[] pixels, int width, int height, 
     xsum = new double[ nB ];
     ysum = new double[ nB ];
 
-    for (int y=0; y<(height); y++) // Iterator over the rows
+    for (int y=YSkip; y<(height-YSkip); y++) // Iterator over the rows
     {
         // Start pixel count at the beginning of the row
 		i = y*width;
@@ -76,8 +76,8 @@ public static double[] getNCentroidsDark(short[] pixels, int width, int height, 
 
             // Running totals
             sum[b]  += v;
-	    xsum[b] += x*v;
-	    ysum[b] += y*v;
+    	    xsum[b] += x*v;
+	        ysum[b] += y*v;
 			
             // Increment pixel count
 			i++;
