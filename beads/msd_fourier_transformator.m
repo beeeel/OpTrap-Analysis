@@ -4,8 +4,9 @@ function [FT, varargout] = msd_fourier_transformator(msdObj, obsT, varargin)
 % Takes parameters in name-value pairs. Possible options:
 % wRange        - cell row vector with 1 element per dimension to be FT'd
 % nBead         - numerical scalar for number of beads in dataset
-% trunc         - truncation mode ('none', 'minima', or 'FF')
+% trunc         - truncation mode ('none', 'minima', 'FF', or 'timeFF')
 % truncFF       - fudge factor for truncation (points skipped)
+% truncT        - time to truncate at (when using trunc = 'timeFF')
 % extrap        - extrapolation mode ('none', or 'linear')
 % norm          - which corner to normalise time to ('none','low', or 'high')
 % show_int      - show plots with tan(δ) used for intercept finding
@@ -34,8 +35,9 @@ p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
 p.addParameter('nBead',[],@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
-p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF'})))%
+p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF', 'timeFF'})))%
 p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1}), 'integer'}))
+p.addParameter('truncT',[], @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<',msdObj.msd{1}(end,1)}))
 p.addParameter('extrap','none',@(x)any(strcmp(x,{'none','linear'})))
 p.addParameter('eta',[], @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero'}))
 p.addParameter('norm','none',@(x)any(strcmp(x,{'none','low','high'})))
@@ -60,6 +62,7 @@ nB = p.Results.nBead;
 wR = p.Results.wRange;
 trunc_mode = p.Results.trunc;
 FF = p.Results.truncFF;
+truncT = p.Results.truncT;
 extrap_mode = p.Results.extrap;
 etaIn = p.Results.eta;
 norm_mode = p.Results.norm;
@@ -151,7 +154,7 @@ for dimI = 1:length(dims)
     end
     
     % Determine truncation point
-    [idx, eta] = msd_truncator(tau, msd, trunc_mode, FF);
+    [idx, eta] = msd_truncator(tau, msd, trunc_mode, FF, truncT);
     
     % Extrapolate if necessary
     [tau, msd, eta, idx] = msd_extrapolator(tau, msd, idx, eta, extrap_mode, etaIn);
@@ -303,7 +306,7 @@ end
         
     end
 
-    function [idx, eta] = msd_truncator(tau, msd, mode, FF)
+    function [idx, eta] = msd_truncator(tau, msd, mode, FF, truncT)
         % Tells you which idx to truncate MSD at (helpfully reuses gradient
         % calculation)
         dydxfilt = msd_gradientor(tau, msd);
@@ -325,6 +328,8 @@ end
                 % Don't truncate
             case 'FF'
                 idx = length(tau) - FF;
+            case 'timeFF'
+                idx = find(tau > truncT, 1);
             otherwise
                 idx = length(tau);
         end
