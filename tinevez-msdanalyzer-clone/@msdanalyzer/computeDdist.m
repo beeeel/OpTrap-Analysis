@@ -13,6 +13,10 @@ function obj = computeDdist(obj, indices, normR)
 % factor normD. Be careful to match the units of normD to the spatial units
 % in the msdanalyzer!
 
+% NGP - Bursac 2005, Weeks 2002, Rahman 1964.
+%  <z^4> / (3 <z^2> ^2 ) - 1
+ngp = @(z, rho) sum(rho.*(z.^4),1) ./ (3 .* sum(rho.*(z.^2),1) .^2) - 1;
+
 if nargin < 2 || isempty(indices)
     indices = 1 : numel(obj.tracks);
 end
@@ -62,9 +66,11 @@ for i = 1 : n_tracks
     alldTs = alldTs(alldTs ~= 0);
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
-    % Number of histogram bins
-    edg = 0.05 + (-7:0.1:7)';
-%     edg = 0.05 + (-20:0.01:20)';
+    % Histogram bins - centres then edges
+    z = -7:0.1:7;
+    bw = (z(2)-z(1))/2;
+    edg = [z(1)-bw, bw + z]';
+%     edg = 0.05 + (-20:0.1:20)';
     nBins = numel(edg) - 1;
     
     if ~exist('normR', 'var')
@@ -78,7 +84,7 @@ for i = 1 : n_tracks
     edges       = repmat(edg, 1, n_delays);
     n_msd       = zeros(n_delays, 1);
 %     pvals       = zeros(n_delays, 2);
-    %covs        = cell(n_delays, 1);
+    alpha       = zeros(n_delays, 1);
 
     % Determine drift correction
     if ~isempty(obj.drift)
@@ -103,14 +109,15 @@ for i = 1 : n_tracks
         
         n_msd(j) = size(dX,1);
         counts(:,j) = N;
+        
+        alpha(j) = ngp(z', N'./sum(N));
 %         [~, pvals(j,1)] = ttest(dX);
 %         [~, pvals(j,2)] = lillietest(dX);
     end
     
     
-    obj.Ddist{index,1} = [ alldTs*dt n_msd];% pvals ];
-    % First cell contains the increment times queries, number of points and
-    % probabilities that 1) Mean == 0, 2) Distribution == normal.
+    obj.Ddist{index,1} = [ alldTs*dt n_msd alpha];% pvals ];
+    % First cell contains the increment times queries, number of points ngp
     
     obj.Ddist{index,2} = [ counts; edges ]; % Sorry about how this looks.
     % This way to access the counts and edges for a given dT, you get the
