@@ -21,7 +21,7 @@ if nargin == 2
     msd = tmp(:,2,:);
     
     if strcmp(msdObj.space_units, 'um')
-        msd = msd .* 1e-12;
+        mult = 1e-12;
     end
 else
     tau = varargin{1};
@@ -59,5 +59,5 @@ for idx = 1:size(msd,3)
 end
 
 if nargout == 2
-    varargout{1} = 2 * kBT(298) ./ M;
+    varargout{1} = 2 * kBT(298) ./ (mult * M);
 end
