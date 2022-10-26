@@ -15,6 +15,9 @@ float expMs = 0.1;		// Exposure time (ms)
 int[] subWidth = {300, 400, 200, 540}; // Number of px on each side to calculate CofM
 int YSkip = 2;      // Number of rows to skip at top and bottom (symmetrically)
 
+// Camera size
+int[] imSz = {2048, 2048};
+
 // START YOUR ENGINES! (jk)
 startTime = System.nanoTime();
 mm.live().setLiveMode(false);
@@ -61,6 +64,7 @@ if (saveInterval >= n){
 int nB = subWidth.length;
 // Basic with threshold
 XYs = new double[2*nB][n];
+XYsD = new double[2*nB][n];
 // Misc
 Is = new double[n];
 Times = new double[n];
@@ -71,9 +75,9 @@ double firstTime = 0, lastTime = 0;
 // Reset the ROI to full frame if necessary
 int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
-if ((width != 1920) || (height != 1080))
+if ((width != imSz[0]) || (height != imSz[1]))
 {
-	java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+	java.awt.Rectangle ROI = new Rectangle(0, 0, imSz[0], imSz[1]);
 mm.app().setROI(ROI);
 }
 int width = mmc.getImageWidth();
@@ -160,13 +164,19 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
    	}
    	
    	// Calculate centre of mass
-		centres = nCentroids.getNCentroidsBasic(pixels, width, height, subWidth, thresh, YSkip);
-		for ( int j = 0; j < 2*nB; j++ )
-		{
-			XYs[j][i] = centres[j];
-		}
+	centres = nCentroids.getNCentroidsBasic(pixels, width, height, subWidth, thresh, YSkip);
+	for ( int j = 0; j < 2*nB; j++ )
+	{
+		XYs[j][i] = centres[j];
+	}
+   	centres = nCentroids.getNCentroidsDark(pixels, width, height, subWidth, threshD, YSkip)
+  
+	for ( int j = 0; j < 2*nB; j++ )
+	{
+		XYsD[j][i] = centres[j];
+	}
 		
-		Is[i] = Static_Image_Math.getMean(pixels, width, height, YSkip);
+	Is[i] = Static_Image_Math.getMean(pixels, width, height, YSkip);
 		
 		if (i%saveInterval == 0 || i == n-1) // Every [saveInterval] frames, print this frame's info
 		{
@@ -188,6 +198,8 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
 				{
 					myTools.writeDoubleArrayToFile(XYs[2*b], f, e, folderPath + "X" + b + ".dat");
 					myTools.writeDoubleArrayToFile(XYs[2*b+1], f, e, folderPath + "Y" + b + ".dat");
+					myTools.writeDoubleArrayToFile(XYsD[2*b], f, e, folderPath + "X" + b + "D.dat");
+					myTools.writeDoubleArrayToFile(XYsD[2*b+1], f, e, folderPath + "Y" + b + "D.dat");
 				}
 				
 				myTools.writeDoubleArrayToFile(Is, f, e, folderPath + "I.dat");
@@ -233,7 +245,7 @@ if (mmc.isSequenceRunning())
 	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
 }
 // Reset the ROI to full frame
-java.awt.Rectangle ROI = new Rectangle(0, 0, 1920, 1080);
+java.awt.Rectangle ROI = new Rectangle(0, 0, imSz[0], imSz[1]);
 mm.app().setROI(ROI);
 print("Set ROI at " + (System.nanoTime() - startTime)/1e9 + "s");
 // Get an after image
