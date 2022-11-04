@@ -73,7 +73,7 @@ data.pro.yCentresMr = Yr;
 data.opts.UseField = 'CentresMr';
 
 if doPlot
-    bw2 = max(range(Xr), range(Yr));
+    bw2 = max(range(Xr), range(Yr))/100;
     figure
     histogram2(Xr, Yr,'BinWidth', bw2);
     xlabel('X (m)')
