@@ -6,6 +6,12 @@ function datOut = endpoints_norm(accumulated, allplots, tRange, varargin)
 % endpoints you want using allplots. If you supply 4th argument, data is
 % normalised by first observation chosen. If 4th argument is numeric, only
 % two observations are returned, separated by deltaT = 4th arg.
+% 
+% datOut is a cell array of size [2, numel(allplots)] where the first row
+% is a data array and the second row is the allplot name. The data array
+% has size [N, 4], where N is the number of observations. First column is
+% observation time, second and third columns are values in each
+% dimension and fourth column is observation index (e.g. cell number)
 
 norm = false;
 deltaT = NaN;
@@ -25,6 +31,8 @@ for plt = 1:numel(allplots)
         allDat = [];
         allTs = [];
         alldT = [];
+        allcIdx = [];
+        cIdx = 1;
         for dayIdx = 1:length(accumulated)
             for cellIdx = 1:size(accumulated{1,dayIdx},2)
                 clear dat err hack
@@ -60,10 +68,17 @@ for plt = 1:numel(allplots)
                     catch ME
                         error(ME.message)
                     end
-                    fpstau = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstau);
-                    fpstauG = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstauG);
-                    fpsG = cat(3, accumulated{1,dayIdx}{1,cellIdx}.fpsG);
-                    
+                    if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fpstau')
+                        try
+                            fpstau = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstau);
+                            fpstauG = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstauG);
+                            fpsG = cat(3, accumulated{1,dayIdx}{1,cellIdx}.fpsG);
+                        catch ME
+                            if ~strcmp(ME.identifier, 'MATLAB:catenate:dimensionMismatch')
+                                error(ME.message)
+                            end
+                        end
+                    end
                     if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fpsH')
                         try
                             fpsH = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpsH);
@@ -138,6 +153,16 @@ for plt = 1:numel(allplots)
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff2);
                                 dat = Gs(dim,:,3);
                                 
+                            case 'α_{short}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff3);
+                                dat = Gs(dim,:,2);
+                            case 'G_{1s}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff3);
+                                dat = Gs(dim,:,1);
+                            case 'J_{short}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff3);
+                                dat = Gs(dim,:,3);
+                                
                             case 'actual time'
                                 dat = t;
                             case 'τ_c'
@@ -199,8 +224,11 @@ for plt = 1:numel(allplots)
                             end
                         end
                         
+                        
                         allDat = [allDat; dat(:)];
                         allTs = [allTs; t(:)];
+                        allcIdx = [allcIdx; repmat(cIdx, numel(dat), 1)];
+                        cIdx = cIdx + 1;
                     end
                 end
             end
@@ -213,4 +241,5 @@ for plt = 1:numel(allplots)
         datOut{2,plt} = allplots{plt};
 
     end
+    datOut{1,plt}(:,end+1) = allcIdx;
 end
