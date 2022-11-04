@@ -24,7 +24,7 @@ p.addParameter('dofit', true, @(x) isa(x,'logical'))
 p.addParameter('holdOn', false, @(x) isa(x,'logical'))
 p.addParameter('plotFit', true, @(x) isa(x,'logical'))
 
-p.addParameter('colour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3) || strcmp(x,'scatter'))
+p.addParameter('colour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3) || strcmp(x,'scatter') || strcmp(x,'rainbow'))
 p.addParameter('mark','o', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
 
 p.parse(datOut, pIdxs, varargin{:});
@@ -59,8 +59,31 @@ for dim = 1:2
 %         end
 %     end
     
-    if ~strcmp(p.Results.colour, 'scatter')
-        h = plot(mult(1)*allDat{1}+NF(1),mult(2)*allDat{2}+NF(2), p.Results.mark, 'LineWidth', 2, 'Color', p.Results.Colour);
+    if ~strcmp(p.Results.colour, 'scatter') && ~strcmp(p.Results.colour, 'rainbow')
+        h = plot(mult(1)*allDat{1}+NF(1),mult(2)*allDat{2}+NF(2), p.Results.mark, 'LineWidth', 2, 'Color', p.Results.colour, 'MarkerFaceColor', p.Results.colour);
+    elseif strcmp(p.Results.colour, 'rainbow')
+        Ms = {'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram'};
+        Cs = 'rgbcm';
+        l = 0;
+        n = 1;
+        hold on
+        
+        tDat = datOut{1,1}(:,1);
+        % It's prettier but it might not work
+        % Number of cells is last index
+        nC = datOut{1,1}(end,4);
+        % Get a list of which observation is which cell
+        Cidx = datOut{1,1}(:,4);
+        while n <= nC
+            l = l + 1;
+            m = 1;
+            while m <= 5
+                idxs = Cidx == n;
+                plot(mult(1)*allDat{1}(idxs)+NF(1), mult(2)*allDat{2}(idxs)+NF(2), 'Color', Cs(m), 'Marker', Ms{l},'LineStyle','-')
+                m = m + 1;
+                n = n + 1;
+            end
+        end
     else
         h = scatter(mult(1)*allDat{1}+NF(1),mult(2)*allDat{2}+NF(2), [], datOut{1,1}(:,1), p.Results.mark, 'LineWidth', 2);
     end
@@ -83,10 +106,11 @@ for dim = 1:2
                 plot(exp(xPlt), exp(fo.a).*exp(xPlt)', 'k--')
             end
         end
-        as = [exp(fo.a+std(out.residuals)) exp(fo.a-std(out.residuals))] - exp(fo.a);
+        
+        if nargout > 0
+            as = [exp(fo.a+std(out.residuals)) exp(fo.a-std(out.residuals))] - exp(fo.a);
 %         fprintf('\nConfidence interval for η: %g\t %g\tPa.s\n',as+exp(fo.a))
 %         fprintf('\t\tError on η: %g Pa.s\n', mean(as))
-        if nargout > 0
             varargout{1}(dim) = exp(fo.a);
             if nargout > 1
                 varargout{2}(dim) = mean(as);
