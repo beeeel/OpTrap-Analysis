@@ -1,6 +1,8 @@
 function [varargout] = plot_EPsTime(datOut, pIdxs, varargin)
 %% Plot...
-% [a] = plot_EPs2D(datOut, pIdxs, [varargin])
+% [a] = plot_EPsTime(datOut, pIdxs, [varargin])
+% datOut - endpoints data from endpoints_norm
+% pIdxs - which endpoint to plot
 % varargin in name-value pairs:
 %   mult        - multiplicative factor, 1 element per dimension/EP
 %   NF          - additative factor, as above
@@ -10,6 +12,7 @@ function [varargout] = plot_EPsTime(datOut, pIdxs, varargin)
 %   mark        - Marker to plot
 %   colour      - Colour to plot
 %   dofit       - Plot a least-squares fit to data
+%   tits        - Graph titles (default radial/tangential)
 
 p = inputParser;
 
@@ -23,6 +26,7 @@ p.addParameter('yls',[],@(x)validateattributes(x,{'numeric'},{'numel',2,'increas
 p.addParameter('dofit', true, @(x) isa(x,'logical'))
 p.addParameter('holdOn', false, @(x) isa(x,'logical'))
 p.addParameter('plotFit', true, @(x) isa(x,'logical'))
+p.addParameter('tits',{'Radial', 'Tangential'},@(x)validateattributes(x,{'cell'},{'numel',2}))
 
 p.addParameter('colour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3) || any(strcmp(x,{'scatter','scat2'})))
 p.addParameter('mark','o', @(x) any(strcmp(x,{'+', 'o', '*', '.', 'x', 'square', 'diamond', 'v', '^', '>', '<', 'pentagram', 'hexagram', 'none'})))
@@ -31,8 +35,8 @@ p.parse(datOut, pIdxs, varargin{:});
 
 mult = p.Results.mult;
 NF = p.Results.NF;
-    
-RT = {'Radial','Tangential'};
+RT = p.Results.tits;
+
 if ~p.Results.holdOn
     fh = figure(99); % I got 99 problems and figure numbering ain't one
     clf
@@ -46,11 +50,11 @@ for dim = 1:2
     ax = subplot(1,2,dim);
     hold on
     
-    % It's not pretty but it works
-    % Number of cells is equal to number of times the observation time goes down
-    nC = sum(tDat(1:end-1) > tDat(2:end))+1;
-    % Use the cumulative sum to get a list of which observation is which cell
-    Cidx = [1; cumsum(tDat(1:end-1) > tDat(2:end))+1];
+    % It's prettier but it might not work
+    % Number of cells is last index 
+    nC = datOut{1,1}(end,4);
+    % Get a list of which observation is which cell
+    Cidx = datOut{1,1}(:,4);
     
     if strcmp(p.Results.colour, 'scatter')
         colourmap = colormap;
