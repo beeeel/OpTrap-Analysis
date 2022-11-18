@@ -56,6 +56,7 @@ for plt = 1:numel(allplots)
                 
                 if any(idxs)
                     try
+                    try
                         fps = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fps);
                     catch ME
                         error(ME.message)
@@ -63,6 +64,9 @@ for plt = 1:numel(allplots)
                     fpstau = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstau);
                     fpstauG = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstauG);
                     fpsG = cat(3, accumulated{1,dayIdx}{1,cellIdx}.fpsG);
+                    catch ME
+                        
+                    end
                     
                     if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fpsH')
                         try
