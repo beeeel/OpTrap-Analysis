@@ -20,13 +20,8 @@ if nargin > 3 && ~ isempty(varargin{argN})
 else
     setLims = [];
 end
-    
 
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;      
-else
-    cropT = [1 length(data.raw.timeVecMs)];
-end
+cropT = data.opts.cropT;      
 
 n_points = diff(cropT)+1;
 
@@ -54,8 +49,10 @@ for direction = 'xy'
     % units
     if isfield(data.pro, [direction useField])
         x = data.pro.([ direction useField])(cRow,cropT(1):cropT(2));
+        t = data.pro.timeVecMs*1e-3;
     elseif isfield(data.raw, [direction useField])
         x = data.mPerPx * data.raw.([ direction useField])(cRow,cropT(1):cropT(2));
+        t = data.raw.timeVecMs*1e-3;
     else
         error('Could not find specified field: %s%s',direction, useField)
     end
@@ -68,7 +65,7 @@ for direction = 'xy'
 end
 
 % Frequency in index (k+1) is k cycles per whole dataset, so convert to Hz
-data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(data.raw.timeVecMs([cropT(1) cropT(2)])*1e-3);
+data.pro.fftFreqHz = (0:ceil((n_points-1)/2))./diff(t([cropT(1) cropT(2)]));
 
 %% Plot
 if doPlots

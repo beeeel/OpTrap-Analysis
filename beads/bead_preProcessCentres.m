@@ -18,17 +18,15 @@ if ~isfield(data,'opts')
 end
 % Check essential fields have been put in opts
 fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', ...
-    'timeRegularisation', 'downsampleR', 'UseField'};
+    'timeRegularisation', 'downsampleR', 'UseField','bandstop'};
 defaults = {[1 data.nPoints], 0, 0, false, ...
-    true, 1, ''};
+    true, 1, '', []};
 for fi = 1:length(fnames)
-    if ~isfield(data.opts, fnames{fi}) 
+    if ~isfield(data.opts, fnames{fi})  || isempty(data.opts.(fnames{fi}))
         data.opts.(fnames{fi}) = defaults{fi};
     end
 end
-if isempty(data.opts.cropT)
-    data.opts.cropT = [1 data.nPoints];
-end
+
 % We also should have an fName
 if ~isfield(data,'fName')
     data.fName = '';
@@ -42,12 +40,12 @@ if data.opts.timeRegularisation
     % Gotta check for split acquisitions! These are characterised by a time
     % vector that resets to 0 partway, so this should do an okay job
     if sum(t==0) > 1
-        error('Split acquisition detected! First acquisition ends at %i, second has length %i', I, length(t)-I)
+        error('Split acquisition detected! First acquisition ends at %i, second has length %i\ncd %s && datCropper.sh %i\t is a possible command to fix?', I, length(t)-I, data.dirPath,-I)
         % A useful command for trimming acquisitions: find . -type f -exec dd if={} of=../{} ibs=8000 count=523 \;
         % Note: First move data files into a new folder then run this with
         % either count or skip set as appropriate
     end
-    data.raw.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
+    data.pro.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
 end
 
 % These are in units of pixels
@@ -64,7 +62,7 @@ elseif isfield(data, 'metadata')
 end
 
 % Store mean and std of co-ordinates AFTER angle correction, BEFORE demean.
-data.pro.meanstd = [mean([xCentres; yCentres], 2) std([xCentres; yCentres], 0, 2)];
+data.pro.meanstd = [mean([xCentres; yCentres], 2) std([xCentres; yCentres], 0, 2)].* mPerPx;
 
 if data.opts.pOrder > 0 && data.opts.angleCorrection
     warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
@@ -143,6 +141,11 @@ end
             % (downsampling factor)
             t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
         end
-        data.raw.timeVecMs = t1;
+        data.pro.timeVecMs = t1;
+        if all(data.opts.cropT == [1 nT]) % User may set cropT and re-preprocess. You could be smart and work out the correct new value for cropT from the current value
+            data.opts.cropT = round([1 nT./r]);
+        else 
+            data.opts.cropT = round(data.opts.cropT./r);
+        end
     end
 end

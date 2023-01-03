@@ -34,7 +34,7 @@ end
 
 x = data.pro.(['x' fn])(centresRow,:);
 y = data.pro.(['y' fn])(centresRow,:);
-t = data.raw.timeVecMs*1e-3;
+t = data.pro.timeVecMs*1e-3;
 
 dMin = 1e-9;
 dMax = range(x);
