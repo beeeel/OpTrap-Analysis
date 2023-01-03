@@ -18,33 +18,48 @@ if ~isfield(data, 'raw')
 elseif ~isfield(data.raw, 'suffixes')
     data.raw.suffixes = {};
 end
-idx = 1;
 errMsg = '';
 
 if ~exist(data.dirPath,'dir')
     error('Folder %s does not exist!',data.dirPath)
 end
 
-if idx == 1
-    dl = dir(data.dirPath);
-    dl = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'X', 'Y'}));
-    nx = sum(startsWith({dl.name}, 'X'));
-    ny = sum(startsWith({dl.name}, 'Y'));
-    if nx ~= ny
-        error('Found mismatched number of X (%i) and Y (%i) data', nx, ny)
-    elseif isempty(dl)
-        fprintf(errMsg);
-        error('Could not find any centres data');
-    end
-    xdx = 1;
-    ydx = 1;
-    for idx = 1:nx+ny
-        fName = sprintf('%s/%s', data.dirPath, dl(idx).name);
-        suff = strsplit(dl(idx).name, {'X', 'Y','.dat'});
-        suff = suff{end-1};
-        % Screen for NaNs
-        tmp = byteStreamToDouble(fName);
-        warnNaN(tmp, fName);
+if exist([data.dirPath '/Times.dat'], 'file')
+    data.raw.timeVecMs  = byteStreamToDouble([data.dirPath '/Times.dat']);
+elseif exist([data.dirPath '/T.dat'], 'file')
+    data.raw.timeVecMs  = byteStreamToDouble([data.dirPath '/T.dat']);
+else
+    disp(['File ' data.dirPath '/Times.dat does not exist'])
+    disp(['File ' data.dirPath '/T.dat does not exist'])
+    error('Could not find any times data');
+end
+nP = length(data.raw.timeVecMs);
+
+dl = dir(data.dirPath);
+dl = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'X', 'Y'}));
+nx = sum(startsWith({dl.name}, 'X'));
+ny = sum(startsWith({dl.name}, 'Y'));
+
+if nx ~= ny
+    error('Found mismatched number of X (%i) and Y (%i) data', nx, ny)
+elseif isempty(dl)
+    fprintf(errMsg);
+    error('Could not find any centres data');
+end
+
+nNans = zeros(nx+ny,1);
+xdx = 1;
+ydx = 1;
+for idx = 1:nx+ny
+    fName = sprintf('%s/%s', data.dirPath, dl(idx).name);
+    suff = strsplit(dl(idx).name, {'X', 'Y','.dat'});
+    suff = suff{end-1};
+    % Screen for NaNs
+    tmp = byteStreamToDouble(fName);
+    if length(tmp) ~= nP
+        warning('Skipping file %s with %i points (Times has %i points)', fName, length(tmp), nP)
+    else
+        nNans(idx) = warnNaN(tmp, fName);
         tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
         if contains(dl(idx).name, 'X') && ~contains(dl(idx).name, 'Y')
             data.raw.xCentresPx(xdx,:) = tmp;
@@ -65,6 +80,7 @@ if idx == 1
         end
     end
 end
+data.raw.nNans = nNans;
 
 if exist([data.dirPath '/subWidth.dat'],'file')
     data.raw.subWidth = byteStreamToDouble([data.dirPath '/subWidth.dat']);
@@ -72,16 +88,6 @@ end
 
 if exist([data.dirPath '/I.dat'], 'file')
     data.raw.dcAvg = byteStreamToDouble([data.dirPath '/I.dat']);
-end
-
-if exist([data.dirPath '/Times.dat'], 'file')
-    data.raw.timeVecMs  = byteStreamToDouble([data.dirPath '/Times.dat']);
-elseif exist([data.dirPath '/T.dat'], 'file')
-    data.raw.timeVecMs  = byteStreamToDouble([data.dirPath '/T.dat']);
-else
-    disp(['File ' data.dirPath '/Times.dat does not exist'])
-    disp(['File ' data.dirPath '/T.dat does not exist'])
-    error('Could not find any times data');
 end
 
 if loadImages
@@ -129,9 +135,19 @@ else
     warning('Instructed to not load images')
 end
 
+if exist([data.dirPath '/opts.txt'],'file')
+    fprintf('Loading options from file\n')
+    fid = fopen([data.dirPath '/opts.txt'],'r');
+    while ~feof(fid)
+        str = strsplit(fgetl(fid),': ');
+        data.opts.(str{1}) = eval(str{2});
+    end
+    fclose(fid);
+end
+
 data.nPoints = length(data.raw.xCentresPx);
 
-function warnNaN(arr, name)
+function nNans = warnNaN(arr, name)
 nNans = sum(isnan(arr));
 if nNans
     warning(['Loaded and replaced ' num2str(nNans) ' from ' name])
