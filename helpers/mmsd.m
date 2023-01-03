@@ -13,7 +13,7 @@ function [M, varargout] = mmsd(varargin)
 if nargin == 2
     msdObj = varargin{1};
     if ~isa(msdObj, 'msdanalyzer')
-        error('%i input arguments given, expected first to be msdanalyzer, instead got %s', nargin, class(masdObj))
+        error('%i input arguments given, expected first to be msdanalyzer, instead got %s', nargin, class(msdObj))
     end
     tR = varargin{2};
     tmp = cat(3, msdObj.msd{:});
@@ -52,7 +52,7 @@ end
 
 for idx = 1:size(msd,3)
     if size(tau,3) == size(msd,3)
-        M(idx) = mean(msd(inds(:,:,idx)),1);
+        M(idx) = mean(msd(inds(:,:,idx),:,idx),1);
     else
         M(idx) = mean(msd(inds),1);
     end
