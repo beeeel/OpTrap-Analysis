@@ -35,7 +35,7 @@ end
 % Do time regularisation?
 if data.opts.timeRegularisation
     t = data.raw.timeVecMs;
-    dt = median(diff(t));
+    dt = median(diff(t)) * data.opts.downsampleR;
     [~, I] = min(diff(t));
     % Gotta check for split acquisitions! These are characterised by a time
     % vector that resets to 0 partway, so this should do an okay job
@@ -45,7 +45,7 @@ if data.opts.timeRegularisation
         % Note: First move data files into a new folder then run this with
         % either count or skip set as appropriate
     end
-    data.pro.timeVecMs = ( (1:data.nPoints) - 1 ) * dt;
+    data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
 end
 
 % These are in units of pixels
@@ -122,6 +122,16 @@ end
         [nR, ~, nT] = size(xCentres);
         r = data.opts.downsampleR;
         
+        if all(data.opts.cropT == [1 nT])
+            cropT = round([1 nT./r]);
+        else
+            cropT = round(data.opts.cropT./r);
+            if cropT(1) == 0
+                cropT(1) = 1;
+            end
+        end
+        data.opts.cropT = cropT;
+            
         validateattributes(r, {'numeric'}, {'integer','positive'})
         
         tmp = [xCentres, yCentres];
@@ -134,18 +144,15 @@ end
         xCentres = Centres(:,1,:);
         yCentres = Centres(:,2,:);
         
-        tmp = data.raw.timeVecMs;
-        t1 = zeros(1, floor(nT./r));
-        for idx = 1:floor(nT/r)
-            % Average time vector using a number of elements equal to R
-            % (downsampling factor)
-            t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
-        end
-        data.pro.timeVecMs = t1;
-        if all(data.opts.cropT == [1 nT]) % User may set cropT and re-preprocess. You could be smart and work out the correct new value for cropT from the current value
-            data.opts.cropT = round([1 nT./r]);
-        else 
-            data.opts.cropT = round(data.opts.cropT./r);
+        if ~data.opts.timeRegularisation
+            tmp = data.pro.timeVecMs;
+            t1 = zeros(1, floor(nT./r));
+            for idx = 1:floor(nT/r)
+                % Average time vector using a number of elements equal to R
+                % (downsampling factor)
+                t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
+            end
+            data.pro.timeVecMs = t1(cropT(1):cropT(2));
         end
     end
 end
