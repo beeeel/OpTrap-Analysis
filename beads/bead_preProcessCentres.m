@@ -162,8 +162,8 @@ end
                 t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
             end
             data.pro.timeVecMs = t1(cropT(1):cropT(2));
+            data.raw.timeVecMs = t1;
         end
-        data.raw.timeVecMs = t1;
         
         data.opts.cropT = [1 floor(nT./r)];
     end
