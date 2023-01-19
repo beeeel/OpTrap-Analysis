@@ -239,6 +239,10 @@ for dimI = 1:length(dims)
             legend('"Storage"','"Loss"','Intercept frequency','Location','best')
             legend(h, legs,'ω (min, max)','1 ÷ Intercept frequency','Location','best')
         end
+        if show_ints
+            subplot(2+show_ints, length(dims), length(dims)+dimI+1)
+            plot(oC.*[1; 1], ylim, '--','Color',0.7*[1 1 1 0.8], 'LineWidth', 2)
+        end
     end
 end
 
@@ -287,7 +291,7 @@ end
             %     ylim([1e-6 1e1])
             xlim([8e-3 1e4])
             xlabel('Frequency (Hz)')
-            ylabel('"G'', G''''"')
+            ylabel('G'', G''''')
             title([tits{plt} ' Fourier transform'])
             set(gca,'FontSize',fSz)
             
@@ -296,7 +300,7 @@ end
                 hold on
                 %         title('Ratio of storage to loss moduli')
                 xlabel('Frequency (Hz)')
-                ylabel('"tan(\delta) = G''''÷G''"')
+                ylabel('tan(\delta)')
                 set(gca,'FontSize',fSz)
                 set(gca,'XScale','log')
                 set(gca,'YScale','log')
