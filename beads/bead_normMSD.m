@@ -10,7 +10,7 @@ function data = bead_normMSD(data, varargin)
 %   numT           - Number of time points to use. Default all
 %   doPlots         - Do the plots if true, else just the calculations
 %   useRaw          - Use raw data instead of processed (you probably don't want this)
-%   centresRow      - Which row of the centres matrix to use. Default 1.
+%   centresRow      - Which row of the centres matrix to use. Default all.
 %   doNorm          - Normalize (divide) the MSD by the variance of the position
 %   errorBars       - Plot errorbars (+/- 1 s.d.) on the MSD
 %   useField        - Specify which processed data field to use.
@@ -27,7 +27,7 @@ p.addParameter('offset',1,@(x)validateattributes(x,{'numeric'},{'<',data.nPoints
 p.addParameter('numT',[],@(x)validateattributes(x,{'numeric'},{'<=',data.nPoints}))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
-p.addParameter('centresRow',1,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
+p.addParameter('centresRow',[],@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
 p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('errorBars', false, @(x)islogical(x))
 p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
@@ -80,7 +80,7 @@ if isfield(data.opts, 'UseField') && ~useRaw
     
     cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
 
-    tmp = data.raw.timeVecMs(cropT(1):cropT(2));
+    tmp = data.pro.timeVecMs(cropT(1):cropT(2));
     tmp = tmp(cropTHP(1):cropTHP(2));
     
     if any(strcmp(direction, {'x', 'y'}))

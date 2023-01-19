@@ -32,7 +32,7 @@ p.addRequired('tRanges',@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 
 p.addParameter('nSkip', 20, @(x)validateattributes(x, {'numeric'},{'>=', 0,'<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
-p.addParameter('yLims', [1e-6 5e1], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
+p.addParameter('yLims', [], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('doPlot', true, @(x) validateattributes(logical(x), {'logical'},{'scalar'}))
 p.addParameter('figHand', [], @(x)isa(x,'matlab.ui.Figure'))
 p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x < 1) && length(x) == 3))
@@ -57,7 +57,7 @@ dims = p.Results.dims;
 % Estimator
 est = p.Results.estimator;
 % Plot options
-doPlot = p.Results.doPlot;
+doPlot = p.Results.doPlot && length(dims) < 5; % Don't plot if too many dims
 yl = p.Results.yLims;
 fh = p.Results.figHand;
 colour = p.Results.lineColour;
@@ -91,7 +91,7 @@ fitErr = zeros(2, length(tRanges{1}), length(dims));
 % For each dimension 
 for dIdx = 1:length(dims)
     d = dims(dIdx);
-    if length(dims) > 1
+    if doPlot && length(dims) > 1
         subplot(length(dims)/2,2,dIdx)
     end
     try
@@ -258,7 +258,9 @@ end
             [xl1, xl2] = bounds(msdObj.msd{1}(:,1));
             
             xlim([xl1 xl2])
-            ylim(yl)
+            if ~isempty(yl)
+                ylim(yl)
+            end
             
             xlabel('Delay time \tau (s)')
             ylabel('MSD (\mu m^2)')

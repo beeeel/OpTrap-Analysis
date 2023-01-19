@@ -20,8 +20,8 @@ else
         cRow = 1;
     end
     m = msdanalyzer(1, 'um','s','log');
-    t = {[data.raw.timeVecMs'*1e-3, data.pro.(['x' fld])(cRow,:)']; 
-        [data.raw.timeVecMs'*1e-3, data.pro.(['y' fld])(cRow,:)']};
+    t = {[data.pro.timeVecMs'*1e-3, data.pro.(['x' fld])(cRow,:)']; 
+        [data.pro.timeVecMs'*1e-3, data.pro.(['y' fld])(cRow,:)']};
     m = m.addAll(t);
 end
     

@@ -29,17 +29,22 @@ if isfield(data.raw, field)
         warning('Using default value for pixel size calibration')
         mPerPx = 0.065e-6;
     end
+    
+    timeVec = data.raw.timeVecMs;
+    
 elseif isfield(data.pro, field)
     centreVec = data.pro.(field);
     % If we're using pro, we mustn't reapply calibration
     mPerPx = 1;
+    
+    timeVec = data.pro.timeVecMs;
+
 else
     error('Could not find field %s in data.raw or data.pro',field)
 end
 
 centreVec = [centreVec(cRow,end:-1:1) centreVec(cRow,:) centreVec(cRow,end:-1:1)];
 
-timeVec = data.raw.timeVecMs;
 
 if length(data.opts.cropT) == 2
     cropT = data.opts.cropT;      

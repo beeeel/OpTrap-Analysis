@@ -27,7 +27,7 @@ for i = 1 : n_tracks
             dT = tStep .* (0:size(t,1)-1)';
         case 'log'
             dT = tStep .* [0:10 ceil(obj.logbase.^(0:(size(t,1)-2)))];
-            dT = dT( dT < max(t) )';
+            dT = dT( dT < (max(t)-min(t)) )';
         case 'original'
             [T1, T2] = meshgrid(t, t);
             % Triu(A, 1) returns the lower half of A, not including the

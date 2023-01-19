@@ -64,7 +64,6 @@ for plt = 1:numel(allplots)
                 
                 if any(idxs)
                     try
-                    try
                         fps = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fps);
                     catch ME
                         error(ME.message)
