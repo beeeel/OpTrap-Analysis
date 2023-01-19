@@ -26,7 +26,9 @@ if nargin < 3 || isempty(beadRadius)
 else
     kB = 1.381e-23;
     T = 298; % Bold to assume
-    msdToJ = pi * beadRadius / (kB * T) % MSD = pi * radius / kB T (Xu, 1998)
+    msdToJ = pi * beadRadius / (kB * T); 
+    % MSD = pi * radius / kB T (Xu, 1998)
+    % Note that the beadRadius input must take into accoun the units of msdanalyzer
 end
 
 n_tracks = numel(indices);
