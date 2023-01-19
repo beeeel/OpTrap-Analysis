@@ -43,6 +43,7 @@ p.addParameter('interpF', 1e2, @(x) validateattributes(x, {'numeric'}, {'scalar'
 p.addParameter('estimator', 'lsq', @(x) any(strcmp(x,{'lsq', 'fit'})))
 p.addParameter('normT', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x(~isnan(x)) < msdObj.msd{1}(1,end)) && all(x(~isnan(x)) > 0))
 p.addParameter('normR', ones(1,nMSDs), @(x)isa(x,'double') && length(x) == nMSDs && all(x > 0))
+p.addParameter('fitCols', {'r', 'g'}, @(x)validateattributes(x,{'cell'}, {'numel',length(tRanges{1})}))
 
 p.parse(msdObj, obsT, tRanges, varargin{:});
 
@@ -65,6 +66,7 @@ mS = p.Results.marker;
 normT = p.Results.normT;
 normT(isnan(normT)) = 1;
 normR = p.Results.normR;
+fitCols = p.Results.fitCols;
 %% Setup
 
 cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
@@ -122,7 +124,7 @@ for dIdx = 1:length(dims)
             % Show fits
             if doPlot
                 plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + log(fps(2,fIdx, dIdx))) , ...
-                    'r:', 'LineWidth', 2.5)
+                    ':', 'LineWidth', 2.5, 'Color', fitCols{fIdx})
             end
         end
         % Find corners by intercept of fits. I fucking hope I wrote this in
