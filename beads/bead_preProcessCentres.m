@@ -1,5 +1,14 @@
 function data = bead_preProcessCentres(data)
 %% General preprocessing on bead data - polynomial fit removal, angular correction, unit conversion, time regularisation
+% Takes options from data.opts. Options are
+%   cropT   - crop time domain from index 1 to index 2
+%   forceRun- force analysis code to run even if output field exists
+%   pOrder  - polynomial fit order
+%   angleCorrection - what it says (bead and cell data)
+%   timeRegularisation - replace time vector with regular vector over same range
+%   downsampleR - downsample position-time data by factor R
+%   UseField - which field in data.pro to use (automatically updates)
+
 if isfield(data,'mPerPx')
     mPerPx = data.mPerPx;
 else
@@ -144,5 +153,7 @@ end
             t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
         end
         data.raw.timeVecMs = t1;
+        
+        data.opts.cropT = [1 floor(nT./r)];
     end
 end
