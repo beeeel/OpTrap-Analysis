@@ -11,6 +11,7 @@ else
 end
 if nargin == 4
     nP = varargin{2};
+    validateattributes(nP, {'numeric'},{'scalar','positive','finite'}, 'msd_gradientor','np',4)
 end
 
 switch method
@@ -56,10 +57,17 @@ switch method
         assert(size(tau,1) == size(msd,1), 'Ugh you silly, tau and MSD need to have same number of rows')
         dydx = zeros(size(msd,1)-nP, size(msd,2));
         tout = nan(length(tau)-nP, 1);
+        
+        if length(tau) >= 1e4
+            step = floor(length(tau)/1e2);
+            idxs = 1:step:length(tau)-nP;
+        else
+            idxs = 1:length(tau)-nP;
+        end
         for jdx = 1:size(msd,2)
-            for idx = 1:length(tau)-nP
-                tdata = tau(idx:idx+nP);
-                mdata = msd(idx:idx+nP,jdx);
+            for idx = 1:length(idxs)
+                tdata = tau(idxs(idx):idxs(idx)+nP);
+                mdata = msd(idxs(idx):idxs(idx)+nP,jdx);
                 
                 tout(idx) = mean(tdata);
                 
