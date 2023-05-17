@@ -1,5 +1,5 @@
-function varargout = msd_cornerator(msdObj, obsT, tRanges, varargin)
-%% [cTau, fitParams, fitErr] = msd_cornerator(msdObj, obsT, tRanges, varargin)
+function varargout = msd_cornerator_struct(msdObj, obsT, tRanges, varargin)
+%% [cTau, fitParams, fitErr] = msd_cornerator(msdStruct, obsT, tRanges, varargin)
 % Find forner times between tRanges using linear fits to loglog data.
 % Accepts additional parameters in name-value pairs. Possible options:
 % nSkip         - Number of points from end of MSD to skip
@@ -26,11 +26,11 @@ nMSDs = size(msdObj.msd, 1);
 
 p = inputParser;
 
-p.addRequired('msdObj',@(x)isa(x,'msdanalyzer')&&isscalar(x))
+p.addRequired('msdObj',@(x)isa(x,'struct')&&isscalar(x))
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 p.addRequired('tRanges',@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 
-p.addParameter('nSkip', 20, @(x)validateattributes(x, {'numeric'},{'>=', 0,'<',length(msdObj.msd{1})}))
+p.addParameter('nSkip', 20, @(x)validateattributes(x, {'numeric'},{'positive','<',length(msdObj.msd{1})}))
 p.addParameter('dims', 1:nMSDs, @(x)validateattributes(x, {'numeric'},{'positive','nonzero','<=',nMSDs}))
 p.addParameter('yLims', [], @(x)validateattributes(x, {'numeric'},{'increasing','positive','nonzero','numel',2}))
 p.addParameter('doPlot', true, @(x) validateattributes(logical(x), {'logical'},{'scalar'}))
@@ -69,7 +69,7 @@ normR = p.Results.normR;
 fitCols = p.Results.fitCols;
 %% Setup
 
-cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
+cTau = nan(round(max(length(tRanges{1}),length(tRanges{end}))/2),length(dims));
 
 % % Just give up if there's no tRanges to work on
 % if ~any([length(tRanges{1}), length(tRanges{2})] > 1)
@@ -80,7 +80,7 @@ cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
 %     end
 % end
 
-legs = {};
+%legs = {};
 if doPlot
     N_setup_fig;
 end
@@ -227,11 +227,11 @@ end
             figure(fh)
         end
         
-        if obsT < 0
-            legs = sprintf('%i min before drug',abs(round(obsT)));
-        else
-            legs = sprintf('%i min after drug',round(obsT));
-        end
+        % if obsT < 0
+        %     legs = sprintf('%i min before drug',abs(round(obsT)));
+        % else
+        %     legs = sprintf('%i min after drug',round(obsT));
+        % end
         
         for pIdx = dims
             if length(dims) > 1
@@ -261,7 +261,7 @@ end
             if ~isempty(yl)
                 ylim(yl)
             end
-            
+
             xlabel('Delay time \tau (s)')
             ylabel('MSD (\mu m^2)')
             
