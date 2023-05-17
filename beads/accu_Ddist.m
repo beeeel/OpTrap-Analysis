@@ -15,12 +15,15 @@ addRequired(p, 'accumulated', @(x) isa(x, 'cell'));
 addOptional(p, 'normT', false, @(x) islogical(x) || any(strcmp(x, {'lowT', 'alphaMin', 'highT'})));
 addOptional(p, 'normR', 'std', @(x) any(strcmp(x, {'std', 'bG'})));
 addOptional(p, 'posiT', 0, @(x) x == -1 || x == 0 || x == 1);
+addOptional(p, 'obsTnorm', false, @(x) islogical(x));
+
 
 parse(p, accumulated, varargin{:});
 
 normT = p.Results.normT;
 normR = p.Results.normR;
 posiT = p.Results.posiT;
+obsTnorm = p.Results.obsTnorm;
 
 % All scenarios
 dt = [1; 2; 4; 6] .* logspace(-4, 6, 11);
@@ -36,7 +39,12 @@ nC = 0;
 for dIdx = 1:size(accumulated,2)
     for cIdx = 1:size(accumulated{1,dIdx},2)
         for rIdx = 1:size(accumulated{1,dIdx}{1,cIdx},2)
-            obsT = accumulated{1,dIdx}{2,cIdx}(rIdx);
+            if obsTnorm
+                obstTnf = -mean(accumulated{1,dIdx}{2,cIdx});
+            else
+                obstTnf = 0;
+            end
+            obsT = accumulated{1,dIdx}{2,cIdx}(rIdx)+obstTnf;
             if ~posiT || sign(obsT) == posiT
                 nC = nC + 1;
                 % Get the track and calculate the Ddist in a fresh msdanalyzer
