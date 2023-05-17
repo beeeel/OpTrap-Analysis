@@ -12,7 +12,7 @@ if exist([data.dirPath '/opts.txt'],'file')
         try
             opts.(str{1}) = eval(str{2});
         catch ME
-            warning('a')
+            warning('Caught: %s', ME.message)
         end
         fprintf('%s:\t\t\t%s\n',str{:})
     end

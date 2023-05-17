@@ -31,6 +31,7 @@ p.addParameter('centresRow',[],@(x)validateattributes(x,{'numeric'},{'positive',
 p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('errorBars', false, @(x)islogical(x))
 p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
+p.addParameter('compliance',false, @(x)islogical(x) && isfield(data.opts,'beadDiam'))
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -46,6 +47,7 @@ doNorm = p.Results.doNorm;
 errorBars = p.Results.errorBars;
 useField = p.Results.useField;
 forceRun = p.Results.forceRun || data.opts.forceRun;
+compliance = p.Results.compliance;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
@@ -164,7 +166,14 @@ if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1)
     % Make an msdanalyzer and use it
     msd = msdanalyzer(1, 'um', 's','log');
     msd = msd.addAll(tracks);
-    msd = msd.computeMSD;
+
+    if ~compliance
+        msd = msd.computeMSD;
+    else
+        % Assume bead diameter is in microns, apply conversion for MSD from um^2 to m^2
+        beadRadius = 0.5 * data.opts.beadDiam * 1e-6 * 1e-12; 
+        msd = msd.computeMSD([], beadRadius);
+    end
     
     % Calculate normalized MSD
     MSDs = cat(3,msd.msd{:});

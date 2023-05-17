@@ -1,4 +1,4 @@
-function obj = computeMSD(obj, indices)
+function obj = computeMSD(obj, indices, beadRadius)
 %%COMPUTEMSD Compute the mean-squared-displacement for this object.
 %
 % obj = obj.computeMSD computes the MSD for all the tracks stored
@@ -19,6 +19,16 @@ function obj = computeMSD(obj, indices)
 
 if nargin < 2 || isempty(indices)
     indices = 1 : numel(obj.tracks);
+end
+
+if nargin < 3 || isempty(beadRadius)
+    msdToJ = 1;
+else
+    kB = 1.381e-23;
+    T = 298; % Bold to assume
+    msdToJ = pi * beadRadius / (kB * T); 
+    % MSD = pi * radius / kB T (Xu, 1998)
+    % Note that the beadRadius input must take into accoun the units of msdanalyzer
 end
 
 n_tracks = numel(indices);
@@ -134,7 +144,8 @@ for i = 1 : n_tracks
     delay_not_present = n_msd == 0;
     mean_msd( delay_not_present ) = NaN;
     
-    obj.msd{index} = [ delays mean_msd std_msd n_msd ];
+    obj.msd{index} = [ delays mean_msd*msdToJ std_msd n_msd ];
+    % Being a bit lazy I only apply the MSD to compliance conversion here
     
 end
 fprintf('\b\b\b\b\b\b\b\b\bDone.\n')

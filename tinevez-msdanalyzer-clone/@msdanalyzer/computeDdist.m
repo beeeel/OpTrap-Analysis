@@ -1,4 +1,4 @@
-function obj = computeDdist(obj, indices, normR)
+function obj = computeDdist(obj, indices, normR, dTs)
 %%COMPUTEDdist Compute the displacement distribution for this object.
 %
 % obj = obj.computeDdist computes the displacement distribution for all the
@@ -12,7 +12,16 @@ function obj = computeDdist(obj, indices, normR)
 % obj = obj.computDdist([], normD) computes Ddist divided by normalisation
 % factor normD. Be careful to match the units of normD to the spatial units
 % in the msdanalyzer!
-
+%
+% obj = obj.computDdist([], [], dTs) computes Ddist at a user-specified
+% set of lag times, if they are available in the data. Be careful to match
+% the units of dTs to the temporal units in the msdanalyzer!
+% 
+% Output: obj.Ddist, a cell array with one row per track. First element
+% contains the lag times queried, the number of observations, and the NGP.
+% Second element contains histogram counts and bin edges, such that columns
+% 1:floor(end/2) are the counts and ceil(end/2):end are the edges.
+%
 % NGP - Bursac 2005, Weeks 2002, Rahman 1964.
 %  <z^4> / (3 <z^2> ^2 ) - 1
 ngp = @(z, rho) sum(rho.*(z.^4),1) ./ (3 .* sum(rho.*(z.^2),1) .^2) - 1;
@@ -25,9 +34,11 @@ if obj.n_dim > 1
     error('Ddist only works in 1D')
 end
 
-if exist('normR','var') && numel(indices) ~= numel(normR)
+if exist('normR','var') && ~isempty(normR) && numel(indices) ~= numel(normR)
     error('Need 1 normR for each track')
 end
+
+
 
 n_tracks = numel(indices);
 fprintf('Computing Ddist of %d tracks... ', n_tracks);
@@ -61,8 +72,11 @@ for i = 1 : n_tracks
     
     minInd = 10; % Minimum independent observations of maxDelay
     
-    % Take the dTs from the object.
-    alldTs = round(obj.dTs / dt); % Ends up in indexing units!
+    % Take the dTs from the object unless supplied by user.
+    if ~exist('dTs', 'var') || isempty(dTs)
+        dTs = obj.dTs;
+    end
+    alldTs = round(dTs / dt); % Ends up in indexing units!
     alldTs = alldTs(alldTs ~= 0);
     alldTs = alldTs( alldTs < size(t,1)/minInd )';
     
@@ -73,7 +87,7 @@ for i = 1 : n_tracks
 %     edg = 0.05 + (-20:0.1:20)';
     nBins = numel(edg) - 1;
     
-    if ~exist('normR', 'var')
+    if ~exist('normR', 'var') || isempty(normR)
         norm = @(x) (x - mean(x,'all')) ./ std(x);
     else
         norm = @(x) (x - mean(x,'all')) ./ normR(i);
