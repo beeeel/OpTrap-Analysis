@@ -39,7 +39,7 @@ pos0 = opts.pos0;
 x = zeros(Nb,N)+pos0(:,1);
 y = zeros(Nb,N)+pos0(:,2);
 z = zeros(Nb,N)+pos0(:,3);
-fs = zeros(3,N);
+fs = zeros(3, N);
 time = (0:N-1).*opts.dt;
 
 % random Gaussian noise
@@ -55,13 +55,13 @@ for i=1:N-1
     Ef = E(x(:,i), y(:,i), z(:,i), time(i)) .* q;
     % Calculate position (Langevin's equation) - Volpe and Volpe 2012, 2014
     % restoring force
-    x(:,i+1)= x(:,i) -(kx.*deltat.*x(:,i)./gamma0) ...	% Trap force
+    x(:,i+1)= x(:,i) - (kx.*x(:,i).*deltat./gamma0) ...	% Trap force
         + noise(:,1,i).*sqrt(2*D*deltat) ... 			% Diffusion
         + Ef(:,1)*deltat./gamma0;                         % Electric force
 
-    fs(:,i+1) = [-(kx(1).*deltat.*x(1,i)./gamma0(1)), ...	% Trap force
-        + noise(1,1,i).*sqrt(2*D(1)*deltat), ... 			% Diffusion
-        + Ef(1,1)*deltat./gamma0(1)];
+    fs(:,i) = [-(kx.*x(1,i)), ...	% Trap force
+        noise(:,1,i).*sqrt(2*D*deltat).*gamma0/deltat, ... 			% Diffusion
+        Ef(:,1)];
     
     y(:,i+1)= y(:,i) -(ky.*deltat.*y(:,i)./gamma0) ...
         + noise(:,2,i).*sqrt(2*D*deltat) ...
@@ -85,16 +85,20 @@ end
 varargout{1} = tracks;
 
 if nargout > 1
-    kxe = kB*T./var(x,0,2);
-    kye = kB*T./var(y,0,2);
-    kze = kB*T./var(z,0,2);
-    varargout{2} = [kxe kye kze];
+    varargout{2} = fs;
 end
 
 if nargout > 2
+    kxe = kB*T./var(x,0,2);
+    kye = kB*T./var(y,0,2);
+    kze = kB*T./var(z,0,2);
+    varargout{3} = [kxe kye kze];
+end
+
+if nargout > 3
     msd = msdanalyzer(3, 'm','s','log');
     
     msd = msd.addAll(tracks);
     msd = msd.computeMSD;
-    varargout{3} = msd;
+    varargout{4} = msd;
 end
