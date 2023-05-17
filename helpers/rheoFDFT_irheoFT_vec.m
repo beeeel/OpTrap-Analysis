@@ -6,7 +6,7 @@ gdata_I = zeros(freqpoints,3);
 
 GFT = zeros(freqpoints,3);
 
-wrange = logspace(log10(t_I(1)),log10(t_I(end)),freqpoints); % Freqency Range
+wrange = logspace(log10(1/t_I(1)),log10(1/t_I(end)),freqpoints); % Freqency Range
 
 for n = 1:freqpoints
     w = wrange(n);
