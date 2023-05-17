@@ -14,7 +14,7 @@ end
 data.opts = bead_loadOpts(data);
 
 if ~isfield(data.opts, 'skipSuffixes')
-    data.opts.skipSuffixes = '';
+    data.opts.skipSuffixes = [];
 else
     data.opts.skipSuffixes = strsplit(data.opts.skipSuffixes,',');
 end

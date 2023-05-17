@@ -52,7 +52,11 @@ compliance = p.Results.compliance;
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
 if isempty(centresRow)
-    centresRow = 1:length(data.raw.suffixes);
+    if isfield(data.opts, 'centresRow')
+        centresRow = data.opts.centresRow;
+    else
+        centresRow = 1:length(data.raw.suffixes);
+    end
 end
 if isfield(data.raw,'suffixes') && strcmp(data.raw.suffixes{1}, 'l') && strcmp(data.raw.suffixes{2}, 'r') && isscalar(centresRow)
     warning('Looks like you have 2 bead data, but I''m only using 1 of them')

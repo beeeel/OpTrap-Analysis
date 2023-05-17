@@ -123,7 +123,7 @@ for dIdx = 1:length(dims)
             %             fitErr(:,fIdx, dIdx) = N_get_RMSE;
             % Show fits
             if doPlot
-                plot(tauData, exp(fps(1,fIdx, dIdx) * log(tauData) + log(fps(2,fIdx, dIdx))) , ...
+                plot(tauData, 2*exp(fps(1,fIdx, dIdx) * log(tauData) + log(fps(2,fIdx, dIdx))) , ...
                     ':', 'LineWidth', 2.5, 'Color', fitCols{fIdx})
             end
         end
@@ -180,7 +180,7 @@ end
                 [alpha, D] = leastSq(log(tauData), log(msdData));
                 % This needs to output the gradient (alpha) and y-intercept
                 % of the linear fit, whereas 2D is the MSD at τ=1. [1]
-                fps = [alpha; (2*D)];
+                fps = [alpha; (D)];
                 % Truth is I couldn't tell you how this works, but it does.
                 
                 % hahaha they'll never suspect that this isn't reall the RMSE
