@@ -1,5 +1,5 @@
-function msd_colorfulplot(accumulated, dIs, cIs, rIs, tRanges, varargin) %#ok<INUSL>
-%% msd_colorfulplot(accumulated, dIs, cIs, rIs, ... )
+function varargout = msd_colorfulplot(accumulated, dIs, cIs, rIs, tRanges, varargin) %#ok<INUSL>
+%% [h] = msd_colorfulplot(accumulated, dIs, cIs, rIs, ... )
 % Plot MSDs using nice colourmap according to time. I will add support for
 % name-value pair arguments to help this be good, but not yet.
 % You can either supply two axis for the plots to go on (radial and
@@ -69,28 +69,31 @@ if ~exist('axs','var')
     clf
     for plt = 1:2
         axs(plt) = subplot(1,2,plt);
-        hold on
-        set(gca,'XScale','log')
-        set(gca,'YScale','log')
-        %     axis equal
-        if normX
-            xlabel('Normalized time, λτ')
-            %         xlabel('Normalized time, τω_c')
-        else
-            xlabel('Lag time \tau (s)')
-        end
-        if normY
-            ylabel('NMSD')
-            ylim([5e-4 5e2])
-        else
-            ylabel('MSD (μm^2)')
-            %         ylim([8e-6 1e-1])
-            ylim([5e-6 3e-1])
-        end
         title(tits{plt})
-        set(gca,'FontSize',15)
     end
 end
+for plt = 1:2
+    hold(axs(plt), 'on')
+    set(axs(plt),'XScale','log')
+    set(axs(plt),'YScale','log')
+    %     axis equal
+    if normX
+        xlabel(axs(plt),'Normalized time, λτ')
+        %         xlabel('Normalized time, τω_c')
+    else
+        xlabel(axs(plt),'Lag time \tau (s)')
+    end
+    if normY
+        ylabel(axs(plt),'NMSD')
+        ylim(axs(plt),[5e-4 5e2])
+    else
+        ylabel(axs(plt),'MSD (μm^2)')
+        %         ylim([8e-6 1e-1])
+        ylim(axs(plt), [5e-6 3e-1])
+    end
+    set(axs(plt),'FontSize',15)
+end
+
 clear h
 pC = 2;
 legCell = {'Gradient minima'};
@@ -182,6 +185,9 @@ for dIdx = dIs
     end
 end
 % legend(h, legCell, 'Location','best') % Sorry future me!
+if nargout > 0
+    varargout{1} = h;
+end
 
     function [fps, fitErr] = N_get_fits
         % Either use linear fit or the least squares estimator from [1]Ling
