@@ -27,6 +27,7 @@ else
     tau = varargin{1};
     msd = varargin{2};
     tR = varargin{3};
+    mult = 1;
     if size(tau,2) ~= 1 || size(msd,2) ~= 1 || (size(msd,3) ~= size(tau,3) && size(tau,3) ~= 1)
         error('Check input sizes for tau and msd. Should be 1 row per delay time, 1 column, and put repeats in the third dimension')
     end
