@@ -1,5 +1,5 @@
 function [varargout] = func_simulateDataField(opts)
-%% [tracks, stiffnesses, msdanalyzer] = func_simulateDataField(opts)
+%% [tracks, Xforces, stiffnesses, msdanalyzer] = func_simulateDataField(opts)
 %% Perform BD of particle in optical trap and electric field
 % Input an opts structure from func_BDopts, outputs optional - tracks for
 % msdanalyzer, stiffnesses (kBT/variance) as [kx1 ky1 kz1; kx2...],
@@ -34,6 +34,10 @@ deltat = 1./fps;                 % duration of each frame
 kB=1.38E-23;                    % Boltzmann's constant
 D=(kB.*T)./gamma0;                  % diffusion coefficient
 
+% Check timestep vs trap stiffness
+if any(gamma0./opts.kappaNm < 10/fps)
+    warning('Large time step compared to trap relaxation time')
+end
 % initialise bead position vectors
 pos0 = opts.pos0;
 x = zeros(Nb,N)+pos0(:,1);

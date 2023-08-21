@@ -33,7 +33,7 @@ for plt = 1:numel(allplots)
         alldT = [];
         allcIdx = [];
         cIdx = 1;
-        for dayIdx = 1:length(accumulated)
+        for dayIdx = 1:size(accumulated,2)
             for cellIdx = 1:size(accumulated{1,dayIdx},2)
                 clear dat err hack
 
@@ -63,14 +63,14 @@ for plt = 1:numel(allplots)
                 end
                 
                 if any(idxs)
-                    if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fps')
+                    if any(contains(allplots, {'D','α'}))
                         try
                             fps = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fps);
                         catch ME
-                            %error(ME.message)
+                            error(ME.message)
                         end
                     end
-                    if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fpstau')
+                    if any(contains(allplots, {'α_τ', 'D_τ', 'α_{τG}', 'D_{τG}', 'D_G'}))
                         try
                             fpstau = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstau);
                             fpstauG = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstauG);
@@ -81,7 +81,7 @@ for plt = 1:numel(allplots)
                             end
                         end
                     end
-                    if isfield(accumulated{1,dayIdx}{1,cellIdx}, 'fpsH')
+                    if any(contains(allplots, {'α_H', 'D_H', 'α_{τH}', 'D_{τH}', 'α_{τGH}', 'D_{τGH}', 'D_GH'}))
                         try
                             fpsH = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpsH);
                             fpstauH = cat(3,accumulated{1,dayIdx}{1,cellIdx}.fpstauH);
@@ -141,7 +141,16 @@ for plt = 1:numel(allplots)
                             case 'D_{GH}'
                                 Ds = reshape(squeeze(fpsGH(2,1,:)), 2, []);
                                 dat = Ds(dim,:);
-                                
+                            
+                            case 'M_{1s}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff);
+                                dat = Gs(dim,:,1);
+                            case 'G_{avg}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff);
+                                dat = Gs(dim,:,2);
+                            case 'zPos'
+                                dat = cat(2,accumulated{1,dayIdx}{1,cellIdx}.zPos);
+
                             case 'α_{min}'
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff2);
                                 dat = Gs(dim,:,2);

@@ -81,10 +81,14 @@ end
 % Conditional drift removal only demeans when pOrder = 0
 dims = [1, 3, 2];
 
-[~, xCentres, ~] = func_thermal_rm(1:length(xCentres), ...
-    permute(xCentres, dims), data.opts.pOrder, 1, length(xCentres));
-[~, yCentres, ~] = func_thermal_rm(1:length(yCentres), ...
-    permute(yCentres, dims), data.opts.pOrder, 1, length(yCentres));
+Ts = data.opts.cropT(1):data.opts.cropT(2);
+
+[~, xCentres, ~] = func_thermal_rm(Ts, ...
+    permute(xCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
+[~, yCentres, ~] = func_thermal_rm(Ts, ...
+    permute(yCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
+
+warning('I''ve changed how cropT is handled with data.pro... You''re gonna get errors in other bits of code, sorry!')
 
 if data.opts.downsampleR > 1
     N_downsample
