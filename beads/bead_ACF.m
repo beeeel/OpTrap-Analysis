@@ -99,7 +99,7 @@ else
             [acfs(:,idx,jdx), lags] = xcorr(centres(idx, jdxs));
         end
     end
-    acfs = mean(acfs,3)./ntau;
+    acfs = mean(acfs,3);
 
     if doNorm
         normF = var(centres,0,2);

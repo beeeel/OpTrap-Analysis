@@ -13,6 +13,7 @@ function data = bead_PSD(data, varargin)
 %   useField        - Specify which processed data field to use.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nAvgs           - Break track into shorter section and average ACF for each section - improves SNR, default 10
+%   plotAx          - Plot on a pair of given axes
 
 % Parse the inputs
 p = inputParser;
@@ -22,6 +23,9 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('legCell',{'X','Y'}, @(x)iscell(x))
+p.addParameter('nAvgs',10, @(x) isscalar(x) && round(x)==x && x>0)
+p.addParameter('plotAx',[], @(x)isa(x,'matlab.graphics.axis.Axes'))
+p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -32,6 +36,8 @@ p.parse(data, varargin{:});
 doPlots = p.Results.doPlots;
 forceRun = p.Results.forceRun || data.opts.forceRun;
 legCell = p.Results.legCell;
+nAvgs = p.Results.nAvgs;
+zp = p.Results.zeroPadding;
 
 if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
@@ -39,7 +45,7 @@ if isfield(data.pro, 'psd') && ~forceRun
 else
 
     if ~isfield(data.pro, 'acf')
-        data = bead_ACF(data,'doPlots',false);
+        data = bead_ACF(data,'doPlots',false,'nAvgs',nAvgs);
     end
 
     acfs = data.pro.acf(:,2:end);
@@ -47,22 +53,30 @@ else
 
     psds = zeros((size(lags,1)+1)/2,size(acfs,2));
     for idx = 1:size(acfs,2)
-        [freq, psds(:,idx)] = fft_scaled(lags, acfs(:,idx), false);
+        [freq, psds(:,idx)] = fft_scaled(lags, acfs(:,idx), false, [], [], zp);
     end
 
     data.pro.psd = [freq' psds];
 end
 
 if doPlots
-    figure
-    clf
+    makeNewAxis = isempty(p.Results.plotAx) || size(psds,2) ~= numel(p.Results.plotAx);
+    if makeNewAxis
+        figure
+        clf
+        for idx = 1:size(psds,2)
+            ax(idx) = subplot(1,size(psds,2),idx);
+        end
+    else
+        ax = p.Results.plotAx;
+    end
     
     for idx = 1:size(psds,2)
-        subplot(1,size(psds,2),idx)
-        loglog(freq, abs(psds(:,idx)))
-        xlabel('Frequency (Hz)')
+        hold(ax(idx),'on')
+        loglog(ax(idx),freq, abs(psds(:,idx)))
+        xlabel(ax(idx),'Frequency (Hz)')
         
-        ylabel('PSD (m^2/Hz)')
+        ylabel(ax(idx),'PSD (m^2/Hz)')
         
         if numel(legCell) >= idx
             legend(legCell{idx})
