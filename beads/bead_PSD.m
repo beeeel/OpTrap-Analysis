@@ -23,9 +23,9 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('legCell',{'X','Y'}, @(x)iscell(x))
-p.addParameter('nBlocking',10, @(x) isscalar(x) && round(x)==x && x>0)
+p.addParameter('nBlocking',20, @(x) isscalar(x) && round(x)==x && x>0)
 p.addParameter('plotAx',[], @(x)isa(x,'matlab.graphics.axis.Axes'))
-p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
+% p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -37,7 +37,7 @@ doPlots = p.Results.doPlots;
 forceRun = p.Results.forceRun || data.opts.forceRun;
 legCell = p.Results.legCell;
 nB = p.Results.nBlocking;
-zp = p.Results.zeroPadding;
+% zp = p.Results.zeroPadding;
 
 if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
@@ -69,7 +69,7 @@ else
 
     % PSD method based on Berg-Sørensen 2004 eq 10.
     [psds, freq] = dft1(tracks', t);
-    psds = abs(psds(end/2:end,:)).^2 ./t(end);
+    psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
     freq = freq(end/2:end);
     
     % Blocking from Berg-Sørensen 2004 section IV.
@@ -86,7 +86,7 @@ else
     end
     psds = psdsb;
     freq = wb;
-    clear psds freq
+    clear psdsb wb
 
     data.pro.psd = [freq psds];
 end
@@ -108,7 +108,7 @@ if doPlots
         loglog(ax(idx),freq, abs(psds(:,idx)))
         xlabel(ax(idx),'Frequency (Hz)')
         
-        ylabel(ax(idx),'PSD (m^2/Hz)')
+        ylabel(ax(idx),'PSD (m^2Hz)')
         
         if numel(legCell) >= idx
             legend(legCell{idx})
