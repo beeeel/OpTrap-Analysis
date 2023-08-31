@@ -5,15 +5,17 @@ function data = bead_PSD(data, varargin)
 % do that first.
 %
 % Additional parameters in the form of name-value pairs. Possible options:
-%   direction       - Direction used for ACF calculation. 'x','y', or 'a'
 %   doPlots         - Do the plots if true, else just the calculations
-%   useRaw          - Use raw data instead of processed (you probably don't want this)
-%   centresRow      - Which row of the centres matrix to use. Default all.
-%   doNorm          - Normalize (divide) the ACF by the variance of the position
-%   useField        - Specify which processed data field to use.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
-%   nAvgs           - Break track into shorter section and average ACF for each section - improves SNR, default 10
+%   nblocking       - Block averaging after fourier transform - improves SNR, default 20
 %   plotAx          - Plot on a pair of given axes
+
+% Excess options unused:
+%   direction       - Direction used for ACF calculation. 'x','y', or 'a'
+%   useField        - Specify which processed data field to use.
+%   doNorm          - Normalize (divide) the ACF by the variance of the position
+%   centresRow      - Which row of the centres matrix to use. Default all.
+%   useRaw          - Use raw data instead of processed (you probably don't want this)
 
 % Parse the inputs
 p = inputParser;
@@ -103,6 +105,8 @@ if doPlots
         ax = p.Results.plotAx;
     end
     
+    set(ax,'XScale','log','YScale','log')
+    
     for idx = 1:size(psds,2)
         hold(ax(idx),'on')
         loglog(ax(idx),freq, abs(psds(:,idx)))
@@ -113,6 +117,15 @@ if doPlots
         if numel(legCell) >= idx
             legend(legCell{idx})
         end
+    end
+    if isfield(data.opts,'Vfreq') && isfield(data.opts,'Vpp') && data.opts.Vpp ~= 0
+        dI = 1; % direction index
+        
+        frange = [-0.5 0.5] + data.opts.Vfreq;
+        inds = find(freq > frange(1) & freq < frange(2));
+        [P,ind] = max(psds(inds,dI));
+        idx = inds(ind);
+        plot(ax(dI), freq(idx), P, 'kx')
     end
 end
 
