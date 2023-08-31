@@ -207,6 +207,16 @@ for plt = 1:numel(allplots)
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff2);
                                 dat = log(Gs(dim,:,1)).*(log(tCs(:,dim)).^2)';
                                 
+                            case 'X'
+                                xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
+                                dat = xyz(:,1);
+                            case 'Y'
+                                xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
+                                dat = xyz(:,2);
+                            case 'Z'
+                                xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
+                                dat = xyz(:,3);
+                                
                             otherwise
                                 error('Have you added a new plotName but not how to plot it?')
                         end

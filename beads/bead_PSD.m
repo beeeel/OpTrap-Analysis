@@ -13,6 +13,7 @@ function data = bead_PSD(data, varargin)
 %   useField        - Specify which processed data field to use.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nAvgs           - Break track into shorter section and average ACF for each section - improves SNR, default 10
+%   plotAx          - Plot on a pair of given axes
 
 % Parse the inputs
 p = inputParser;
@@ -22,6 +23,9 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('doPlots',true, @(x)islogical(x))
 p.addParameter('legCell',{'X','Y'}, @(x)iscell(x))
+p.addParameter('nBlocking',20, @(x) isscalar(x) && round(x)==x && x>0)
+p.addParameter('plotAx',[], @(x)isa(x,'matlab.graphics.axis.Axes'))
+% p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -32,37 +36,79 @@ p.parse(data, varargin{:});
 doPlots = p.Results.doPlots;
 forceRun = p.Results.forceRun || data.opts.forceRun;
 legCell = p.Results.legCell;
+nB = p.Results.nBlocking;
+% zp = p.Results.zeroPadding;
 
 if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
     freq = data.pro.psd(:,1);
 else
 
-    if ~isfield(data.pro, 'acf')
-        data = bead_ACF(data,'doPlots',false);
+%     if ~isfield(data.pro, 'acf')
+%         data = bead_ACF(data,'doPlots',false,'nAvgs',nAvgs);
+%     end
+% 
+%     acfs = data.pro.acf(:,2:end);
+%     lags = data.pro.acf(:,1);
+% 
+%     psds = zeros((size(lags,1)+1)/2,size(acfs,2));
+%     for idx = 1:size(acfs,2)
+%         [freq, psds(:,idx)] = fft_scaled(lags, acfs(:,idx), false, [], [], zp);
+%     end
+    try
+        fn = data.opts.UseField;
+    catch
+        error('You need to write something to handle missing data.opts.UseField.')
     end
-
-    acfs = data.pro.acf(:,2:end);
-    lags = data.pro.acf(:,1);
-
-    psds = zeros((size(lags,1)+1)/2,size(acfs,2));
-    for idx = 1:size(acfs,2)
-        [freq, psds(:,idx)] = fft_scaled(lags, acfs(:,idx), false);
+    try
+        tracks = [data.pro.(['x' fn])(1,:); data.pro.(['y' fn])(1,:)];
+    catch
+        error('You need to write something to handle data.opts.UseField edge cases, e.g. ''centresPx''. You had ''%s''',data.opts.UseField)
     end
+    t = data.raw.timeVecMs./1e3;
 
-    data.pro.psd = [freq' psds];
+    % PSD method based on Berg-Sørensen 2004 eq 10.
+    [psds, freq] = dft1(tracks', t);
+    psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
+    freq = freq(end/2:end);
+    
+    % Blocking from Berg-Sørensen 2004 section IV.
+    inds = 1:nB:size(psds,1);
+    if inds(end) ~= size(psds,1)
+        inds(end) = size(psds,1);
+    end
+    psdsb = zeros(length(inds)-1, size(psds,2));
+    wb = zeros(length(inds)-1,1);
+    
+    for idx = 1:length(inds)-1
+        psdsb(idx,:) = mean(psds(inds(idx):inds(idx+1)-1,:),1);
+        wb(idx) = mean(freq(inds(idx):inds(idx+1)-1,:),1);
+    end
+    psds = psdsb;
+    freq = wb;
+    clear psdsb wb
+
+    data.pro.psd = [freq psds];
 end
 
 if doPlots
-    figure
-    clf
+    makeNewAxis = isempty(p.Results.plotAx) || size(psds,2) ~= numel(p.Results.plotAx);
+    if makeNewAxis
+        figure
+        clf
+        for idx = 1:size(psds,2)
+            ax(idx) = subplot(1,size(psds,2),idx);
+        end
+    else
+        ax = p.Results.plotAx;
+    end
     
     for idx = 1:size(psds,2)
-        subplot(1,size(psds,2),idx)
-        loglog(freq, abs(psds(:,idx)))
-        xlabel('Frequency (Hz)')
+        hold(ax(idx),'on')
+        loglog(ax(idx),freq, abs(psds(:,idx)))
+        xlabel(ax(idx),'Frequency (Hz)')
         
-        ylabel('PSD (m^2/Hz)')
+        ylabel(ax(idx),'PSD (m^2Hz)')
         
         if numel(legCell) >= idx
             legend(legCell{idx})
@@ -71,3 +117,43 @@ if doPlots
 end
 
 end
+
+function [X, w] = dft1(x,t)
+if ~exist('t','var')
+    t = (0:length(x)-1)';
+end
+dt = diff(t([1 2]));
+N = length(t);
+j = (1:N)';
+X = zeros(size(x));
+k = (-N/2+1:N/2)';
+w = k ./ (N.*dt);
+
+% for kdx = 1:length(k)
+%     X(kdx,:) = dt .* sum(exp(1i*2*pi*j*k(kdx)/N) .*x, 1);
+% end
+for jdx = 1:length(j)
+    X = X + dt .* exp(1i*2*pi*j(jdx)*k/N) .* x(jdx,:);
+end
+end
+
+
+% 
+% function [X, w] = dft2(x,t)
+% if ~exist('t','var')
+%     t = (0:length(x)-1)';
+% end
+% dt = diff(t([1 2]));
+% N = length(t);
+% j = (1:N)';
+% X = zeros(size(x));
+% k = -N/2+1:N/2;
+% w = k' ./ (N.*dt);
+% 
+% for kdx = 1:length(k)
+%     X(kdx,:) = dt .* sum(exp(1i*2*pi*j*k(kdx)/N) .*x, 1);
+% end
+% % for jdx = 1:length(j)
+% %     X = X + dt .* sum(exp(1i*2*pi*j(jdx)*k/N) .* x(jdx), 1);
+% % end
+% end
