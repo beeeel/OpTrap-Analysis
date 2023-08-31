@@ -4,8 +4,10 @@ close all
 % If you don't know which datasets to load, set these two lines to 
 % fnames = {}; % and
 % fIdxs = []; % then run the script.
-% A numbered list of data folder names will get printed out.
-% Choose the numbers you want and put them in fIdxs, e.g. fIdxs = 1:3. 
+
+% A numbered list of data folder names will get printed out along with all
+% the fnames. If you don't want all the folders to be loaded, then choose
+% the numbers you want and put them in fIdxs, e.g. fIdxs = 1:3.
 % Then run again and it will print an expression for the fnames line that
 % you can copy and paste.
 fnames = {};
@@ -55,7 +57,8 @@ end
 tmp = {dirList.name}'; for idx = 1:length(tmp); tmp{idx} = sprintf('%i: %s', idx, tmp{idx}); end
 disp(tmp)
 
-if isempty(fnames)
+if isempty(fnames) 
+    if isempty(fIdxs); fIdxs = 1:length(dirList); end
     fprintf('\nfnames = {')
     fprintf('''%s''',dirList(fIdxs(1)).name)
     for idx = 2:length(fIdxs)
