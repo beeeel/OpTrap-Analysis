@@ -186,7 +186,7 @@ for dIdx = dIs
 end
 % legend(h, legCell, 'Location','best') % Sorry future me!
 if nargout > 0
-    varargout{1} = h;
+    varargout{1} = axs;
 end
 
     function [fps, fitErr] = N_get_fits
