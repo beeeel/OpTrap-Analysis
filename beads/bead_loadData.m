@@ -8,7 +8,7 @@ if nargin > 1
 end
 
 if ~isstruct(data)
-    data = struct('dirPath',data);
+    data = struct('fName', data, 'dirPath',[pwd '/' data]);
 end
 
 data.opts = bead_loadOpts(data);
