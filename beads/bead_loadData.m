@@ -8,7 +8,15 @@ if nargin > 1
 end
 
 if ~isstruct(data)
-    data = struct('fName', data, 'dirPath',[pwd '/' data]);
+    if strcmp(data(1), '/')
+        dP = data;
+        fN = strsplit(data, '/');
+        fN = fN{end};
+    else
+        dP = [pwd '/' data];
+        fN = data;
+    end
+    data = struct('fName', fN, 'dirPath',dP);
 end
 
 data.opts = bead_loadOpts(data);
@@ -56,14 +64,14 @@ for idx = 1:length(dl)
         warning('Skipping file %s because skipSuffixes',dl(idx).name)
     else
         % Screen for NaNs
-        tmp = byteStreamToDouble(fName);
-        if length(tmp) ~= nP
-            warning('Skipping file %s with %i points (Times has %i points)', fName, length(tmp), nP)
+        dP = byteStreamToDouble(fName);
+        if length(dP) ~= nP
+            warning('Skipping file %s with %i points (Times has %i points)', fName, length(dP), nP)
         else
-            nNans(xdx) = warnNaN(tmp, fName);
-            tmp(isnan(tmp)) = mean(tmp(~isnan(tmp)));
+            nNans(xdx) = warnNaN(dP, fName);
+            dP(isnan(dP)) = mean(dP(~isnan(dP)));
             if startsWith(dl(idx).name, 'X')
-                data.raw.xCentresPx(xdx,:) = tmp;
+                data.raw.xCentresPx(xdx,:) = dP;
                 if length(data.raw.suffixes)<xdx || strcmp(data.raw.suffixes{xdx}, suff)
                     data.raw.suffixes{xdx} = suff;
                 else
@@ -71,7 +79,7 @@ for idx = 1:length(dl)
                 end
                 xdx = xdx + 1;
             elseif startsWith(dl(idx).name, 'Y')
-                data.raw.yCentresPx(ydx,:) = tmp;
+                data.raw.yCentresPx(ydx,:) = dP;
                 if length(data.raw.suffixes)<ydx || strcmp(data.raw.suffixes{ydx}, suff)
                     data.raw.suffixes{ydx} = suff;
                 else
