@@ -6,6 +6,7 @@ function data = bead_PSD(data, varargin)
 %
 % Additional parameters in the form of name-value pairs. Possible options:
 %   doPlots         - Do the plots if true, else just the calculations
+%   doFit           - Do fitting as per Berg-Sørensen 2004, plot fits.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nblocking       - Block averaging after fourier transform - improves SNR, default 20
 %   plotAx          - Plot on a pair of given axes
@@ -24,6 +25,7 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('doPlots',true, @(x)islogical(x))
+p.addParameter('doFit',true, @(x)islogical(x))
 p.addParameter('legCell',{'X','Y'}, @(x)iscell(x))
 p.addParameter('nBlocking',20, @(x) isscalar(x) && round(x)==x && x>0)
 p.addParameter('plotAx',[], @(x)isa(x,'matlab.graphics.axis.Axes'))
@@ -39,6 +41,7 @@ doPlots = p.Results.doPlots;
 forceRun = p.Results.forceRun || data.opts.forceRun;
 legCell = p.Results.legCell;
 nB = p.Results.nBlocking;
+doFit = p.Results.doFit;
 % zp = p.Results.zeroPadding;
 
 if isfield(data.pro, 'psd') && ~forceRun
@@ -69,7 +72,7 @@ else
     end
     t = data.raw.timeVecMs./1e3;
 
-    % PSD method based on Berg-Sørensen 2004 eq 10.
+    % PSD method based on Berg-Sørensen 2004.
     [psds, freq] = dft1(tracks', t);
     psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
     freq = freq(end/2:end);
@@ -88,9 +91,22 @@ else
     end
     psds = psdsb;
     freq = wb;
-    clear psdsb wb
 
+    clear psdsb wb
+    
     data.pro.psd = [freq psds];
+
+    if doFit
+        tmax = data.raw.timeVecMs(end) / 1e3;
+        spq = @(p, q) sum(freq.^(2*p) .* psds.^q, 1);
+
+        fc1 = sqrt( ( spq(0,1) .* spq(2,2) - spq(1,1) .* spq(1,2) ) ...
+            ./ ( spq(1,1) .* spq(0,2) - spq(0,1) .* spq(1,2) ) );
+        D1 = ( (2*pi^2) / tmax ) * ( spq(0,2) .* spq(2,2) - spq(1,2).^2 ) ...
+            ./ ( spq(1,1) .* spq(0,2) - spq(0,1) .* spq(1,2) );
+
+        data.pro.psdFits = [fc1; D1];
+    end
 end
 
 if doPlots
@@ -114,6 +130,12 @@ if doPlots
         
         ylabel(ax(idx),'PSD (m^2Hz)')
         
+        if doFit
+            % From Berg-Sørensen 2004 eq 10.
+            psd = @(f, D, fc) D ./ (2 * pi^2 * (fc.^2 + f.^2));
+            plot(ax(idx), freq, psd(freq, D1(idx), fc1(idx)))
+        end
+
         if numel(legCell) >= idx
             legend(legCell{idx})
         end
@@ -132,6 +154,7 @@ end
 end
 
 function [X, w] = dft1(x,t)
+% From Berg-Sørensen 2004.
 if ~exist('t','var')
     t = (0:length(x)-1)';
 end
