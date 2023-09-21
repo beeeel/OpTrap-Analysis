@@ -109,6 +109,9 @@ else
     lags = lags * diff(timeVec([1 2]));
 
     data.pro.acf = [reshape(lags,[],1) acfs];
+
+    % Here's the ACF function that you wanna fit to.
+    C = @(tau, p) kBT(data.opts.Temp) ./ p(1) .* exp(-tau / p(2)) + p(3).^2/2 .* cos(2*pi*data.opts.Vfreq.*tau);
 end
 
 if doPlots
