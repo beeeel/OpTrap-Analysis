@@ -1,15 +1,18 @@
 %% Process multiple sets of bead data sequentially
 close all
 
+% If you know which datasets to load, put them in fnames, e.g.
+% fnames = {'water_b1_t40','water_b1_t50'}; % as many as needed.
+
 % If you don't know which datasets to load, set these two lines to 
 % fnames = {}; % and
 % fIdxs = []; % then run the script.
-
 % A numbered list of data folder names will get printed out along with all
 % the fnames. If you don't want all the folders to be loaded, then choose
 % the numbers you want and put them in fIdxs, e.g. fIdxs = 1:3.
 % Then run again and it will print an expression for the fnames line that
 % you can copy and paste.
+
 fnames = {};
 fIdxs = [];
 
@@ -69,7 +72,7 @@ else
     psds = cell(size(fnames));
     msds = cell(size(fnames));
     stiffs = zeros(2,length(fnames));
-    for fI = 3:length(fnames)
+    for fI = 1:length(fnames)
         f = fnames{fI};
         
         dataFile = [dirList(fI).name '_processed' dataSuff '.mat'];

@@ -73,10 +73,23 @@ else
     t = data.raw.timeVecMs./1e3;
 
     % PSD method based on Berg-Sørensen 2004.
-    [psds, freq] = dft1(tracks', t);
-    psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
-    freq = freq(end/2:end);
+    %     [psds, freq] = dft1(tracks', t);
+    %     psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
+    %     freq = freq(end/2:end);
     
+    delta_t =   t(2)-t(1);
+    fNyq    =   1 / (2 * delta_t);
+    
+    T       =   max(t);
+    freq       =   ((1 : length(tracks)) / T)';
+    
+    FT      =   delta_t*fft(tracks');
+    P       =   FT .* conj(FT) / T;
+    
+    ind     =   find(freq <= fNyq); % only to the Nyquist f
+    freq       =   freq(ind);
+    psds       =   P(ind,:);
+
     % Blocking from Berg-Sørensen 2004 section IV.
     inds = 1:nB:size(psds,1);
     if inds(end) ~= size(psds,1)
