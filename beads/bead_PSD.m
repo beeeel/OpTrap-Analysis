@@ -10,6 +10,7 @@ function data = bead_PSD(data, varargin)
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nblocking       - Block averaging after fourier transform - improves SNR, default 20
 %   plotAx          - Plot on a pair of given axes
+%   zeroPadding     - Zero padding for FFT
 
 % Excess options unused:
 %   direction       - Direction used for ACF calculation. 'x','y', or 'a'
@@ -29,7 +30,7 @@ p.addParameter('doFit',true, @(x)islogical(x))
 p.addParameter('legCell',{'X','Y'}, @(x)iscell(x))
 p.addParameter('nBlocking',20, @(x) isscalar(x) && round(x)==x && x>0)
 p.addParameter('plotAx',[], @(x)isa(x,'matlab.graphics.axis.Axes'))
-% p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
+p.addParameter('zeroPadding',[], @(x) isscalar(x) && round(x)==x && x>0)
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -42,7 +43,7 @@ forceRun = p.Results.forceRun || data.opts.forceRun;
 legCell = p.Results.legCell;
 nB = p.Results.nBlocking;
 doFit = p.Results.doFit;
-% zp = p.Results.zeroPadding;
+zp = p.Results.zeroPadding;
 
 if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
@@ -83,30 +84,33 @@ else
     T       =   max(t);
     freq       =   ((1 : length(tracks)) / T)';
     
-    FT      =   delta_t*fft(tracks');
+    FT      =   delta_t*fft(tracks',2^nextpow2(max(zp,length(t))));
     P       =   FT .* conj(FT) / T;
     
     ind     =   find(freq <= fNyq); % only to the Nyquist f
+    ind     = ind(2:end);
     freq       =   freq(ind);
     psds       =   P(ind,:);
 
-    % Blocking from Berg-Sørensen 2004 section IV.
-    inds = 1:nB:size(psds,1);
-    if inds(end) ~= size(psds,1)
-        inds(end) = size(psds,1);
-    end
-    psdsb = zeros(length(inds)-1, size(psds,2));
-    wb = zeros(length(inds)-1,1);
-    
-    for idx = 1:length(inds)-1
-        psdsb(idx,:) = mean(psds(inds(idx):inds(idx+1)-1,:),1);
-        wb(idx) = mean(freq(inds(idx):inds(idx+1)-1,:),1);
-    end
-    psds = psdsb;
-    freq = wb;
+    if nB > 1
+        % Blocking from Berg-Sørensen 2004 section IV.
+        inds = 1:nB:size(psds,1);
+        if inds(end) ~= size(psds,1)
+            inds(end) = size(psds,1);
+        end
+        psdsb = zeros(length(inds)-1, size(psds,2));
+        wb = zeros(length(inds)-1,1);
 
-    clear psdsb wb
-    
+        for idx = 1:length(inds)-1
+            psdsb(idx,:) = mean(psds(inds(idx):inds(idx+1)-1,:),1);
+            wb(idx) = mean(freq(inds(idx):inds(idx+1)-1,:),1);
+        end
+        psds = psdsb;
+        freq = wb;
+
+        clear psdsb wb
+    end
+
     data.pro.psd = [freq psds];
 
     if doFit
@@ -146,6 +150,14 @@ if doPlots
         if doFit
             % From Berg-Sørensen 2004 eq 10.
             psd = @(f, D, fc) D ./ (2 * pi^2 * (fc.^2 + f.^2));
+
+            tmax = data.raw.timeVecMs(end) / 1e3;
+            spq = @(p, q) sum(freq.^(2*p) .* psds.^q, 1);
+
+            fc1 = sqrt( ( spq(0,1) .* spq(2,2) - spq(1,1) .* spq(1,2) ) ...
+                ./ ( spq(1,1) .* spq(0,2) - spq(0,1) .* spq(1,2) ) );
+            D1 = ( (2*pi^2) / tmax ) * ( spq(0,2) .* spq(2,2) - spq(1,2).^2 ) ...
+                ./ ( spq(1,1) .* spq(0,2) - spq(0,1) .* spq(1,2) );
             plot(ax(idx), freq, psd(freq, D1(idx), fc1(idx)))
         end
 
