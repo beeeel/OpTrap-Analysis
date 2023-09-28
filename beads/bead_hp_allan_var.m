@@ -7,7 +7,7 @@ function data = bead_hp_allan_var(data, field, fpasses, cropTHPval, doPlot, vara
 % Uses position stored in data.raw.(field)
 % (Lazily) uses first row of centres
 
-error('Check how cropTHP is handled because you''re phasing it out')
+% error('Check how cropTHP is handled because you''re phasing it out')
 
 % Choose centres row
 if isfield(data.opts, 'centresRow')
