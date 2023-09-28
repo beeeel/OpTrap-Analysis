@@ -21,6 +21,7 @@ p.addRequired('data',@(x) isa(x,'struct') && isscalar(x) );
 p.addParameter('forceRun',false, @(x)islogical(x))
 p.addParameter('direction','a',@(x)any(strcmp(x,{'a','all','x','y'})))
 p.addParameter('doPlots',true, @(x)islogical(x))
+p.addParameter('doFits',isfield(data.opts,'Vfreq'), @(x)islogical(x))
 p.addParameter('useRaw',false,@(x)islogical(x))
 p.addParameter('centresRow',[],@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',numel(data.raw.suffixes)}))
 p.addParameter('doNorm',false,@(x)islogical(x))
@@ -35,6 +36,7 @@ p.parse(data, varargin{:});
 
 direction = p.Results.direction;
 doPlots = p.Results.doPlots;
+doFits = p.Results.doFits;
 useRaw = p.Results.useRaw;
 doNorm = p.Results.doNorm;
 useField = p.Results.useField;
@@ -110,8 +112,27 @@ else
 
     data.pro.acf = [reshape(lags,[],1) acfs];
 
-    % Here's the ACF function that you wanna fit to.
-    C = @(tau, p) kBT(data.opts.Temp) ./ p(1) .* exp(-tau / p(2)) + p(3).^2/2 .* cos(2*pi*data.opts.Vfreq.*tau);
+    if doFits
+        if isfield(data.opts,'Vfreq')
+            % Here's the ACF function that you wanna fit to.
+            % p = [gamma, tauc]
+            fnc = @(gamma, tauc, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x);
+            ft = fittype( fnc);
+            fopt = fitoptions('method','Nonlin','StartPoint',[0, 0.1],'Lower',[0 0],'Upper',[10, 10]);
+
+            inds = find(lags >= 0 & lags <= 20./data.opts.Vfreq);
+        else
+            fnc = @(tauc, x) exp(-x / tauc);
+            ft = fittype(fnc);
+            fopt = fitoptions('method','Nonlin','StartPoint',[0.1],'Lower',[0],'Upper',[10]);
+
+            inds = find(lags >= 0 & lags <= 1);
+        end
+
+        nacf = acfs(inds,:) ./ acfs(inds(1),:);
+        [fo, G] = fit(lags(inds)', nacf(:,1), ft, fopt);
+        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc);
+    end
 end
 
 if doPlots
@@ -121,6 +142,20 @@ if doPlots
     for idx = 1:size(acfs,2)
         subplot(1,size(acfs,2),idx)
         semilogx(lags, acfs(:,idx))
+        if doFits && idx == 1
+            fnc = data.pro.acfFit.fnc;
+            fo =  data.pro.acfFit.fo;
+            hold on
+            if isfield(data.opts,'Vfreq')
+                inds = find(lags >= 0 & lags <= 20./data.opts.Vfreq);
+
+                plot(lags(inds), fnc(fo.gamma, fo.tauc, lags(inds)).*acfs(inds(1),idx))
+            else
+                inds = find(lags >= 0 & lags <= 1);
+
+                plot(lags(inds), fnc(fo.tauc, lags(inds).*acfs(inds(1),idx)))
+            end
+        end
         xlabel('τ (s)')
         
         if doNorm
