@@ -123,6 +123,24 @@ public static double[] getDarkCentroid(short[] pixels, int width, int height) {
     return CenterOfMass;
 }
 
+public static double getMeanTh(short[] pixels, int width, int height, int YSkip, short thresh) {
+    // Finds mean of image
+    double mean;
+    int i, count = 0;
+    double v, sum = 0.0;
+    
+    for (int y = YSkip; y < height-YSkip; y++) {
+        i = y * width;
+        for (int x = 0; x < width; x++) {
+             v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
+             sum += v;
+             i ++;
+             count ++;
+        }
+    }
+    mean = sum / count;
+    return mean;
+}
 
 public static double getMean(short[] pixels, int width, int height, int YSkip) {
     // Finds mean of image
