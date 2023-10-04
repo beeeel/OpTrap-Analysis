@@ -63,9 +63,9 @@ for i=1:N-1
         + noise(:,1,i).*sqrt(2*D*deltat) ... 			% Diffusion
         + Ef(:,1)*deltat./gamma0;                         % Electric force
 
-    fs(:,i) = [-(kx.*x(1,i)), ...	% Trap force
-        noise(:,1,i).*sqrt(2*D*deltat).*gamma0/deltat, ... 			% Diffusion
-        Ef(:,1)];
+    fs(:,i) = [-(kx(1).*x(1,i)), ...	% Trap force
+        noise(1,1,i).*sqrt(2*D(1)*deltat).*gamma0(1)/deltat, ... 			% Diffusion
+        Ef(1,1)];
     
     y(:,i+1)= y(:,i) -(ky.*deltat.*y(:,i)./gamma0) ...
         + noise(:,2,i).*sqrt(2*D*deltat) ...
@@ -82,11 +82,26 @@ end
 
 
 %% 
-tracks = cell(1,Nb);
-for j = 1:Nb
-	tracks{j} = [time',x(j,:)',y(j,:)', z(j,:)'];
+if strcmp(opts.output, 'tracks')
+    tracks = cell(1,Nb);
+    for j = 1:Nb
+    	tracks{j} = [time',x(j,:)',y(j,:)', z(j,:)'];
+    end
+
+    varargout{1} = tracks;
+
+elseif strcmp(opts.output, 'data')
+    data = struct('fName','BDsim','raw',struct(),'opts',opts);
+    data.mPerPx = 1;
+    data.raw.xCentresPx = x;
+    data.raw.yCentresPx = y;
+    data.raw.timeVecMs = time * 1e3;
+    data = bead_preProcessCentres(data);
+    if isfield(data.opts, 'Efreq')
+        data.opts.Vfreq = data.opts.Efreq;
+    end
+    varargout{1} = data;
 end
-varargout{1} = tracks;
 
 if nargout > 1
     varargout{2} = fs;
