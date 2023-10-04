@@ -41,6 +41,10 @@ if ~isfield(data,'fName')
     data.fName = '';
 end
 
+% Suffixes is needed in some places
+if ~isfield(data.raw,'suffixes')
+    data.raw.suffixes =  repmat({''},size(data.raw.xCentresPx,1),1);
+end
 % Do time regularisation?
 if data.opts.timeRegularisation
     t = data.raw.timeVecMs;
