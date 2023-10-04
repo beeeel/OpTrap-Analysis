@@ -27,6 +27,7 @@ p.addParameter('centresRow',[],@(x)validateattributes(x,{'numeric'},{'positive',
 p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
 p.addParameter('nAvgs',10,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',data.nPoints}))
+p.addParameter('fitCycles',20,@(x)validateattributes(x,{'numeric'},{'positive','integer'}))
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -44,6 +45,7 @@ forceRun = p.Results.forceRun || data.opts.forceRun;
 nAvgs = p.Results.nAvgs;
 centresRow = p.Results.centresRow;
 cropT = data.opts.cropT;
+fitCycles = p.Results.fitCycles;
 
 if isfield(data.pro, 'acf') && ~forceRun
     acfs = data.pro.acf(:,2:end);
@@ -120,7 +122,7 @@ else
             ft = fittype( fnc);
             fopt = fitoptions('method','Nonlin','StartPoint',[0, 0.1],'Lower',[0 0],'Upper',[10, 10]);
 
-            inds = find(lags >= 0 & lags <= 20./data.opts.Vfreq);
+            inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
         else
             fnc = @(tauc, x) exp(-x / tauc);
             ft = fittype(fnc);
@@ -131,7 +133,7 @@ else
 
         nacf = acfs(inds,:) ./ acfs(inds(1),:);
         [fo, G] = fit(lags(inds)', nacf(:,1), ft, fopt);
-        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc);
+        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc,'res',[lags(inds)' nacf(:,1) - fnc(fo.gamma, fo.tauc, lags(inds)')],'fitCycles',fitCycles);
     end
 end
 
@@ -141,13 +143,15 @@ if doPlots
     
     for idx = 1:size(acfs,2)
         subplot(1,size(acfs,2),idx)
-        semilogx(lags, acfs(:,idx))
+        inds = find(lags >= 0);
+        semilogx(lags(inds), acfs(inds,idx))
         if doFits && idx == 1
             fnc = data.pro.acfFit.fnc;
             fo =  data.pro.acfFit.fo;
+            fitCycles = data.pro.acfFit.fitCycles;
             hold on
             if isfield(data.opts,'Vfreq')
-                inds = find(lags >= 0 & lags <= 20./data.opts.Vfreq);
+                inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
 
                 plot(lags(inds), fnc(fo.gamma, fo.tauc, lags(inds)).*acfs(inds(1),idx))
             else
@@ -174,7 +178,7 @@ end
         
         if isempty(useField) && isfield(data.opts, 'UseField')
             useField = data.opts.UseField;
-            fprintf('data.opts says use %s for ACF calculation.\n',useField)
+            %fprintf('data.opts says use %s for ACF calculation.\n',useField)
         elseif any(strcmp(useField(1), {'x','y'}))
             useField = useField(2:end);
         end
