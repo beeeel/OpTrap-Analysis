@@ -30,11 +30,7 @@ else
 end
 
 timeVec = data.raw.timeVecMs;
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;
-else
-    cropT = [1 length(timeVec)];
-end
+cropT = data.opts.cropT;
 
 timeVec = timeVec(cropT(1):cropT(2));
 DC = data.raw.dcAvg(cropT(1):cropT(2));

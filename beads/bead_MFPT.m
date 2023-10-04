@@ -12,12 +12,7 @@ if ~exist('doPlots', 'var')
     doPlots = false;
 end
 
-% If there's a time cropping, use it
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;
-else
-    cropT = [1 length(data.raw.timeVecMs)];
-end
+cropT = data.opts.cropT;
 
 % If there's a field we should use, use it
 if isfield(data.opts, 'UseField')

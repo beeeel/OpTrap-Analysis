@@ -10,12 +10,8 @@ else
     cRow = 1:size(data.pro.xCentresM,1);
 end
 
-timeVec = data.raw.timeVecMs;
-if length(data.opts.cropT) == 2
-    cropT = data.opts.cropT;      
-else
-    cropT = [1 length(timeVec)];
-end
+timeVec = data.pro.timeVecMs;
+cropT = data.opts.cropT;      
 
 xCentresM = data.pro.xCentresM(cRow,cropT(1):cropT(2));
 yCentresM = data.pro.yCentresM(cRow,cropT(1):cropT(2));

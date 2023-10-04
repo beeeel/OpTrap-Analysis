@@ -114,7 +114,7 @@ else
     data.pro.psd = [freq psds];
 
     if doFit
-        tmax = data.raw.timeVecMs(end) / 1e3;
+        tmax = diff(data.pro.timeVecMs([1 end])) / 1e3;
         spq = @(p, q) sum(freq.^(2*p) .* psds.^q, 1);
 
         fc1 = sqrt( ( spq(0,1) .* spq(2,2) - spq(1,1) .* spq(1,2) ) ...
@@ -151,7 +151,7 @@ if doPlots
             % From Berg-Sørensen 2004 eq 10.
             psd = @(f, D, fc) D ./ (2 * pi^2 * (fc.^2 + f.^2));
 
-            tmax = data.raw.timeVecMs(end) / 1e3;
+            tmax = diff(data.pro.timeVecMs([1 end])) / 1e3;
             spq = @(p, q) sum(freq.^(2*p) .* psds.^q, 1);
 
             fc1 = sqrt( ( spq(0,1) .* spq(2,2) - spq(1,1) .* spq(1,2) ) ...

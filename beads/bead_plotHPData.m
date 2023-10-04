@@ -11,7 +11,7 @@ end
 
 xCentresM = data.pro.xCentresHP;
 yCentresM = data.pro.yCentresHP;
-timeVec = data.raw.timeVecMs;
+timeVec = data.pro.timeVecMs;
 
 cropT = data.opts.cropT; 
 if isempty(cropT)
