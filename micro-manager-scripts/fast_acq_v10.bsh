@@ -199,7 +199,7 @@ while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCamera
 	//	XYsD[j][i] = centres[j];
 	//}
 		
-	Is[i] = Static_Image_Math.getMean(pixels, width, height, YSkip);
+	Is[i] = Static_Image_Math.getMeanTh(pixels, width, height, YSkip, thresh);
 		
 		if (i%saveInterval == 0 || i == n-1) // Every [saveInterval] frames, print this frame's info
 		{
