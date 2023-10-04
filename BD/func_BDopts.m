@@ -13,6 +13,15 @@ function opts = func_BDopts(varargin)
 %   Nt          1e5             samples
 %   eta         0.97e-3         Pas
 %   rng_seed    0               dimensionless
+%   output      'data'        'tracks' OR 'data'
+%
+% Instead of trap stiffness, you may choose to give corner time
+%   tauc        []              s
+%
+% Instead of defining a function, you may choose a value of gamma (force
+% ratio) and frequency - this will define an E field in X only
+%   gamma       []              dimensionless
+%   Efreq       []              Hz
 
 if isnumeric(varargin{1})
     N_beads = varargin{1};
@@ -38,15 +47,36 @@ p.addOptional('dt',      1e-4,          posScalar);
 p.addOptional('Nt',      1e5,           posScalar);
 p.addOptional('eta',     0.97e-3,       posNumeric);
 p.addOptional('rng_seed',1,             @(x) isscalar(x) && isinteger(x) && x < 2^32);
+p.addOptional('output',  'data',        @(x) any(strcmp(x, {'tracks','data'})));
+
+p.addOptional('tauc',    [],            posNumeric);
+
+p.addOptional('Efreq',   [],            posScalar);
+p.addOptional('gamma',   [],            posScalar);
 
 parse(p, args{:});
 
 opts = p.Results;
 
+if ~isempty(opts.tauc)
+    if posScalar(opts.tauc)
+        opts.kappaNm = [1 1 .3] * (6 * pi * opts.radius * opts.eta) ./ opts.tauc;
+    else
+        opts.kappaNm = (6 * pi * opts.radius * opts.eta) ./ opts.tauc;
+    end
+end
+
+if ~isempty(opts.Efreq) && ~isempty(opts.gamma)
+    fc = opts.kappaNm(1) ./ (6*pi*opts.radius*opts.eta);
+    E_amp =  sqrt(opts.gamma * 2 * opts.kappaNm(1)*kBT(opts.temp+273) * (1 + opts.Efreq^2/fc^2)/(opts.q_bead*1.6e-19)^2);          % V/m
+
+    opts.E_func = @(x, y, z, t) [E_amp 0 0] .* cos(2 * pi * opts.Efreq * reshape(t, 1, 1, []));
+end
+
 fns = fieldnames(opts);
 
 for idx = 1:length(fns)
-    if ~strcmp(fns{idx}, {'E_func', 'Nt','dt','rng_seed'})
+    if ~strcmp(fns{idx}, {'E_func', 'Nt','dt','rng_seed', 'output','Efreq','gamma'})
         if size(opts.(fns{idx}), 1) == 1
             opts.(fns{idx}) = repmat(opts.(fns{idx}), N_beads, 1);
         elseif size(opts.(fns{idx}),1) ~= N_beads
