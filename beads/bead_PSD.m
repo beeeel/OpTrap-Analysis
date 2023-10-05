@@ -71,7 +71,7 @@ else
     catch
         error('You need to write something to handle data.opts.UseField edge cases, e.g. ''centresPx''. You had ''%s''',data.opts.UseField)
     end
-    t = data.raw.timeVecMs./1e3;
+    t = data.pro.timeVecMs./1e3;
 
     % PSD method based on Berg-Sørensen 2004.
     %     [psds, freq] = dft1(tracks', t);
