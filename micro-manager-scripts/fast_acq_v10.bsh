@@ -141,6 +141,10 @@ int width = mmc.getImageWidth();
 int height = mmc.getImageHeight();
 print("w = " + width + " h = " + height);
 
+if (subWidth[0] == 0)
+{
+	subWidth[0] = width;
+}
 // Set exposure again because the orca is weird
 mmc.setExposure(expMs);
 
