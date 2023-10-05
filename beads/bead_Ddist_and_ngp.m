@@ -40,12 +40,14 @@ for dim = 1:2
 end
 
 % Alpha plot
-figure(300)
+fh = figure(300);
 h = semilogx(dt, alpha(:,1), 'x-');
 hold on
 semilogx(dt, alpha(:,2), 'o-', 'Color',h.Color)
 xlabel('τ (s)')
-ylabel('α')
+ylabel('α_2')
+title('Second-order NGP')
+fh.Name = data.fName;
 
 % ρ(z) plot
 fh = figure;
@@ -55,11 +57,15 @@ y = y./sum(y);
 % semilogy(z,y, 'k-','LineWidth',2)
 hold on
 for idx = 1:size(rho,2)
-    semilogy(z,rho(:,idx) ./ y,'o-')
+    % semilogy(z,rho(:,idx) ./ y,'o-')
+    semilogy(z,rho(:,idx) ./ normpdf(0),'-')
 end
 set(gca,'YScale','log')
 fh.Name = data.fName;
+title('ρ(z)')
 xlim([-5 5])
-ylim([1e-1 100])
+ylim([1e-5 1])
+xlabel('z')
+ylabel('ρ(z)')
 
 data.pro.ngp = [dt alpha];
