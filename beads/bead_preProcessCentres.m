@@ -11,6 +11,12 @@ function data = bead_preProcessCentres(data)
 
 if isfield(data,'mPerPx')
     mPerPx = data.mPerPx;
+elseif isfield(data.opts,'mPerPx')
+    mPerPx = data.opts.mPerPx;
+    data.mPerPx = mPerPx;
+elseif isfield(data.opts,'umPerPx')
+    mPerPx = data.opts.umPerPx * 1e-6;
+    data.mPerPx = mPerPx;
 else
     mPerPx = 0.065e-6;
     data.mPerPx = mPerPx;
