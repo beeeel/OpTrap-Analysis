@@ -10,11 +10,10 @@ else
     cRow = 1:size(data.pro.xCentresM,1);
 end
 
-timeVec = data.pro.timeVecMs;
-cropT = data.opts.cropT;      
+timeVec = 1e-3 * data.pro.timeVecMs;
 
-xCentresM = data.pro.xCentresM(cRow,cropT(1):cropT(2));
-yCentresM = data.pro.yCentresM(cRow,cropT(1):cropT(2));
+xCentresM = data.pro.xCentresM(cRow,:);
+yCentresM = data.pro.yCentresM(cRow,:);
 
 xStiff = calcStiffness(xCentresM);
 yStiff = calcStiffness(yCentresM);
@@ -61,7 +60,7 @@ if size(xCentresM, 1) == 1
     
     % Scatterplot of each centre in units um
     subplot(3,1,2)
-    scatter(xCentresM.*1e6,yCentresM.*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
+    scatter(xCentresM.*1e6,yCentresM.*1e6,[],timeVec,'.')
     if ~isempty(setLims)
         xlim(setLims)
         ylim(setLims)
@@ -75,7 +74,7 @@ if size(xCentresM, 1) == 1
     
     % Time traces of X and Y in units um
     subplot(3,2,5)
-    plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM.*1e6,'.')
+    plot(timeVec, xCentresM.*1e6,'.')
     xlabel('Time (s)')
     ylabel('X (\mu m)')
     title('X time trace')
@@ -83,7 +82,7 @@ if size(xCentresM, 1) == 1
         ylim(setLims)
     end
     subplot(3,2,6)
-    plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM.*1e6,'.')
+    plot(timeVec, yCentresM.*1e6,'.')
     xlabel('Time (s)')
     ylabel('Y (\mu m)')
     title('Y time trace')
@@ -111,7 +110,7 @@ else
         % Scatterplot of each centre in units um
         subplot( 3, size(xCentresM,1), size(xCentresM,1) + obj)
         hold on
-        scatter(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,[],1e-3.*timeVec(cropT(1):cropT(2)),'.')
+        scatter(xCentresM(obj,:).*1e6,yCentresM(obj,:).*1e6,[],timeVec,'.')
         if ~isempty(setLims)
             xlim(setLims)
             ylim(setLims)
@@ -125,7 +124,7 @@ else
         % Time traces of X and Y in units um
         subplot(3,2,5)
         hold on
-        plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM(obj,:).*1e6,'.','MarkerSize',3)
+        plot(timeVec, xCentresM(obj,:).*1e6,'.','MarkerSize',3)
         xlabel('Time (s)')
         ylabel('X (\mu m)')
         title('X time trace')
@@ -135,7 +134,7 @@ else
         
         subplot(3,2,6)
         hold on
-        plot(1e-3.*timeVec(cropT(1):cropT(2)), yCentresM(obj,:).*1e6,'.','MarkerSize',3)
+        plot(timeVec, yCentresM(obj,:).*1e6,'.','MarkerSize',3)
         xlabel('Time (s)')
         ylabel('Y (\mu m)')
         title('Y time trace')

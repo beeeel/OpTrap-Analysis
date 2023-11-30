@@ -65,6 +65,8 @@ if data.opts.timeRegularisation
         % either count or skip set as appropriate
     end
     data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
+    cropT = data.opts.cropT;
+    data.pro.timeVecMs = data.pro.timeVecMs(cropT(1):cropT(2));
 end
 
 % These are in units of pixels

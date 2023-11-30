@@ -86,7 +86,7 @@ if isfield(data.opts, 'UseField') && ~useRaw
     
     cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
 
-    tmp = data.pro.timeVecMs(cropT(1):cropT(2));
+    tmp = data.pro.timeVecMs;
     tmp = tmp(cropTHP(1):cropTHP(2));
     
     if any(strcmp(direction, {'x', 'y'}))
