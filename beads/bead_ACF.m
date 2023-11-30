@@ -71,7 +71,7 @@ else
         % If there's a field we should use, and we're not forced to use raw
         useField = get_Fn;
 
-        timeVec = 1e-3 * data.pro.timeVecMs(cropT(1):cropT(2));
+        timeVec = 1e-3 * data.pro.timeVecMs;
 
         if any(strcmp(direction, {'x', 'y'}))
             centres = data.pro.([direction useField])(centresRow,:);
@@ -118,9 +118,9 @@ else
         if isfield(data.opts,'Vfreq')
             % Here's the ACF function that you wanna fit to.
             % p = [gamma, tauc]
-            fnc = @(gamma, tauc, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x);
+            fnc = @(gamma, tauc, phi, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x + phi);
             ft = fittype( fnc);
-            fopt = fitoptions('method','Nonlin','StartPoint',[0, 0.1],'Lower',[0 0],'Upper',[10, 10]);
+            fopt = fitoptions('method','Nonlin','StartPoint',[0.1, 0.1 0],'Lower',[0 0 0],'Upper',[10, 10 2 * pi]);
 
             inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
         else
@@ -133,7 +133,7 @@ else
 
         nacf = acfs(inds,:) ./ acfs(inds(1),:);
         [fo, G] = fit(lags(inds)', nacf(:,1), ft, fopt);
-        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc,'res',[lags(inds)' nacf(:,1) - fnc(fo.gamma, fo.tauc, lags(inds)')],'fitCycles',fitCycles);
+        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc,'res',[lags(inds)' nacf(:,1) - fnc(fo.gamma, fo.tauc, fo.phi, lags(inds)')],'fitCycles',fitCycles);
     end
 end
 
@@ -153,7 +153,7 @@ if doPlots
             if isfield(data.opts,'Vfreq')
                 inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
 
-                plot(lags(inds), fnc(fo.gamma, fo.tauc, lags(inds)).*acfs(inds(1),idx))
+                plot(lags(inds), fnc(fo.gamma, fo.tauc, fo.phi, lags(inds)).*acfs(inds(1),idx))
             else
                 inds = find(lags >= 0 & lags <= 1);
 
