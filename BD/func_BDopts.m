@@ -41,7 +41,7 @@ p.addOptional('radius',  2.5e-6,        posNumeric);
 p.addOptional('temp',    20,            posNumeric);
 p.addOptional('pos0',    [0 0 0],       posVec);
 p.addOptional('kappaNm', [1 1 .3]*1e-6, posVec);
-p.addOptional('E_func',  @(x,y,z,t) 0,  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0)));
+p.addOptional('E_func',  @(x,y,z,t) repmat(0,size(x,1),3,numel(t)),  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0)));
 p.addOptional('q_bead',  1,             posNumeric);
 p.addOptional('dt',      1e-4,          posScalar);
 p.addOptional('Nt',      1e5,           posScalar);
@@ -64,6 +64,8 @@ if ~isempty(opts.tauc)
     else
         opts.kappaNm = (6 * pi * opts.radius * opts.eta) ./ opts.tauc;
     end
+else
+    opts.tauc = (6 * pi * opts.radius * opts.eta) ./ opts.kappaNm;
 end
 
 if ~isempty(opts.Efreq) && ~isempty(opts.gamma)
