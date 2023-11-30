@@ -1,6 +1,6 @@
 Simulate particle trajectories for trapped beads using Brownian Dynamics.
 
-First use func_BDopts to create an options structure. This function takes name-value pairs as inputs and returns a struct as output. Then call func_simulateDataField to run the simulation.
+First use `func_BDopts` to create an options structure. This function takes name-value pairs as inputs and returns a struct as output. Then call `func_simulateDataField` to run the simulation.
 
 Note: Currently viscosity must be time-independent (i.e. Newtonian), however if you pester me I can update this to create a version which is more generally applicable.
 
