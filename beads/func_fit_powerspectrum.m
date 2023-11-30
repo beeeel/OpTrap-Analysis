@@ -1,6 +1,8 @@
 function fitout = func_fit_powerspectrum(f, psd, nblock, LfitR, FfitR)
 %% Fit PSD, function adapted from Berg-Sorensen tweezercallib
-fitout = struct('parameters',[],'errors',[])
+% inputs: frequency, psd, blocking number, lorentzian fit range, final fit
+% range
+fitout = struct('parameters',[],'errors',[]);
 XY = 'XY';
 for idx = [1 2]
     P = psd(:,idx); Title = XY(idx);
@@ -180,6 +182,7 @@ for idx = [1 2]
 
     %xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     fitout(ixy).parameters = parameters;
+    fitout(idx).errors = sigma_par;
 end; %(for ixy = [1 2])
 
 end
