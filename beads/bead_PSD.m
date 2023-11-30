@@ -84,7 +84,12 @@ else
     T       =   max(t);
     freq       =   ((1 : length(tracks)) / T)';
     
-    FT      =   delta_t*fft(tracks',2^nextpow2(max(zp,length(t))));
+    if zp == 1
+        ZP = length(t);
+    else
+        ZP = 2^nextpow2(max(zp,length(t)));
+    end
+    FT      =   delta_t*fft(tracks',ZP);
     P       =   FT .* conj(FT) / T;
     
     ind     =   find(freq <= fNyq); % only to the Nyquist f
