@@ -32,9 +32,9 @@ if ~isfield(data,'opts')
     data.opts = struct();
 end
 % Check essential fields have been put in opts
-fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', ...
+fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', 'correctionAngle', ...
     'timeRegularisation', 'downsampleR', 'UseField','bandstop'};
-defaults = {[1 data.nPoints], 0, 0, false, ...
+defaults = {[1 data.nPoints], 0, 0, false, [], ...
     true, 1, '', []};
 for fi = 1:length(fnames)
     if ~isfield(data.opts, fnames{fi})  || isempty(data.opts.(fnames{fi}))
@@ -74,7 +74,7 @@ xCentres = data.raw.xCentresPx;
 yCentres = data.raw.yCentresPx;
 
 % Do angular correction?
-if data.opts.angleCorrection
+if data.opts.angleCorrection || ~isempty(data.opts.correctionAngle)
     N_doAngleCorrection;
 elseif isfield(data, 'metadata')
     % Get ROI position
@@ -112,33 +112,47 @@ data.opts.UseField = 'CentresM';
 
 
 function N_doAngleCorrection
-
-    if isfield(data, 'ImstackFullFoV')
-        % Get ROI position
-        roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
-        data.opts.roi = roi;
-        
-        % Get cell centre position
-        cFile = [data.dirPath '/cell_centre.txt'];
-        if exist(cFile, 'file')
-            % Load previously measured cell centre
-            fprintf('Loading cell centre from file: %s\n', cFile)
-            cCentre = load(cFile, '-ascii');
+    if isempty(data.opts.correctionAngle)
+        if isfield(data, 'ImstackFullFoV')
+            % Get ROI position
+            roi = str2double( strsplit( data.metadata.FrameKey_0_0_0.ROI, '-' ) );
+            data.opts.roi = roi;
+            
+            % Get cell centre position
+            cFile = [data.dirPath '/cell_centre.txt'];
+            if exist(cFile, 'file')
+                % Load previously measured cell centre
+                fprintf('Loading cell centre from file: %s\n', cFile)
+                cCentre = load(cFile, '-ascii');
+            else
+                % Measure centre function
+                cCentre = measure_cell_centre(data.ImstackFullFoV{1}{1,1}, data.dirPath, roi);
+            end
+            data.opts.cCentre = cCentre;
+            % This is written in my lab book 22/9/2021
+            rhoX = xCentres + roi(1) - cCentre(1);
+            rhoY = yCentres + roi(2) - cCentre(2);
+            % This is actually radial co-ordinate
+            xCentres = sqrt( rhoX.^2 + rhoY.^2 );
+            % This is r times tangential co-ordinate
+            yCentres = xCentres .* unwrap(2*atan(rhoY ./ rhoX))/2; % Gotta double and then half to make unwrap work.
         else
-            % Measure centre function
-            cCentre = measure_cell_centre(data.ImstackFullFoV{1}{1,1}, data.dirPath, roi);
+            data.opts.angleCorrection = false;
+            warning('No image files loaded, skipping angular correction')
         end
-        data.opts.cCentre = cCentre;
-        % This is written in my lab book 22/9/2021
-        rhoX = xCentres + roi(1) - cCentre(1);
-        rhoY = yCentres + roi(2) - cCentre(2);
-        % This is actually radial co-ordinate
-        xCentres = sqrt( rhoX.^2 + rhoY.^2 );
-        % This is r times tangential co-ordinate
-        yCentres = xCentres .* unwrap(2*atan(rhoY ./ rhoX))/2; % Gotta double and then half to make unwrap work.
     else
-        data.opts.angleCorrection = false;
-        warning('No image files loaded, skipping angular correction')
+        theta = data.opts.correctionAngle;
+        if ~isscalar(theta) || theta < -90 || theta > 90
+            error('Please give scalar correction angle between -90 and +90 degrees')
+        end
+        
+        % Straightforward co-ordinate rotation
+        Xp = cosd(theta) * xCentres - sind(theta) * yCentres;
+        Yp = cosd(theta) * yCentres + sind(theta) * xCentres;
+        
+        xCentres = Xp;
+        yCentres = Yp;
+        
     end
 end
 
