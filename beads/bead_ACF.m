@@ -12,6 +12,8 @@ function data = bead_ACF(data, varargin)
 %   useField        - Specify which processed data field to use.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nAvgs           - Break track into shorter section and average ACF for each section - improves SNR, default 10
+%   doFits          - Fit ACF to monoexponential decay (+sine if Vfreq exists)
+%   fitCycles       - How many cycles at Vfreq to fit to
 
 % Parse the inputs
 p = inputParser;
@@ -47,7 +49,7 @@ centresRow = p.Results.centresRow;
 cropT = data.opts.cropT;
 fitCycles = p.Results.fitCycles;
 
-if isfield(data.pro, 'acf') && ~forceRun
+if isfield(data.pro, 'acf') && ~forceRun && ( ~doFits || isfield(data.pro,'acfFit') )
     acfs = data.pro.acf(:,2:end);
     lags = data.pro.acf(:,1);
     if any(strcmp(direction, {'x', 'y'}))
