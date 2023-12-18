@@ -65,7 +65,8 @@ if data.opts.timeRegularisation
         % either count or skip set as appropriate
     end
     data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
-    cropT = data.opts.cropT;
+    cropT = ceil(data.opts.cropT./data.opts.downsampleR);
+    %data.opts.cropT = cropT;
     data.pro.timeVecMs = data.pro.timeVecMs(cropT(1):cropT(2));
 end
 
@@ -164,11 +165,15 @@ end
         for idx = 1:floor(nT/r)
             % Average both rows of the track, using a number of elements
             % equal to R (downsampling factor)
-            Centres(:,:,idx) = mean( tmp( :, :, (idx - 1) * r + 1 : idx * r ),3);
+            Centres(:,:,idx) = mean( tmp( :, :, (idx - 1) * r + 1 : idx * r ),3);    
         end
         xCentres = Centres(:,1,:);
         yCentres = Centres(:,2,:);
         
+        dc = data.raw.dcAvg;
+        dc = reshape(dc, r, []);
+        dc = mean(dc,1);
+        data.pro.dcAvg = dc;
         if ~data.opts.timeRegularisation
             tmp = data.pro.timeVecMs;
             t1 = zeros(1, floor(nT./r));
@@ -178,7 +183,7 @@ end
                 t1(idx) = mean( tmp( (idx - 1) * r + 1 : idx * r ));
             end
             data.pro.timeVecMs = t1(cropT(1):cropT(2));
-            data.raw.timeVecMs = t1;
+            %data.raw.timeVecMs = t1;
         end
         
         data.opts.cropT = [1 floor(nT./r)];
