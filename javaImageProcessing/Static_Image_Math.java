@@ -124,6 +124,14 @@ public static double[] getDarkCentroid(short[] pixels, int width, int height) {
 }
 
 public static double getMeanTh(short[] pixels, int width, int height, int YSkip, short thresh) {
+    return getMean(pixels, width, height, YSkip, thresh);
+}
+
+public static double getMean(short[] pixels, int width, int height, int YSkip) {
+    return getMean(pixels, width, height, YSkip, (short) 0);
+}
+
+public static double getMean(short[] pixels, int width, int height, int YSkip, short thresh) {
     // Finds mean of image
     double mean;
     int i, count = 0;
@@ -142,24 +150,6 @@ public static double getMeanTh(short[] pixels, int width, int height, int YSkip,
     return mean;
 }
 
-public static double getMean(short[] pixels, int width, int height, int YSkip) {
-    // Finds mean of image
-    double mean;
-    int i, count = 0;
-    double v, sum = 0.0;
-    
-    for (int y = YSkip; y < height-YSkip; y++) {
-        i = y * width;
-        for (int x = 0; x < width; x++) {
-             v = pixels[i];
-             sum += v;
-             i ++;
-             count ++;
-        }
-    }
-    mean = sum / count;
-    return mean;
-}
     
 // Calculate centroids by weighted variance measure
 public static double[] getTwoCentroids(short[] pixels, int width, int height, short thresh) {
