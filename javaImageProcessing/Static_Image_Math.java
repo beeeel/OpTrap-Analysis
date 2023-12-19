@@ -140,6 +140,39 @@ public static double getMeanTh(short[] pixels, int width, int height, int YSkip,
     }
     mean = sum / count;
     return mean;
+	}
+
+	public static double[] getNMeansTh(short[] pixels, int width, int height, int[] subWidth, int YSkip, short thresh) {
+	    // Finds mean of image
+	    int i, count[], nB = subWidth.length;
+	    double mean[], v, sum[];
+
+	    count = new int[nB];
+	    mean = new double[nB];
+	    sum = new double[nB];
+	    
+	    for (int y = YSkip; y < height-YSkip; y++) 
+	    	{
+		i = y * width;
+		for (int b=0; b<nB; b++)
+			{
+			for (int x = 0; x < subWidth[b]; x++) 
+			{
+			        v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
+			        sum[b] += v;
+		        	i ++;
+			        count[b] ++;
+			}
+		}
+    
+	   }
+
+    for (int b=0; b<nB; b++)
+    {
+    	mean[b] = sum[b] / count[b];
+    }
+
+    return mean;
 }
 
 public static double getMean(short[] pixels, int width, int height, int YSkip) {
