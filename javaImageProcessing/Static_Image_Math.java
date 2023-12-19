@@ -135,7 +135,7 @@ public static double getMeanTh(short[] pixels, int width, int height, int YSkip,
              v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
              sum += v;
              i ++;
-             count ++;
+             count += ( v > 0 ) ? 1 : 0;
         }
     }
     mean = sum / count;
@@ -161,7 +161,7 @@ public static double getMeanTh(short[] pixels, int width, int height, int YSkip,
 			        v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
 			        sum[b] += v;
 		        	i ++;
-			        count[b] ++;
+			        count[b] += ( v > 0 ) ? 1 : 0;
 			}
 		}
     
