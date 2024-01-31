@@ -1,6 +1,6 @@
 function out = loadNyquist(filename)
 % out = loadNyquist(filename)
-%% Read csv from dropView and return nyquist data ([f, Z', Z''])
+%% Read csv from dropView and return nyquist data ([f; Z'; Z''])
 fid = fopen(filename);
 
 str = '';
