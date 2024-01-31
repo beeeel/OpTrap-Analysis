@@ -1,4 +1,4 @@
-function [varargout] = rheoFDFT_Evans_vec(tau, msd, nOmegas, J0, eta)
+function [varargout] = rheoFDFT_Evans_vec(tau, msd, nOmegas, J0, eta, allowZero)
 %Y = rheoFDFT_Evans_vec(tau, msd, J0, eta)
 %% Compute finite discrete fourier transform using Evans et al 2009
 % Requires consideration of the long-time limit of the gradient = 1/η
@@ -15,7 +15,7 @@ catch
 end
 
 % If first tau or msd is zero, throw an error
-if tau(1) == 0 || min(msd(1,:) == 0)
+if ( tau(1) == 0 || min(msd(1,:) == 0) ) && ~exist('allowZero','var')
     error('Expected non-zero lag time and MSDs')
 end
 

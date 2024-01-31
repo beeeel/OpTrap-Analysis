@@ -1,5 +1,5 @@
-function [omega, Y] = rheoFDFT_Evans(tau, msd, nOmegas, J0, eta)
-%Y = rheoFDFT_Evans(tau, msd, J0, eta)
+function [varargout] = rheoFDFT_Evans(tau, msd, nOmegas, J0, eta)
+%[omega, Y, [Z]] = rheoFDFT_Evans(tau, msd, nOmegas, J0, eta)
 %% Compute finite discrete fourier transform using Evans et al 2009
 % Requires consideration of the long-time limit of the gradient = 1/η
 % Needs to be supplied the zero-time limit of the compliance/MSD, J0
@@ -34,8 +34,13 @@ for wIdx = 1:nOmegas
         .* ( exp( -1i * omega(wIdx) * tau( 1:N-1 )) - exp( -1i * omega(wIdx) * tau( 2:N )) ));
 end
 
+Z = Y./(-omega.^2); % The Fourier transform of MSD
 Y = 1i .* omega ./ Y;
 
+varargout = {omega, Y};
+if nargout == 3
+    varargout{3} = Z;
+end
 fprintf('\rDone!%s\n',repmat(' ', 50,1))
 
 end
