@@ -41,31 +41,42 @@ end
 
 % Alpha plot
 fh = figure(300);
+clf
 h = semilogx(dt, alpha(:,1), 'x-');
 hold on
 semilogx(dt, alpha(:,2), 'o-', 'Color',h.Color)
 xlabel('τ (s)')
 ylabel('α_2')
 title('Second-order NGP')
+legend('x','y');
 fh.Name = data.fName;
 
 % ρ(z) plot
 fh = figure;
 clf
+fh.Name = data.fName;
 y = normpdf(z);
 y = y./sum(y);
-% semilogy(z,y, 'k-','LineWidth',2)
-hold on
-for idx = 1:size(rho,2)
-    % semilogy(z,rho(:,idx) ./ y,'o-')
-    semilogy(z,rho(:,idx) ./ normpdf(0),'-')
+for dim = 1:2
+    subplot(2,1,dim)
+    semilogy(z,y, 'k-','LineWidth',2)
+    hold on
+    rho = m.Ddist{dim,2}(1:floor(end/2),:);
+    rho = rho./sum(rho);
+    cols = hsv(size(rho,2));
+    colormap('hsv')
+    clim(dt([1 end]))
+    for idx = 1:size(rho,2)
+        % semilogy(z,rho(:,idx) ./ y,'o-')
+        semilogy(z,rho(:,idx) ./ normpdf(0),'-','Color',cols(idx,:))
+    end
+    set(gca,'YScale','log')
+    xy = 'xy';
+    title(['ρ(z), ' xy(dim) ' Direction'])
+    xlim([-5 5])
+    ylim([1e-5 1])
+    xlabel('z')
+    ylabel('ρ(z)')
 end
-set(gca,'YScale','log')
-fh.Name = data.fName;
-title('ρ(z)')
-xlim([-5 5])
-ylim([1e-5 1])
-xlabel('z')
-ylabel('ρ(z)')
 
 data.pro.ngp = [dt alpha];
