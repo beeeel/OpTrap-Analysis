@@ -124,60 +124,121 @@ public static double[] getDarkCentroid(short[] pixels, int width, int height) {
 }
 
 public static double getMeanTh(short[] pixels, int width, int height, int YSkip, short thresh) {
-    return getMean(pixels, width, height, YSkip, thresh);
+    short[] th = {thresh};
+    int[] sW = {width};
+    double mean[][] = getMean(pixels, width, height, sW, YSkip, th);
+    return mean[0][0];
 }
 
 public static double getMean(short[] pixels, int width, int height, int YSkip) {
-    return getMean(pixels, width, height, YSkip, (short) 0);
+    short[] th = {0};
+    int[] sW = {width};
+    double mean[][] =  getMean(pixels, width, height, sW, YSkip, th);
+    return mean[0][0];
 }
 
-public static double getMean(short[] pixels, int width, int height, int YSkip, short thresh) {
+public static double getMean(short[] pixels, int width, int height, int YSkip, short thresh) 
+{
+    short[] th = {thresh};
+    int[] sW = {width};
+    double mean[][] =  getMean(pixels, width, height, sW, YSkip, th);
+    return mean[0][0];
+}
+
+public static double[] getNMeans(short[] pixels, int width, int height, int[] subWidth, int YSkip, short thresh)
+{
+    short[] th = {thresh};
+    double mean[][] = getMean(pixels, width, height, subWidth, YSkip, th);
+    return mean[0];
+}
+
+//public static double getMean(short[] pixels, int width, int height, int YSkip, short[] thresh) {
     // Finds mean of image
-    double mean;
-    int i, count = 0;
-    double v, sum = 0.0;
+//    double mean;
+//    int i, count = 0;
+//    double v, sum = 0.0;
+//    
+//    for (int y = YSkip; y < height-YSkip; y++) {
+//        i = y * width;
+//        for (int x = 0; x < width; x++) {
+//             v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
+//             sum += v;
+//             i ++;
+//             count += ( v > 0 ) ? 1 : 0;
+//        }
+//    }
+//    mean = sum / count;
+//    return mean;
+//}
+
+//public static double[] getMean(short[] pixels, int width, int height, int[] subWidth, int YSkip, short thresh) {
+	// Finds mean of image
+ //   int i, count[], nB = subWidth.length;
+ //   double mean[], v, sum[];
+ //
+ //   count = new int[nB];
+ //   mean = new double[nB];
+ //   sum = new double[nB];
+ //   
+ //   for (int y = YSkip; y < height-YSkip; y++) 
+ //   {
+ //   	i = y * width;
+ //       for (int b=0; b<nB; b++)
+ //   	{
+ //   		for (int x = 0; x < subWidth[b]; x++) 
+ //   		{
+ //   	    	v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
+ //       		sum[b] += v;
+ //   		    i ++;
+ //   		    count[b] += ( v > 0 ) ? 1 : 0;
+ //   		}
+ //   	}
+ //   
+ //   }
+ //
+ //   for (int b=0; b<nB; b++)
+ //   {
+ //   	mean[b] = sum[b] / count[b];
+ //   }
+ //
+ //   return mean;
+//}
+ 
+public static double[][] getMean(short[] pixels, int width, int height, int[] subWidth, int YSkip, short[] thresh) {
+	// Finds mean of image
+    int i, count[][], nB = subWidth.length, nT = thresh.length;
+    double mean[][], v, sum[][];
     
-    for (int y = YSkip; y < height-YSkip; y++) {
-        i = y * width;
-        for (int x = 0; x < width; x++) {
-             v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
-             sum += v;
-             i ++;
-             count += ( v > 0 ) ? 1 : 0;
-        }
-    }
-    mean = sum / count;
-    return mean;
-	}
-
-	public static double[] getNMeansTh(short[] pixels, int width, int height, int[] subWidth, int YSkip, short thresh) {
-	    // Finds mean of image
-	    int i, count[], nB = subWidth.length;
-	    double mean[], v, sum[];
-
-	    count = new int[nB];
-	    mean = new double[nB];
-	    sum = new double[nB];
-	    
-	    for (int y = YSkip; y < height-YSkip; y++) 
-	    	{
-		i = y * width;
-		for (int b=0; b<nB; b++)
-			{
+    count = new int[nB][nT];
+    mean = new double[nB][nT];
+    sum = new double[nB][nT];
+    
+    for (int y = YSkip; y < height-YSkip; y++) 
+    {
+    	i = y * width;
+	    for (int b=0; b<nB; b++)
+		{
 			for (int x = 0; x < subWidth[b]; x++) 
 			{
-			        v = ( pixels[i] > thresh ) ? pixels[i] + Double.MIN_VALUE : 0;
-			        sum[b] += v;
-		        	i ++;
-			        count[b] += ( v > 0 ) ? 1 : 0;
+                for (int t = 0; t < nT; t++)
+                {
+
+    		    	v = ( pixels[i] > thresh[t] ) ? pixels[i] + Double.MIN_VALUE : 0;
+	        		sum[b][t] += v;
+			        count[b][t] += ( v > 0 ) ? 1 : 0;
+                }
+                i++;
 			}
 		}
     
-	   }
+    }
 
     for (int b=0; b<nB; b++)
     {
-    	mean[b] = sum[b] / count[b];
+        for ( int t = 0; t < nT; t++ )
+        {
+        	mean[b][t] = sum[b][t] / count[b][t];
+        }
     }
 
     return mean;
