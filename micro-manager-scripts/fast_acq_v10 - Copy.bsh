@@ -1,0 +1,302 @@
+/**
+ * Using sequence acquisition and real-time processing to track the location of n particles
+ */
+// Set and rep number to go in save file names
+String set = "01";
+String rep = "sin";
+
+// Acquisition parameters
+short thresh = 290; // Threshold below which pixels are ignored for centroid algorithm
+int n = 2e5; // number of frames
+int saveInterval = 5e3; // How often to save an image (in frames)
+float expMs = 0.1;		// Exposure time (ms)
+int[] subWidth = {0}; // Number of px on each side to calculate CofM
+int YSkip = 0;      // Number of rows to skip at top and bottom (symmetrically)
+float Vpp = 0.5;    // Peak to peak voltage applies
+float Vfreq = 500; // Frequency of applied AC
+// The following list of metadata will be saved with the data, ready for MATLAB to load it.
+String[] opts = {"beadDiam: 2e-6", "umPerPx: 0.625", "Temp: 310", "setExp: " + expMs, "thresh: " + thresh, "Vpp: " + Vpp, "Vfreq: " + Vfreq};
+
+// Write the save path here, if it already exists then it'll be appended with _N where N is a number
+folderPath = "D:/Will/data/2023_10_25/sample1_b_" + set + "_f"+Vfreq+"_V"+Vpp+rep; //2023_07_28/area"+set+"_bead"+rep+"/";
+folderpath = mm.data().getUniqueSaveDirectory(folderPath);
+folderPath = folderpath + "/";
+
+// Camera size
+int[] imSz = {2048, 2048};
+
+// START YOUR ENGINES! (jk)
+startTime = System.nanoTime();
+mm.live().setLiveMode(false);
+
+// Save a backup of the position list
+//positionList = mm.positions().getPositionList();
+//mm.positions().markCurrentPosition();
+//positionList.save("D:/Will/junk/PosListBackup"+set+".pos");
+
+// Need this for getMean
+import Static_Image_Math;
+import twoCentroids;
+import nCentroids;
+import myTools;
+// Need this for ROI selection
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.Roi;
+ImagePlus curImage = WindowManager.getCurrentImage();
+// Need this for.... plots....
+import ij.gui.Plot;
+// Need this for writing opts.txt
+import java.io.File;
+import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+
+// Check the folder exists and is empty
+imageFolder = "images_and_metadata";
+folder = new File(folderPath);
+if (folder.isDirectory()){
+	subFolder = new File(folderPath + imageFolder);
+	if (subFolder.isDirectory()){
+		throw new Exception("Path " + folderPath + imageFolder + " already exists. Pick a new path");
+	}
+} else if (folder.exists()) {
+	throw new Exception("Path " + folderPath + " is a file, not a folder");
+} else {
+	folder.mkdirs();
+}
+
+// Write opts.txt
+File fout = new File(folderPath+"opts.txt");
+FileOutputStream fos = new FileOutputStream(fout);
+BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+x = mmc.getXPosition();
+y = mmc.getYPosition();
+//z = mmc.getPosition("PIZStage");
+bw.write("XYZ: ["+x+","+y+","+0+"]");
+bw.newLine();
+for ( st : opts ) {bw.write(st); bw.newLine();}
+bw.close();
+
+
+// Check saveInterval is sensible compared to n
+if (saveInterval >= n){
+	print("number of frames, n = " + n + " saveInterval = " + saveInterval);
+	throw new Exception("saveInterval must be less than number of frames otherwise timing calculation doesn't work");
+}
+
+// Allocate some variables
+int nB = subWidth.length;
+// Basic with threshold
+XYs = new double[2*nB][n];
+//XYsD = new double[2*nB][n];
+// Misc
+Is = new double[n];
+Times = new double[n];
+int i = 0;
+int iSave = 0;
+double firstTime = 0, lastTime = 0;
+
+// Reset the ROI to full frame if necessary
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+if ((width != imSz[0]) || (height != imSz[1]))
+{
+	java.awt.Rectangle ROI = new Rectangle(0, 0, imSz[0], imSz[1]);
+mm.app().setROI(ROI);
+}
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("Initial w = " + width + " h = " + height);
+
+// Prepare coordinated builder and datastore
+builder = mm.data().getCoordsBuilder().z(0).channel(0).stagePosition(0);
+store = mm.data().createRAMDatastore();	// ROI Images
+store1 = mm.data().createRAMDatastore(); // full FOV images
+saveMode = org.micromanager.data.Datastore.SaveMode.valueOf("MULTIPAGE_TIFF");
+
+// Set exposure
+mmc.setExposure(expMs);
+
+// Get one image at full size
+print("Getting full FOV image at " + (System.nanoTime() - startTime)/1e9 + "s");
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+images = mm.live().snap(false);
+image = images.get(0);
+store1.putImage(image);
+
+// Set the ROI and check it has been set
+if (curImage != null) {
+   Roi roi = curImage.getRoi();
+   if (roi != null && roi.getType() == Roi.RECTANGLE) {
+   	for ( j : subWidth ) { i += j; }
+   	if (roi.getFloatWidth() < i )
+   	{
+   		throw new Exception("subWidth array must add to less than the ROI size");
+   	}
+      mm.app().setROI(roi.getBounds());
+   }
+}
+i = 0;
+int width = mmc.getImageWidth();
+int height = mmc.getImageHeight();
+print("w = " + width + " h = " + height);
+
+if (subWidth[0] == 0)
+{
+	subWidth[0] = width;
+}
+// Set exposure again because the orca is weird
+mmc.setExposure(expMs);
+
+// Create a display to show images as they are acquired.
+mm.displays().createDisplay(store1);
+mm.displays().createDisplay(store);
+
+// Variables to be used in the processing loop
+img = 0;
+pixels = new short[width*height];
+centres = new double[2*nB];
+
+// Start acquiring and process frames as they arrive
+print("I'm here!");
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+mmc.startSequenceAcquisition(n, 0.0, true);
+while (!mmc.isSequenceRunning()){
+	print("Waiting for acquisition to start");
+	java.util.concurrent.TimeUnit.MILLISECONDS.sleep(5); // Wait for acquisition to start
+} // There have been weird bugs with it not getting any images, maybe this will help?
+print("Started acquition at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+while  ((mmc.getRemainingImageCount() > 0 || mmc.isSequenceRunning(mmc.getCameraDevice())) && i < n) {
+   if (mmc.getRemainingImageCount() > 0 && i < n) 
+   {
+   	
+   	// Get the next frame
+   	if (i%saveInterval == 0)
+   	{ // Every [saveInterval] frames, get the metadata and display the image
+   		img = mmc.popNextTaggedImage();
+   		image = mm.data().convertTaggedImage(img,
+         	builder.time(iSave).build(), null);
+      	store.putImage(image);
+      	pixels = image.getRawPixels();
+      	iSave++;
+      	if (i == 0) {firstTime = img.tags.getDouble("ElapsedTime-ms");}
+   	} else
+   	{ // The rest of the time, just get the pixel data
+			pixels = mmc.popNextImage();
+   	}
+   	
+   	// Calculate centre of mass
+	centres = nCentroids.getNCentroidsBasic(pixels, width, height, subWidth, thresh, YSkip);
+	for ( int j = 0; j < 2*nB; j++ )
+	{
+		XYs[j][i] = centres[j];
+	}
+   //	centres = nCentroids.getNCentroidsDark(pixels, width, height, subWidth, threshD, YSkip);
+  
+	//for ( int j = 0; j < 2*nB; j++ )
+	//{
+	//	XYsD[j][i] = centres[j];
+	//}
+		
+	Is[i] = Static_Image_Math.getMeanTh(pixels, width, height, YSkip, thresh);
+		
+		if (i%saveInterval == 0 || i == n-1) // Every [saveInterval] frames, print this frame's info
+		{
+			// Regular updates
+			int f = i - saveInterval;
+			int e = i;
+			//print("f = " + f + ", e = " + e);
+			print("i " + i + " X1 = " + XYs[0][i] + " Y1 = " + XYs[1][i]);
+			print("In buffer: " + mmc.getRemainingImageCount());
+			print("Total acquired: " + (i + mmc.getRemainingImageCount()));
+			print("T = " + (System.nanoTime() - startTime)/1e9 + "s");
+			print("");
+
+			// Save data arrays
+			
+			if (f >= 0)
+			{
+				for ( int b = 0; b < nB; b++ )
+				{
+					myTools.writeDoubleArrayToFile(XYs[2*b], f, e, folderPath + "X" + b + ".dat");
+					myTools.writeDoubleArrayToFile(XYs[2*b+1], f, e, folderPath + "Y" + b + ".dat");
+					//myTools.writeDoubleArrayToFile(XYsD[2*b], f, e, folderPath + "X" + b + "D.dat");
+					//myTools.writeDoubleArrayToFile(XYsD[2*b+1], f, e, folderPath + "Y" + b + "D.dat");
+				}
+				
+				myTools.writeDoubleArrayToFile(Is, f, e, folderPath + "I.dat");
+
+				// Calculate and save times
+				lastTime = img.tags.getDouble("ElapsedTime-ms");
+				if (iSave > 1) {
+					frameTime = (lastTime - firstTime)/((iSave-1)*saveInterval);
+					for (int idx = f; idx < e; idx++){
+						Times[idx] = idx * frameTime;}
+				}
+				myTools.writeDoubleArrayToFile(Times, f, e, folderPath + "Times.dat");
+			}
+		}
+		i++;
+   }
+}
+				
+print("Completed main acquisition at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+// Do the plots
+plt = new Plot("X1 time trace", "Time (ms)", "X1 position (px)");
+plt.add("dot", Times, XYs[0]);
+plt.show();
+
+plt = new Plot("Y1 time trace", "Time (ms)", "Y1 position (px)");
+plt.add("dot", Times, XYs[1]);
+plt.show();
+
+plt = new Plot("Scatterplot", "X1 position (px)", "Y1 position (px)");
+for (int b = 0; 2*b < nB; b++) 
+{
+	plt.add("dot", XYs[2*b], XYs[2*b+1]);
+}
+plt.show();
+dim = plt.getSize();
+plt.setFrameSize((int) dim.getWidth(), (int) dim.getWidth());
+
+// Check the acquisition is finished
+if (mmc.isSequenceRunning())
+{
+	print("Stopping previous acquisition");
+	mmc.stopSequenceAcquisition(); // Stop previous acquisition in case it is running
+}
+// Reset the ROI to full frame
+java.awt.Rectangle ROI = new Rectangle(0, 0, imSz[0], imSz[1]);
+mm.app().setROI(ROI);
+print("Set ROI at " + (System.nanoTime() - startTime)/1e9 + "s");
+// Get an after image
+images = mm.live().snap(false);
+image = images.get(0);
+image = image.copyAtCoords(builder.time(1).build());
+store1.putImage(image);
+
+// Finish up - stop the acquisition and save all the data
+print("Completed all acquisition and processing at " + (System.nanoTime() - startTime)/1e9 + "s");
+print("Acquisition rate = " + 1000/Times[1] + "Hz");
+
+// Save images
+store.save(saveMode, folderPath+imageFolder);
+store1.save(saveMode, folderPath+"full_"+imageFolder);
+
+print("Saved at " + (System.nanoTime() - startTime)/1e9 + "s");
+
+mm.displays().closeDisplaysFor(store);
+mm.displays().closeDisplaysFor(store1);
+
+mm.live().setLiveMode(true);
