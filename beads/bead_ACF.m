@@ -12,6 +12,9 @@ function data = bead_ACF(data, varargin)
 %   useField        - Specify which processed data field to use.
 %   forceRun        - Force analysis to run, even if calculation was already done for this data
 %   nAvgs           - Break track into shorter section and average ACF for each section - improves SNR, default 10
+%   doFits          - Fit to equation for trapped bead (with Vfreq if supplied)
+%   fitCycles       - Number of cycles at Vfreq to fit. Otherwise fit to 1s
+%   Vind            - Direction of force (normally x = 1, y = 2)
 
 % Parse the inputs
 p = inputParser;
@@ -28,6 +31,7 @@ p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
 p.addParameter('nAvgs',10,@(x)validateattributes(x,{'numeric'},{'positive','integer','<=',data.nPoints}))
 p.addParameter('fitCycles',20,@(x)validateattributes(x,{'numeric'},{'positive','integer'}))
+p.addParameter('Vind',1,@(x)validateattributes(x,{'numeric'},{'positive','integer'}))
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -46,8 +50,9 @@ nAvgs = p.Results.nAvgs;
 centresRow = p.Results.centresRow;
 cropT = data.opts.cropT;
 fitCycles = p.Results.fitCycles;
+Vind = p.Results.direction; % you might thank me later
 
-if isfield(data.pro, 'acf') && ~forceRun
+if isfield(data.pro, 'acf') && ~forceRun && ( ~ doFits || isfield(data.pro,'acfFit') )
     acfs = data.pro.acf(:,2:end);
     lags = data.pro.acf(:,1);
     if any(strcmp(direction, {'x', 'y'}))
@@ -115,25 +120,29 @@ else
     data.pro.acf = [reshape(lags,[],1) acfs];
 
     if doFits
-        if isfield(data.opts,'Vfreq')
-            % Here's the ACF function that you wanna fit to.
-            % p = [gamma, tauc]
-            fnc = @(gamma, tauc, phi, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x + phi);
-            ft = fittype( fnc);
-            fopt = fitoptions('method','Nonlin','StartPoint',[0.1, 0.1 0],'Lower',[0 0 0],'Upper',[10, 10 2 * pi]);
+        for ind = 1:size(acfs,2)
+            if isfield(data.opts,'Vfreq') && ind == Vind
+                % Here's the ACF function that you wanna fit to.
+                % p = [gamma, tauc]
+                fnc = @(gamma, tauc, phi, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x + phi);
+                ft = fittype( fnc);
+                fopt = fitoptions('method','Nonlin','StartPoint',[0.1, 0.1 0],'Lower',[0 0 0],'Upper',[10, 10 2 * pi]);
 
-            inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
-        else
-            fnc = @(tauc, x) exp(-x / tauc);
-            ft = fittype(fnc);
-            fopt = fitoptions('method','Nonlin','StartPoint',[0.1],'Lower',[0],'Upper',[10]);
+                inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
+                resStr = '[lags(inds)'' nacf - fnc(fo.gamma, fo.tauc, fo.phi, lags(inds)'')]';
+            else
+                fnc = @(tauc, x) exp(-x / tauc);
+                ft = fittype(fnc);
+                fopt = fitoptions('method','Nonlin','StartPoint',[0.01],'Lower',[0],'Upper',[10]);
 
-            inds = find(lags >= 0 & lags <= 1);
+                inds = find(lags >= 0 & lags <= 1);
+                resStr = '[lags(inds)'' nacf - fnc(fo.tauc, lags(inds)'')]';
+            end
+            nacf = acfs(inds,ind) ./ acfs(inds(1),ind);
+
+            [fo, G] = fit(lags(inds)', nacf, ft, fopt);
+            data.pro.acfFit(ind) = struct('fo',fo,'gof',G, 'fnc',fnc,'res',eval(resStr),'fitCycles',fitCycles);
         end
-
-        nacf = acfs(inds,:) ./ acfs(inds(1),:);
-        [fo, G] = fit(lags(inds)', nacf(:,1), ft, fopt);
-        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc,'res',[lags(inds)' nacf(:,1) - fnc(fo.gamma, fo.tauc, fo.phi, lags(inds)')],'fitCycles',fitCycles);
     end
 end
 
@@ -145,19 +154,19 @@ if doPlots
         subplot(1,size(acfs,2),idx)
         inds = find(lags >= 0);
         semilogx(lags(inds), acfs(inds,idx))
-        if doFits && idx == 1
-            fnc = data.pro.acfFit.fnc;
-            fo =  data.pro.acfFit.fo;
-            fitCycles = data.pro.acfFit.fitCycles;
+        if doFits && numel(data.pro.acfFit) >=  idx
+            fnc = data.pro.acfFit(idx).fnc;
+            fo =  data.pro.acfFit(idx).fo;
             hold on
             if isfield(data.opts,'Vfreq')
+                fitCycles = data.pro.acfFit.fitCycles;
                 inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
 
                 plot(lags(inds), fnc(fo.gamma, fo.tauc, fo.phi, lags(inds)).*acfs(inds(1),idx))
             else
                 inds = find(lags >= 0 & lags <= 1);
 
-                plot(lags(inds), fnc(fo.tauc, lags(inds).*acfs(inds(1),idx)))
+                plot(lags(inds), fnc(fo.tauc, lags(inds)).*acfs(inds(1),idx))
             end
         end
         xlabel('τ (s)')

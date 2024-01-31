@@ -86,24 +86,32 @@ else
     data.pro.nacf = [tau' nacfs];
 
     if doFits
-        if isfield(data.opts,'Vfreq')
-            % Here's the ACF function that you wanna fit to.
-            % p = [gamma, tauc]
-            fnc = @(gamma, tauc, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x);
-            ft = fittype( fnc);
-            fopt = fitoptions('method','Nonlin','StartPoint',[0, 0.1],'Lower',[0 0],'Upper',[10, 10]);
+        Vind = 1;
+        fitCycles = 10;
+        for ind = 1:size(nacfs,2)
+        
+            if isfield(data.opts,'Vfreq') && ind == Vind
+                % Here's the ACF function that you wanna fit to.
+                % p = [gamma, tauc]
+                fnc = @(gamma, tauc, phi, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x + phi);
+                ft = fittype( fnc);
+                fopt = fitoptions('method','Nonlin','StartPoint',[0.1, 0.1 0],'Lower',[0 0 0],'Upper',[10, 10 2 * pi]);
 
-            inds = find(tau <= 20./data.opts.Vfreq);
-        else
-            fnc = @(tauc, x) exp(-x / tauc);
-            ft = fittype(fnc);
-            fopt = fitoptions('method','Nonlin','StartPoint',[0.1],'Lower',[0],'Upper',[10]);
+                inds = find(tau >= 0 & tau <= fitCycles./data.opts.Vfreq);
+                resStr = '[tau(inds)'' nacf - fnc(fo.gamma, fo.tauc, fo.phi, tau(inds)'')]';
+            else
+                fnc = @(tauc, x) exp(-x / tauc);
+                ft = fittype(fnc);
+                fopt = fitoptions('method','Nonlin','StartPoint',[0.01],'Lower',[0],'Upper',[10]);
 
-            inds = 1:length(tau);
+                inds = find(tau >= 0 & tau <= 1);
+                resStr = '[tau(inds)'' nacf - fnc(fo.tauc, tau(inds)'')]';
+            end
+            nacf = nacfs(inds,ind);
+
+            [fo, G] = fit(tau(inds)', nacf, ft, fopt);
+            data.pro.acfFit(ind) = struct('fo',fo,'gof',G, 'fnc',fnc,'res',eval(resStr),'fitCycles',fitCycles);
         end
-
-        [fo, G] = fit(tau(inds)', nacfs(inds,1), ft, fopt);
-        data.pro.acfFit = struct('fo',fo,'gof',G, 'fnc',fnc,'res',[tau(inds)' nacfs(inds,1) - fnc(fo.gamma, fo.tauc, tau(inds)')]);
     end
 end
 
