@@ -69,7 +69,11 @@ normR = p.Results.normR;
 fitCols = p.Results.fitCols;
 %% Setup
 
-cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
+if numel(tRanges) == 1
+    cTau = nan(round(length(tRanges{1})/2),length(dims));
+else
+    cTau = nan(round(max(length(tRanges{1}),length(tRanges{2}))/2),length(dims));
+end
 
 % % Just give up if there's no tRanges to work on
 % if ~any([length(tRanges{1}), length(tRanges{2})] > 1)
