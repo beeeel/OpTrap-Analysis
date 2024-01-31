@@ -1,10 +1,14 @@
 function data = bead_loadData(data, varargin)
-%% data = loadBeadData(data/dirPath, [loadImages])
+%% data = loadBeadData(data/dirPath, [loadImages, skipSuffixes])
 % Load centres, times, images and metadata for a given dataset
 
 loadImages = true;
 if nargin > 1
     loadImages = varargin{1};
+end
+skipSuffixes = {};
+if nargin > 2
+    skipSuffixes = varargin{2};
 end
 
 if ~isstruct(data)
@@ -22,8 +26,11 @@ end
 data.opts = bead_loadOpts(data);
 
 if ~isfield(data.opts, 'skipSuffixes')
-    data.opts.skipSuffixes = {};
+    data.opts.skipSuffixes = skipSuffixes;
 else
+    if ~isempty(skipSuffixes)
+        warning('skipSuffixes overridden by opts file')
+    end
     data.opts.skipSuffixes = strsplit(data.opts.skipSuffixes,',');
 end
 
