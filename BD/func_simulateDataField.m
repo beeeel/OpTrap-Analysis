@@ -27,9 +27,10 @@ eta = opts.eta;			% Viscosity of solution
 %water = dynamic viscosity)
 
 N = opts.Nt;                       % number of samples
-fps = 1/opts.dt;                      % sample rate
+deltat = opts.dt;                 % duration of each frame
+fps = 1/deltat;                      % sample rate
 gamma0 = 6*pi*r.*eta;            % viscous drag force
-deltat = 1./fps;                 % duration of each frame
+
 
 kB=1.38E-23;                    % Boltzmann's constant
 D=(kB.*T)./gamma0;                  % diffusion coefficient
@@ -90,6 +91,14 @@ if strcmp(opts.output, 'tracks')
 
     varargout{1} = tracks;
 
+    if nargout > 3
+        msd = msdanalyzer(3, 'm','s','log');
+
+        msd = msd.addAll(tracks);
+        msd = msd.computeMSD;
+        varargout{4} = msd;
+    end
+
 elseif strcmp(opts.output, 'data')
     data = struct('fName','BDsim','raw',struct(),'opts',opts);
     data.mPerPx = 1;
@@ -101,6 +110,11 @@ elseif strcmp(opts.output, 'data')
         data.opts.Vfreq = data.opts.Efreq;
     end
     varargout{1} = data;
+
+    if nargout > 3
+        data = bead_normMSD(data,'doPlots',false);
+        varargout{4} = data.pro.amsdObj;
+    end
 end
 
 if nargout > 1
@@ -114,10 +128,4 @@ if nargout > 2
     varargout{3} = [kxe kye kze];
 end
 
-if nargout > 3
-    msd = msdanalyzer(3, 'm','s','log');
-    
-    msd = msd.addAll(tracks);
-    msd = msd.computeMSD;
-    varargout{4} = msd;
-end
+

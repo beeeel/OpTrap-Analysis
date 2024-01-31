@@ -45,7 +45,7 @@ p.addOptional('E_func',  @(x,y,z,t) repmat(0,size(x,1),3,numel(t)),  @(x) isa(x,
 p.addOptional('q_bead',  1,             posNumeric);
 p.addOptional('dt',      1e-4,          posScalar);
 p.addOptional('Nt',      1e5,           posScalar);
-p.addOptional('eta',     0.97e-3,       posNumeric);
+p.addOptional('eta',     0.97e-3,       posNumeric); % % eta = 2.414E-5 * 10.^(247.8 ./(T -140)); 
 p.addOptional('rng_seed',1,             @(x) isscalar(x) && isinteger(x) && x < 2^32);
 p.addOptional('output',  'data',        @(x) any(strcmp(x, {'tracks','data'})));
 
@@ -86,6 +86,8 @@ for idx = 1:length(fns)
         end
     end
 end
+
+
 
 opts.Nbeads = N_beads;
 
