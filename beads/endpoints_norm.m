@@ -148,8 +148,9 @@ for plt = 1:numel(allplots)
                             case 'G_{avg}'
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff);
                                 dat = Gs(dim,:,2);
-                            case 'zPos'
-                                dat = cat(2,accumulated{1,dayIdx}{1,cellIdx}.zPos);
+                            case 'NGP_{avg}'
+                                Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff);
+                                dat = Gs(dim,:,3);
 
                             case 'α_{min}'
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff2);
@@ -207,6 +208,8 @@ for plt = 1:numel(allplots)
                                 Gs = cat(2,accumulated{1,dayIdx}{1,cellIdx}.stiff2);
                                 dat = log(Gs(dim,:,1)).*(log(tCs(:,dim)).^2)';
                                 
+                            case 'zPos'
+                                dat = cat(2,accumulated{1,dayIdx}{1,cellIdx}.zPos);
                             case 'X'
                                 xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
                                 dat = xyz(:,1);
@@ -216,6 +219,13 @@ for plt = 1:numel(allplots)
                             case 'Z'
                                 xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
                                 dat = xyz(:,3);
+
+                            case '-X'
+                                xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
+                                dat = -xyz(:,1);
+                            case '-Y'
+                                xyz = cat(1,accumulated{1,dayIdx}{1,cellIdx}.XYZ);
+                                dat = -xyz(:,2);
                                 
                             otherwise
                                 error('Have you added a new plotName but not how to plot it?')
