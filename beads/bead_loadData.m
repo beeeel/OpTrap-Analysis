@@ -48,6 +48,7 @@ if ~exist(data.dirPath,'dir')
 end
 
 dl = dir(data.dirPath);
+il = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'I'}));
 dl = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'X', 'Y','T','Times'}));
 nx = sum(startsWith({dl.name}, 'X'));
 ny = sum(startsWith({dl.name}, 'Y'));
@@ -65,7 +66,7 @@ xdx = 1;
 ydx = 1;
 for idx = 1:length(dl)
     fName = sprintf('%s/%s', data.dirPath, dl(idx).name);
-    suff = strsplit(dl(idx).name, {'X', 'Y','.dat'});
+    suff = strsplit(dl(idx).name, {'X', 'Y', '.dat'});
     suff = suff{end-1};
     if any(strcmp(data.opts.skipSuffixes, suff))
         warning('Skipping file %s because skipSuffixes',dl(idx).name)
@@ -103,8 +104,22 @@ if exist([data.dirPath '/subWidth.dat'],'file')
     data.raw.subWidth = byteStreamToDouble([data.dirPath '/subWidth.dat']);
 end
 
-if exist([data.dirPath '/I.dat'], 'file')
-    data.raw.dcAvg = byteStreamToDouble([data.dirPath '/I.dat']);
+if isempty(il) 
+    warning('No brightness (Z/I) data found')
+else
+    if isfield(data.opts, 'zthresh') 
+        str = sprintf('I%%s_th%i.dat',data.opts.zthresh);
+    elseif isfield(data.opts, 'thresh')
+        str = sprintf('I%%s_th%i.dat',data.opts.thresh);
+    else
+        str = sprintf('I%%s_th0.dat');
+    end
+    for idx = 1:length(data.raw.suffixes)
+        Ipath = [data.dirPath '/' sprintf(str,data.raw.suffixes{idx})];
+        if exist(Ipath,'file')
+            data.raw.dcAvg(idx,:) = byteStreamToDouble(Ipath);
+        end
+    end
 end
 
 if loadImages
