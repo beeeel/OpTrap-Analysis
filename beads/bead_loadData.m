@@ -109,8 +109,8 @@ if isempty(il)
 else
     if isfield(data.opts, 'zthresh') 
         str = sprintf('I%%s_th%i.dat',data.opts.zthresh);
-    % elseif isfield(data.opts, 'thresh')
-    %     str = sprintf('I%%s_th%i.dat',data.opts.thresh);
+    elseif isfield(data.opts, 'thresh')
+        str = sprintf('I%%s_th%i.dat',data.opts.thresh);
     else
         str = sprintf('I%%s_th0.dat');
     end
