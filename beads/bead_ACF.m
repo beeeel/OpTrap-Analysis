@@ -50,7 +50,7 @@ nAvgs = p.Results.nAvgs;
 centresRow = p.Results.centresRow;
 cropT = data.opts.cropT;
 fitCycles = p.Results.fitCycles;
-Vind = p.Results.direction; % you might thank me later
+Vind = 1; % you might thank me later
 
 if isfield(data.pro, 'acf') && ~forceRun && ( ~ doFits || isfield(data.pro,'acfFit') )
     acfs = data.pro.acf(:,2:end);
@@ -158,7 +158,7 @@ if doPlots
             fnc = data.pro.acfFit(idx).fnc;
             fo =  data.pro.acfFit(idx).fo;
             hold on
-            if isfield(data.opts,'Vfreq')
+            if isfield(data.opts,'Vfreq') && idx == Vind
                 fitCycles = data.pro.acfFit.fitCycles;
                 inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
 
