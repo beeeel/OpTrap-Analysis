@@ -69,7 +69,7 @@ for idx = 1:length(dl)
     suff = strsplit(dl(idx).name, {'X', 'Y', '.dat'});
     suff = suff{end-1};
     if any(strcmp(data.opts.skipSuffixes, suff))
-        warning('Skipping file %s because skipSuffixes',dl(idx).name)
+%         warning('Skipping file %s because skipSuffixes',dl(idx).name)
     else
         % Screen for NaNs
         dP = byteStreamToDouble(fName);
