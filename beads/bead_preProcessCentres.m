@@ -59,7 +59,7 @@ if data.opts.timeRegularisation
     % Gotta check for split acquisitions! These are characterised by a time
     % vector that resets to 0 partway, so this should do an okay job
     if sum(t==0) > 1
-        error('Split acquisition detected! First acquisition ends at %i, second has length %i\ncd %s && datCropper.sh %i\t is a possible command to fix?', I, length(t)-I, data.dirPath,-I)
+        error('Split acquisition detected! First acquisition ends at %i, second has length %i\ncd %s && datCropper.sh %i\t is a possible command to fix?', I, (length(t)-I)/1e3, data.dirPath,-I)
         % A useful command for trimming acquisitions: find . -type f -exec dd if={} of=../{} ibs=8000 count=523 \;
         % Note: First move data files into a new folder then run this with
         % either count or skip set as appropriate
