@@ -12,7 +12,11 @@ s = s(4:end);
 t = nan(size(s));
 I = nan(size(s));
 for ind = 1:length(s)
+    try
     str         = strsplit(s{ind},{'";"','"'});
     t(ind)      = str2double(str{2});
     I(ind)      = str2double(str{3});
+    catch ME
+        error(ME)
+    end
 end
