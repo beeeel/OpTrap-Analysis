@@ -109,6 +109,8 @@ elseif strcmp(opts.output, 'data')
     if isfield(data.opts, 'Efreq')
         data.opts.Vfreq = data.opts.Efreq;
     end
+    data.opts.gamma = gamma0;
+    data.opts.D = D;
     varargout{1} = data;
 
     if nargout > 3
