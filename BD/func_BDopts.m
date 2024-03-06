@@ -32,13 +32,14 @@ else
 end
 
 posNumeric = @(x) isnumeric(x) && (size(x,1) == N_beads || size(x,1) == 1 ) && all(x > 0);
+Numeric = @(x) isnumeric(x) && (size(x,1) == N_beads || size(x,1) == 1 );
 posVec =  @(x) isnumeric(x) && (size(x,1) == N_beads || size(x,1) == 1 ) && size(x,2) == 3;
 posScalar = @(x) isnumeric(x) && isscalar(x) && x > 0;
 
 p = inputParser;
 
 p.addOptional('radius',  2.5e-6,        posNumeric);
-p.addOptional('temp',    20,            posNumeric);
+p.addOptional('temp',    20,            Numeric);
 p.addOptional('pos0',    [0 0 0],       posVec);
 p.addOptional('kappaNm', [1 1 .3]*1e-6, posVec);
 p.addOptional('E_func',  @(x,y,z,t) repmat(0,size(x,1),3,numel(t)),  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0)));
