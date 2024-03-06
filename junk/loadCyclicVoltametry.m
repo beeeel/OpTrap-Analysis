@@ -14,9 +14,12 @@ I = nan(size(s));
 for ind = 1:length(s)
     try
         str         = strsplit(s{ind},{'";"','"'});
-        V(ind)      = str2double(str{2});
-        I(ind)      = str2double(str{3});
+        if ~isempty(str{2})
+            V(ind)      = str2double(str{2});
+            I(ind)      = str2double(str{3});
+        end
     catch ME
+        error('Loading probably failed because the files are written as multiple experiments each consisting 1 scan. Fix your code!')
         break
         error(ME.message)
     end
