@@ -1,5 +1,6 @@
 function [varargout] = rheoFDFT_Evans_vec(tau, msd, nOmegas, J0, eta, allowZero)
-%Y = rheoFDFT_Evans_vec(tau, msd, J0, eta)
+% Y = rheoFDFT_Evans_vec(tau, msd, J0, eta)
+% [omega, [Y, [Z]]] = rheoFDFT_Evans_vec(tau, msd, J0, eta)
 %% Compute finite discrete fourier transform using Evans et al 2009
 % Requires consideration of the long-time limit of the gradient = 1/η
 % Needs to be supplied the zero-time limit of the compliance/MSD, J0
@@ -15,13 +16,22 @@ catch
 end
 
 % If first tau or msd is zero, throw an error
-if ( tau(1) == 0 || min(msd(1,:) == 0) ) && ~exist('allowZero','var')
+if ( tau(1) == 0 || min(msd(1,:) == 0) ) && (~exist('allowZero','var') || ~allowZero)
     error('Expected non-zero lag time and MSDs')
 end
 
 % Setup: Frequency sampling
-omega = 1./logspace(log10(tau(1)), log10(tau(end)), nOmegas)';
-% omega = 2*pi./tau;
+if (~exist('allowZero','var') || ~allowZero)
+    omega = 1./logspace(log10(tau(1)), log10(tau(end)), nOmegas)';
+else
+    omega = 2*pi./tau;
+    if any(tau == 0)
+        omega = omega(tau ~= 0);
+        tau = tau(tau ~= 0);
+        N = length(tau);
+    end
+    omega = omega(unique(round(linspace(1, length(omega), nOmegas))));
+end
 
 %% Find out how much this can be parallelized
 % Determine max array size by asking for an array of increasing size
