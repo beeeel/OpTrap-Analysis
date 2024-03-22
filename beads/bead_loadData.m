@@ -2,15 +2,7 @@ function data = bead_loadData(data, varargin)
 %% data = loadBeadData(data/dirPath, [loadImages, skipSuffixes])
 % Load centres, times, images and metadata for a given dataset
 
-loadImages = true;
-if nargin > 1
-    loadImages = varargin{1};
-end
-skipSuffixes = {};
-if nargin > 2
-    skipSuffixes = varargin{2};
-end
-
+% Make the struct
 if ~isstruct(data)
     if strcmp(data(1), '/')
         dP = data;
@@ -23,7 +15,18 @@ if ~isstruct(data)
     data = struct('fName', fN, 'dirPath',dP);
 end
 
+% Load opts
 data.opts = bead_loadOpts(data);
+
+% Handle inputs
+loadImages = true;
+if nargin > 1
+    loadImages = varargin{1};
+end
+skipSuffixes = {};
+if nargin > 2
+    skipSuffixes = varargin{2};
+end
 
 if ~isfield(data.opts, 'skipSuffixes')
     data.opts.skipSuffixes = skipSuffixes;
@@ -31,14 +34,13 @@ else
     if ~isempty(skipSuffixes)
         warning('skipSuffixes overridden by opts file')
     end
-    data.opts.skipSuffixes = strsplit(data.opts.skipSuffixes,',');
+    warning('I removed a line of code because it seemed stupid, now that line didn''t load')
+%     data.opts.skipSuffixes = strsplit(data.opts.skipSuffixes,',');
 end
 
 % New method: Find anything with a suffix and then record it and what
 % suffix
-if ~isfield(data, 'raw') 
-    data.raw.suffixes = {};
-elseif ~isfield(data.raw, 'suffixes')
+if ~isfield(data, 'raw') ||  ~isfield(data.raw, 'suffixes')
     data.raw.suffixes = {};
 end
 errMsg = '';
@@ -77,7 +79,9 @@ for idx = 1:length(dl)
             warning('Skipping file %s with %i points (Times has %i points)', fName, length(dP), nP)
         else
             nNans(xdx) = warnNaN(dP, fName);
-            dP(isnan(dP)) = mean(dP(~isnan(dP)));
+            % This next line might cause errors down the line but tbh I
+            % should be doing it.
+%             dP(isnan(dP)) = mean(dP(~isnan(dP)));
             if startsWith(dl(idx).name, 'X')
                 data.raw.xCentresPx(xdx,:) = dP;
                 if length(data.raw.suffixes)<xdx || strcmp(data.raw.suffixes{xdx}, suff)
@@ -99,6 +103,17 @@ for idx = 1:length(dl)
     end
 end
 data.raw.nNans = nNans;
+
+if ~isfield(data.opts, 'centresRow')
+    if isfield(data.opts, 'thresh')
+        data.opts.centresRow = find(endsWith(data.raw.suffixes, num2str(data.opts.thresh)),1);
+        if isempty(data.opts.centresRow)
+            error('Didn''t load data with thresh = %i... You knew you would want to do this eventually.', data.opts.thresh)
+        end
+    else
+        data.opts.centresRow = 1:size(data.raw.xCentresPx,1);
+    end
+end
 
 if exist([data.dirPath '/subWidth.dat'],'file')
     data.raw.subWidth = byteStreamToDouble([data.dirPath '/subWidth.dat']);

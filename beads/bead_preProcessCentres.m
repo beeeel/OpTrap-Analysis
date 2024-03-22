@@ -53,7 +53,8 @@ if ~isfield(data.raw,'suffixes')
 end
 % Do time regularisation?
 if data.opts.timeRegularisation
-    t = data.raw.timeVecMs;
+    cropT = data.opts.cropT;
+    t = data.raw.timeVecMs(cropT(1):cropT(2));
     dt = median(diff(t)) * data.opts.downsampleR;
     [~, I] = min(diff(t));
     % Gotta check for split acquisitions! These are characterised by a time
@@ -65,7 +66,7 @@ if data.opts.timeRegularisation
         % either count or skip set as appropriate
     end
     data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
-    cropT = ceil(data.opts.cropT./data.opts.downsampleR);
+    cropT = ceil(cropT./data.opts.downsampleR);
     %data.opts.cropT = cropT;
     data.pro.timeVecMs = data.pro.timeVecMs(cropT(1):cropT(2));
 end
