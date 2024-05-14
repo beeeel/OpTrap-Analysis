@@ -164,7 +164,7 @@ if loadImages
         warning('Could not find directory for full FoV images')
     end
 else
-    warning('Instructed to not load images')
+    disp('Instructed to not load images')
 end
 
 data.nPoints = length(data.raw.xCentresPx);
