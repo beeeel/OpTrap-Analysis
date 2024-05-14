@@ -45,6 +45,8 @@ nB = p.Results.nBlocking;
 doFit = p.Results.doFit;
 zp = p.Results.zeroPadding;
 
+centresRow = data.opts.centresRow;
+
 if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
     freq = data.pro.psd(:,1);
@@ -67,7 +69,7 @@ else
         error('You need to write something to handle missing data.opts.UseField.')
     end
     try
-        tracks = [data.pro.(['x' fn])(1,:); data.pro.(['y' fn])(1,:)];
+        tracks = [data.pro.(['x' fn])(centresRow,:); data.pro.(['y' fn])(centresRow,:)];
     catch
         error('You need to write something to handle data.opts.UseField edge cases, e.g. ''centresPx''. You had ''%s''',data.opts.UseField)
     end

@@ -65,7 +65,7 @@ for dim = 1:2
     rho = rho./sum(rho);
     cols = hsv(size(rho,2));
     colormap('hsv')
-    clim(dt([1 end]))
+%     clim(dt([1 end]))
     for idx = 1:size(rho,2)
         % semilogy(z,rho(:,idx) ./ y,'o-')
         semilogy(z,rho(:,idx) ./ normpdf(0),'-','Color',cols(idx,:))
