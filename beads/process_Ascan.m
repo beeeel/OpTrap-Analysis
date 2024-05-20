@@ -1,6 +1,11 @@
-function Ascan = process_Ascan(fbase, scanNo, roi, doplots, normalisation, beadPosition, bstop, cropT, tRs, Cref, etaref, zcalibration, Z0V)
+function Ascan = process_Ascan(fbase, scanNo, roi, doplots, normalisation, beadPosition, bstop, cropT, tRs, Cref, etaref, zcalibration, Z0V, skipInds, deTrend)
 dl = dir(sprintf('%sAscan%i*', fbase, scanNo));
 fnames = natsort({dl.name}');
+if exist("skipInds", 'var') && ~isempty(skipInds)
+    inds = 1:length(fnames);
+    inds = ~any(inds == skipInds', 1);
+    fnames = fnames(inds);
+end
 
 if strcmp(normalisation, '0V') && (~exist('Z0V','var') || numel(Z0V) < length(fnames))
     error('Insufficient 0V calibration data')
@@ -13,7 +18,7 @@ for fIdx = [1 round(length(fnames)/2) length(fnames)]
 end
     
 a = data.opts.beadDiam/2;
-deltaZ = logspace(log10(a/2), -4, 1e4);
+deltaZ = logspace(log10(a), -4, 1e4);
 
 corPar = faxens_law(a, deltaZ);
 corNor = faxens_law(a, deltaZ, false);
@@ -26,6 +31,7 @@ Xpos    = nan(length(fnames),1);
 Zpos    = nan(length(fnames),1);
 Zbar    = nan(length(fnames),1);
 ks      = nan(length(fnames),3);
+XYZ     = nan(length(fnames),3);
 thresh  = nan(length(fnames),1);
 
 First = true;
@@ -37,26 +43,33 @@ for fIdx = 1:length(fnames)
         
         [ths, inds] = natsort(data.raw.suffixes(1:end/2));
         try
-        % Better way, by regionpropsing the image
-        idx = length(ths);
-        while idx > 0
-        	idx = idx - 1;
-            str = strsplit(ths{idx},'th');
-            th = str2double(str{2});
-            im = max(cat(3,data.Imstack{1}{:,1}),[],3);
-            rp = regionprops(im > th);
-            if length(rp) > 1 && th ~= 0 && th > mode(im, 'all')
-                if idx ~= length(ths)
-                    idx = idx + 1;
+            % Better way, by regionpropsing the image
+            idx = length(ths);
+            if idx < 3
+                data.opts.centresRow = inds(idx);
+                str = strsplit(ths{idx},'th');
+                th = str2double(str{2});
+                thresh(fIdx) = th;
+            else
+                while idx > 0
+                    idx = idx - 1;
                     str = strsplit(ths{idx},'th');
                     th = str2double(str{2});
+                    im = max(cat(3,data.Imstack{1}{:,1}),[],3);
+                    rp = regionprops(im > th);
+                    if length(rp) > 1 && th ~= 0 && th > mode(im, 'all')
+                        if idx ~= length(ths)
+                            idx = idx + 1;
+                            str = strsplit(ths{idx},'th');
+                            th = str2double(str{2});
+                        end
+                        % Not sorry future me
+                        data.opts.centresRow = inds(idx);
+                        thresh(fIdx) = th;
+                        break
+                    end
                 end
-                % Not sorry future me
-                data.opts.centresRow = inds(idx);
-                thresh(fIdx) = th;
-                break
-            end 
-        end
+            end
         catch ME2
             if strcmp(ME2.identifier, 'MATLAB:nonExistentField')
                 data.opts.centresRow = inds(idx);
@@ -90,11 +103,14 @@ for fIdx = 1:length(fnames)
                 if First
                     xbar = mean(data.raw.xCentresPx(data.opts.centresRow,:));
                     ybar = mean(data.raw.yCentresPx(data.opts.centresRow,:));
-                    
+                    zbar = mean(z);
+
                     roi = data.opts.roi;
                     
                     First = false;
                 end
+                z = z - zbar;
+                Zbar(fIdx) = mean(z);
             case 'none'
                 zbar = 0;
                 Zbar(fIdx) = mean(z);
@@ -165,23 +181,48 @@ for fIdx = 1:length(fnames)
         end
         
         if beadPosition
-            Ypos(fIdx) = data.opts.XYZ(2) + (mean(data.raw.yCentresPx(data.opts.centresRow,:)) + (1081 - data.opts.roi(2))) * data.mPerPx * 1e6;
-            Xpos(fIdx) = data.opts.XYZ(1) + (mean(data.raw.xCentresPx(data.opts.centresRow,:)) + data.opts.roi(1)) * data.mPerPx * 1e6;
+            % If we can get the ROI used for acquisition, do so, otherwise
+            % use the ROI from the last dataset (because of a crash), or
+            % use the user-supplied ROI as a last resort
+            if isfield(data.opts, 'roi')
+                Roi = data.opts.roi;
+            elseif ~exist('Roi','var')
+                Roi = roi;
+            end
+
+            Xpos(fIdx) = data.opts.XYZ(1) + (mean(data.raw.xCentresPx(data.opts.centresRow,:)) + Roi(1)) * data.mPerPx * 1e6;
+            Ypos(fIdx) = data.opts.XYZ(2) + (mean(data.raw.yCentresPx(data.opts.centresRow,:)) + (1081 - Roi(2))) * data.mPerPx * 1e6;
             
-            Xforce(fIdx) = kxy(1) * (mean(data.raw.xCentresPx(data.opts.centresRow,:)) - xbar - data.opts.roi(1) + roi(1)) * data.mPerPx;
-            Yforce(fIdx) = kxy(2) * (mean(data.raw.yCentresPx(data.opts.centresRow,:)) - ybar - data.opts.roi(2) + roi(2)) * data.mPerPx;
+            Xforce(fIdx) = kxy(1) * (mean(data.raw.xCentresPx(data.opts.centresRow,:)) - xbar + Roi(1) - roi(1)) * data.mPerPx;
+            Yforce(fIdx) = kxy(2) * (mean(data.raw.yCentresPx(data.opts.centresRow,:)) - ybar + Roi(2) - roi(2)) * data.mPerPx;
         else
             Ypos(fIdx) = data.opts.XYZ(2);
             Xpos(fIdx) = data.opts.XYZ(1);
         end
+        XYZ(fIdx,:) = data.opts.XYZ;
         ks(fIdx,:) = [kxy, kz];
         
-        Zforce(fIdx) = kz * mean(z*C-zbar);
+        Zforce(fIdx) = kz * mean((z-Zbar(fIdx))*C);
     catch ME
-%                     error(ME.message )
+                    %error(ME.message )
     end
     %         close all
 end
+if exist('deTrend','var') && ~isempty(deTrend)
+    warning('Detrend not working well yet')
+    for idx = 1:length(deTrend)
+        ind = find(strcmp({'X','Y','Z'}, deTrend(idx)));
+        pos = eval(sprintf('%spos;',deTrend(idx)));
+        inds = [1:3 (length(pos)-2):length(pos)];
+        fo = fit(inds', pos(inds), 'poly1');
+        figure(2)
+        clf
+        plot(fo, 1:30, pos)
+        tmp = pos - fo.p1 .* XYZ(:, ind) - fo.p2;
+        eval(sprintf('%sforce = tmp .* ks(:,ind);', deTrend(idx)));
+    end
+end
+
 
 Ascan.Xforce    = Xforce;
 Ascan.Yforce    = Yforce;
