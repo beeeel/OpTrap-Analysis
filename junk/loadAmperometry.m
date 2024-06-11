@@ -17,6 +17,6 @@ for ind = 1:length(s)
     t(ind)      = str2double(str{2});
     I(ind)      = str2double(str{3});
     catch ME
-        error(ME)
+        error(ME.message)
     end
 end

@@ -122,19 +122,38 @@ end
 if isempty(il) 
     warning('No brightness (Z/I) data found')
 else
+    % Check if the opts threshold is present
     if isfield(data.opts, 'zthresh') 
-        str = sprintf('I%%s_th%i.dat',data.opts.zthresh);
+        th = data.opts.zthresh;
     elseif isfield(data.opts, 'thresh')
-        str = sprintf('I%%s_th%i.dat',data.opts.thresh);
+        th = data.opts.thresh;
     else
-        str = sprintf('I%%s_th0.dat');
+        th = 0;
     end
-    for idx = 1:length(data.raw.suffixes)
-        Ipath = [data.dirPath '/' sprintf(str,data.raw.suffixes{idx})];
+    str = sprintf('I0_th%i.dat',th);
+    ind = find(strcmp({il.name}, str));
+    % If the threshold from opts exists, load that and do Z ratiometrically
+    if ~isempty(ind)
+        Ipath = [data.dirPath '/' il(ind).name];
         if exist(Ipath,'file')
-            data.raw.dcAvg(idx,:) = byteStreamToDouble(Ipath);
+            data.raw.dcAvg(1,:) = byteStreamToDouble(Ipath);
+        end
+        % Load background data (presumably)
+        str = sprintf('I1_th0.dat');
+        Ipath = [data.dirPath '/' str];
+        if exist(Ipath,'file')
+            data.raw.dcAvg(2,:) = byteStreamToDouble(Ipath);
+        end
+    else
+        % Otherwise just load all the I data
+        for idx = 1:length(data.raw.suffixes)
+            Ipath = [data.dirPath '/' sprintf(str,idx)];
+            if exist(Ipath,'file')
+                data.raw.dcAvg(idx,:) = byteStreamToDouble(Ipath);
+            end
         end
     end
+    
 end
 
 if loadImages
@@ -179,7 +198,7 @@ if loadImages
         warning('Could not find directory for full FoV images')
     end
 else
-    warning('Instructed to not load images')
+    disp('Instructed to not load images')
 end
 
 data.nPoints = length(data.raw.xCentresPx);
