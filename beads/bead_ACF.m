@@ -121,7 +121,7 @@ else
 
     if doFits
         for ind = 1:size(acfs,2)
-            if isfield(data.opts,'Vfreq') && ind == Vind
+            if isfield(data.opts,'Vfreq') && ~isempty(data.opts.Vfreq) && ind == Vind
                 % Here's the ACF function that you wanna fit to.
                 % p = [gamma, tauc]
                 fnc = @(gamma, tauc, phi, x) 1 ./ (1+gamma.^2) .* exp(-x / tauc) + gamma.^2./(1+gamma.^2) .* cos(2*pi*data.opts.Vfreq.*x + phi);
@@ -158,7 +158,7 @@ if doPlots
             fnc = data.pro.acfFit(idx).fnc;
             fo =  data.pro.acfFit(idx).fo;
             hold on
-            if isfield(data.opts,'Vfreq') && idx == Vind
+            if isfield(data.opts,'Vfreq') && ~isempty(data.opts.Vfreq) && idx == Vind
                 fitCycles = data.pro.acfFit.fitCycles;
                 inds = find(lags >= 0 & lags <= fitCycles./data.opts.Vfreq);
 
