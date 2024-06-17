@@ -98,6 +98,7 @@ for fIdx = 1:length(fnames)
         z = z(data.opts.cropT(1):data.opts.cropT(2));
         switch normalisation
             case 'ref'
+                error('there''s a bug where you need to supply zbar but it''s not an input argument yet...')
                 z = z - zbar;
             case 'first'
                 if First
@@ -202,7 +203,7 @@ for fIdx = 1:length(fnames)
         XYZ(fIdx,:) = data.opts.XYZ;
         ks(fIdx,:) = [kxy, kz];
         
-        Zforce(fIdx) = kz * mean((z-Zbar(fIdx))*C);
+        Zforce(fIdx) = kz * mean((z-Zbar(1))*C);
     catch ME
                     %error(ME.message )
     end
