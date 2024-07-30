@@ -1,12 +1,13 @@
 function [w, X] = fft_scaled(t, x, varargin)
 %% [w, X] = fft_scaled(t, x, [doPlots, ax, fn, zp])
-% Calculate Fourier transform of xf, return one-sided spectra in m and
+% Calculate Fourier transform of x, return one-sided spectra in m and
 % frequency vector in Hz. Assumes x in m and t in s. [Optional] Plots X in
 % m and w in Hz, [optional] on axis ax, and evaluate function fn using
 % input X. [Optional] apply zero padding when doing the FFT
 
 doPlots = true;
 fn = '';
+method = 'new'; % One day this will be an option...
 
 if nargin >= 3
     doPlots = varargin{1};
@@ -44,26 +45,40 @@ if zp < n_points
 elseif isempty(zp)
     zp = n_points;
 else
-    warning('Zero padding was seen causing an error of ~ a factor of 3')
-    tmp = zeros(1,2^nextpow2(zp));
-    inds = [zp/2-ceil(n_points/2), zp/2+floor(n_points/2)];
-    tmp(inds(1):inds(2)-1) = x;
-    tmp(1:inds(1)-1) = x(1);
-    tmp(inds(2):end) = x(end);
-    x = tmp;
-    clear tmp
+%     warning('Zero padding was seen causing an error of ~ a factor of 3')
+%     tmp = zeros(1,2^nextpow2(zp));
+%     inds = [zp/2-ceil(n_points/2), zp/2+floor(n_points/2)];
+%     tmp(inds(1):inds(2)-1) = x;
+%     tmp(1:inds(1)-1) = x(1);
+%     tmp(inds(2):end) = x(end);
+%     x = tmp;
+%     clear tmp
 end
 
 %% Get the FFT
-X = fft(x, zp, 2);
-X = eval([fn '(X/zp)']);
-X = X(:,1:floor(end/2)+1);
-X(:,2:end-1) = 2*X(:,2:end-1);
+switch method
+    case 'old'
+        X = fft(x, zp, 2);
+        X = eval([fn '(X/zp)']);
+        X = X(:,1:floor(end/2)+1);
+        X(:,2:end-1) = 2*X(:,2:end-1);
+        
+        % Sampling frequency
+        Fs = 1./diff(t([1 2]));
+        w = 0:Fs/zp:Fs/2;
+    case 'new'
+        ZP = zp;
 
-% Sampling frequency
-Fs = 1./diff(t([1 2]));
-w = 0:Fs/zp:Fs/2;
-
+        delta_t =   t(2)-t(1);
+        Fs = 1./delta_t;
+        w = 0:Fs/ZP:Fs/2;
+        
+        X       =   fft(x,ZP);
+        X       =   2*X(1:length(w))./length(t);
+    otherwise
+        error('Unrecognised method: %s', method)
+end
+    
 if doPlots
     plot(ax, w, abs(X))
     
