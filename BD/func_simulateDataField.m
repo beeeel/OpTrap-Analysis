@@ -45,6 +45,7 @@ x = zeros(Nb,N)+pos0(:,1);
 y = zeros(Nb,N)+pos0(:,2);
 z = zeros(Nb,N)+pos0(:,3);
 fs = zeros(3, N);
+Efs = zeros(3, N);
 time = (0:N-1).*opts.dt;
 
 % random Gaussian noise
@@ -60,22 +61,22 @@ for i=1:N-1
     Ef = E(x(:,i), y(:,i), z(:,i), time(i)) .* q;
     % Calculate position (Langevin's equation) - Volpe and Volpe 2012, 2014
     % restoring force
-    x(:,i+1)= x(:,i) - (kx.*x(:,i).*deltat./gamma0) ...	% Trap force
+    x(:,i+1)= x(:,i) - (kx.*(x(:,i)-pos0(:,1)).*deltat./gamma0) ...	% Trap force
         + noise(:,1,i).*sqrt(2*D*deltat) ... 			% Diffusion
         + Ef(:,1)*deltat./gamma0;                         % Electric force
-
-    fs(:,i) = [-(kx(1).*x(1,i)), ...	% Trap force
-        noise(1,1,i).*sqrt(2*D(1)*deltat).*gamma0(1)/deltat, ... 			% Diffusion
-        Ef(1,1)];
     
-    y(:,i+1)= y(:,i) -(ky.*deltat.*y(:,i)./gamma0) ...
+    y(:,i+1)= y(:,i) -(ky.*deltat.*(y(:,i)-pos0(:,2))./gamma0) ...
         + noise(:,2,i).*sqrt(2*D*deltat) ...
         + Ef(:,2)*deltat./gamma0;
     
-    z(:,i+1)= z(:,i) -(kz.*deltat.*z(:,i)./gamma0) ...
+    z(:,i+1)= z(:,i) -(kz.*deltat.*(z(:,i)-pos0(:,3))./gamma0) ...
         + noise(:,3,i).*sqrt(2*D*deltat) ...
         + Ef(:,3)*deltat./gamma0;
     
+    fs(:,i) = [-(kx(1).*(x(1,i)-pos0(:,1))), ...	% Trap force
+        noise(1,1,i).*sqrt(2*D(1)*deltat).*gamma0(1)/deltat, ... 			% Diffusion
+        Ef(1,1)];
+    Efs(:,1) = Ef;
 end
 
 % kxe(j) = kB*T/var(x(:,j));
@@ -120,7 +121,7 @@ elseif strcmp(opts.output, 'data')
 end
 
 if nargout > 1
-    varargout{2} = fs;
+    varargout{2} = struct('TotalForce',fs, 'ExternalForce', Efs);
 end
 
 if nargout > 2
