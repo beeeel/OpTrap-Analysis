@@ -87,20 +87,24 @@ end
 % Store mean and std of co-ordinates AFTER angle correction, BEFORE demean.
 data.pro.meanstd = [mean([xCentres; yCentres], 2) std([xCentres; yCentres], 0, 2)].* mPerPx;
 
+Ts = data.opts.cropT(1):data.opts.cropT(2);
+dims = [1, 3, 2];
+
 if data.opts.pOrder > 0 && data.opts.angleCorrection
     warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
     warning('I have not thought carefully about the implications of this. Continue at own risk')
+    
+    % Conditional drift removal only demeans when pOrder = 0
+
+    
+    [~, xCentres, ~] = func_thermal_rm(Ts, ...
+        permute(xCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
+    [~, yCentres, ~] = func_thermal_rm(Ts, ...
+        permute(yCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
+elseif data.opts.pOrder == 0
+    xCentres = permute(xCentres(:,Ts), dims);
+    yCentres = permute(yCentres(:,Ts), dims);
 end
-        
-% Conditional drift removal only demeans when pOrder = 0
-dims = [1, 3, 2];
-
-Ts = data.opts.cropT(1):data.opts.cropT(2);
-
-[~, xCentres, ~] = func_thermal_rm(Ts, ...
-    permute(xCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
-[~, yCentres, ~] = func_thermal_rm(Ts, ...
-    permute(yCentres(:,Ts), dims), data.opts.pOrder, 1, length(Ts));
 
 warning('I''ve changed how cropT is handled with data.pro... You''re gonna get errors in other bits of code, sorry!')
 
