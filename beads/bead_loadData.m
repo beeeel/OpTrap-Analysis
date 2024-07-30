@@ -143,6 +143,7 @@ else
         Ipath = [data.dirPath '/' str];
         if exist(Ipath,'file')
             data.raw.dcAvg(2,:) = byteStreamToDouble(Ipath);
+            data.opts.zLoaded = true;
         end
     else
         % Otherwise just load all the I data

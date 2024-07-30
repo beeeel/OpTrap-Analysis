@@ -1,8 +1,7 @@
 function data = bead_PSD(data, varargin)
 %% data = bead_PSD(data, ...)
 % Take data struct and calculate PSD for processed or raw data, returning
-% calculated PSD in complete data struct. If ACF has not been calculated,
-% do that first.
+% calculated PSD in complete data struct.
 %
 % Additional parameters in the form of name-value pairs. Possible options:
 %   doPlots         - Do the plots if true, else just the calculations
@@ -51,18 +50,6 @@ if isfield(data.pro, 'psd') && ~forceRun
     psds = data.pro.psd(:,2:end);
     freq = data.pro.psd(:,1);
 else
-
-%     if ~isfield(data.pro, 'acf')
-%         data = bead_ACF(data,'doPlots',false,'nAvgs',nAvgs);
-%     end
-% 
-%     acfs = data.pro.acf(:,2:end);
-%     lags = data.pro.acf(:,1);
-% 
-%     psds = zeros((size(lags,1)+1)/2,size(acfs,2));
-%     for idx = 1:size(acfs,2)
-%         [freq, psds(:,idx)] = fft_scaled(lags, acfs(:,idx), false, [], [], zp);
-%     end
     try
         fn = data.opts.UseField;
     catch
@@ -74,31 +61,42 @@ else
         error('You need to write something to handle data.opts.UseField edge cases, e.g. ''centresPx''. You had ''%s''',data.opts.UseField)
     end
     t = data.pro.timeVecMs./1e3;
-
-    % PSD method based on Berg-Sørensen 2004.
-    %     [psds, freq] = dft1(tracks', t);
-    %     psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
-    %     freq = freq(end/2:end);
-    
-    delta_t =   t(2)-t(1);
-    fNyq    =   1 / (2 * delta_t);
-    
-    T       =   max(t);
-    freq       =   ((1 : length(tracks)) / T)';
-    
-    if zp == 1
-        ZP = length(t);
-    else
-        ZP = 2^nextpow2(max(zp,length(t)));
+    % tt = tic;
+    FTMethod = 'fft_scaled';
+    switch FTMethod
+        case 'dft1'
+            % PSD method based on Berg-Sørensen 2004.
+            [psds, freq] = dft1(tracks', t);
+            psds = abs(psds(end/2:end,:)).^2 ./t(end); % Take one-sided FT to calculate PSD = FT^2 / tmax
+            freq = freq(end/2:end);
+        case 'manual'
+            delta_t =   t(2)-t(1);
+            fNyq    =   1 / (2 * delta_t);
+            
+            T       =   max(t);
+            freq       =   ((1 : length(tracks)) / T)';
+            
+            if zp == 1
+                ZP = length(t);
+            else
+                ZP = 2^nextpow2(max(zp,length(t)));
+            end
+            FT      =   delta_t*fft(tracks',ZP);
+            P       =   FT .* conj(FT) / length(t);
+            
+            ind     =   find(freq <= fNyq); % only to the Nyquist f
+            ind     = ind(2:end);
+            freq       =   freq(ind);
+            psds       =   P(ind,:);
+        case 'fft_scaled'
+            for idx = 1:size(tracks,1)
+                [freq, psds(:,idx)] = fft_scaled(t', tracks(idx,:)', false);
+            end
+            freq = freq';
+            psds = psds.*conj(psds);
     end
-    FT      =   delta_t*fft(tracks',ZP);
-    P       =   FT .* conj(FT) / T;
-    
-    ind     =   find(freq <= fNyq); % only to the Nyquist f
-    ind     = ind(2:end);
-    freq       =   freq(ind);
-    psds       =   P(ind,:);
-
+    % disp(['Completed FT in ' num2str(toc(tt)) ' seconds'])
+    % tt = tic;
     if nB > 1
         % Blocking from Berg-Sørensen 2004 section IV.
         inds = 1:nB:size(psds,1);
@@ -117,6 +115,7 @@ else
 
         clear psdsb wb
     end
+    % disp(['Completed blocking in ' num2str(toc(tt)) ' seconds'])
 
     data.pro.psd = [freq psds];
 

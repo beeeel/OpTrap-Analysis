@@ -75,6 +75,12 @@ end
 xCentres = data.raw.xCentresPx;
 yCentres = data.raw.yCentresPx;
 
+% Z data comes from brightness-to-background ratio
+if isfield(data.opts, 'zLoaded') && data.opts.zLoaded 
+    zCentres = data.raw.dcAvg(1,:) ./ data.raw.dcAvg(2,:);
+    data.raw.zCentresAU = zCentres;
+end
+
 % Do angular correction?
 if data.opts.angleCorrection || ~isempty(data.opts.correctionAngle)
     N_doAngleCorrection;
