@@ -34,6 +34,9 @@ p.addRequired('msdObj',@(x)(isa(x,'msdanalyzer')&&isscalar(x)) || (false));
 p.addRequired('obsT',@(x)validateattributes(x,{'numeric'},{'scalar'}))
 
 p.addParameter('nBead',[],@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
+p.addParameter('beadR',1e-6,@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
+p.addParameter('tempK', 298,@(x)validateattributes(x,{'numeric'},{'scalar','positive'}))
+
 p.addParameter('wRange',{{}, {}},@(x)validateattributes(x,{'cell'},{'ncols',nMSDs}))
 p.addParameter('trunc','none',@(x)any(strcmp(x,{'none','minima','FF', 'timeFF'})))%
 p.addParameter('truncFF',0, @(x)validateattributes(x, {'numeric'},{'scalar','positive','nonzero','<',length(msdObj.msd{1}), 'integer'}))
@@ -57,7 +60,14 @@ p.addParameter('doPlot', true, @(x) isa(x,'logical'))
 
 p.parse(msdObj, obsT, varargin{:});
 
+% Experiment options
 nB = p.Results.nBead;
+beadR = p.Results.beadR;
+if any(contains(p.UsingDefaults, 'beadR'))
+    warning('Using default bead radius %g um', 1e6 * beadR)
+end
+tempK = p.Results.tempK;
+
 % FT options
 wR = p.Results.wRange;
 trunc_mode = p.Results.trunc;
@@ -68,6 +78,7 @@ etaIn = p.Results.eta;
 norm_mode = p.Results.norm;
 show_ints = p.Results.show_int;
 lpFrq = p.Results.lowPassFreq;
+
 % MSD options
 nSkip = p.Results.nSkip;
 dims = p.Results.dims;
@@ -91,7 +102,10 @@ doPlot = p.Results.doPlot;
 
 %% Preparatory
 % hee hee
-if length(dims) == 2
+
+if length(dims) == 2 
+    tits = {'X', 'Y'};    
+elseif false %&& data.opts.angleCorrection
     tits = {'Radial', 'Tangential'};    
 elseif length(dims) == 4
     tits = {'Left Radial', 'Left Tangential', 'Right Radial', 'Right Tangential'};
@@ -100,7 +114,8 @@ elseif length(dims) == nB
     tits = {'Thing'};
     dims = 1;
 elseif length(dims) == 1
-    tits = {'Radial', 'Tangential'};    
+    %tits = {'Radial', 'Tangential'};    
+    tits = {'X', 'Y'};    
     tits = tits(dims);
 else
     error('huh, how many beads?');
@@ -138,8 +153,16 @@ for dimI = 1:length(dims)
     else
         msdV = msdObj.msd{dim};
     end
+    switch msdObj.space_units
+        case 'um'
+            SF = 1e-12 * pi * beadR ./ kBT(tempK);
+        otherwise 
+            SF = 1;
+    end
+            
+        
     tau = msdV(2:end-nSkip,1);
-    msd = msdV(2:end-nSkip,2)./msdNorm(dimI);
+    msd = SF .* msdV(2:end-nSkip,2)./msdNorm(dimI);
     
     % Do the lowpass
     if ~isempty(lpFrq)
@@ -198,9 +221,9 @@ for dimI = 1:length(dims)
         
         loglog(nF.*msdV(2:end,1), msdV(2:end,2), 'LineWidth', 2, ...
             'Color', [1 1 1 0.25], 'LineStyle', lS, 'Marker', mS);
-        h = loglog(nF.*tau, msd, 'LineWidth', 2, ...
+        h = loglog(nF.*tau, msd./ SF, 'LineWidth', 2, ...
             'Color', colour, 'LineStyle', lS, 'Marker', mS);
-        h(end+1) = plot(nF.*tau([idx1 idx]), msd([idx1 idx]), ...
+        h(end+1) = plot(nF.*tau([idx1 idx]), msd([idx1 idx])./SF, ...
             'rx', 'LineWidth', 3, 'MarkerSize', 12);
         
         % Plot inverse of intercept frequencies
@@ -291,7 +314,7 @@ end
             %     ylim([1e-6 1e1])
             xlim([8e-3 1e4])
             xlabel('Frequency (Hz)')
-            ylabel('G'', G''''')
+            ylabel('G'', G'''' (Pa)')
             title([tits{plt} ' Fourier transform'])
             set(gca,'FontSize',fSz)
             

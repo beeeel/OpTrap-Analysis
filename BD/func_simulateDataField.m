@@ -48,7 +48,7 @@ fs = zeros(3, N);
 time = (0:N-1).*opts.dt;
 
 % random Gaussian noise
-rng(opts.rng_seed);
+if opts.rng_seed ~= 0; rng(opts.rng_seed); end
 noise = randn(Nb, 3, N);
 
 %% Simulation
