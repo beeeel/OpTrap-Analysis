@@ -14,6 +14,7 @@ end
 xb = zeros(length(inds)-1, size(x,2));
 wb = zeros(length(inds)-1,1);
 
+% There's a quicker way of doing this using reshape (shrug)
 for idx = 1:length(inds)-1
     xb(idx,:) = mean(x(inds(idx):inds(idx+1)-1,:),1);
     wb(idx) = mean(w(inds(idx):inds(idx+1)-1,:),1);
