@@ -1,4 +1,4 @@
-function [wb, xb] = blockAverage(w, x, nB)
+function [wb, xb] = blockAverage(w, x, nB, spacing)
 % Blocking from Berg-Sørensen 2004 section IV.
 if isrow(x)
     x = x';
@@ -7,7 +7,29 @@ if isrow(w)
     w = w';
 end
 
-inds = 1:nB:size(x,1);
+if any(w < w(1))
+    error('Please give frequencies in ascending order')
+end
+
+if ~exist('spacing','var')
+    spacing = 'linear';
+end
+
+switch spacing
+    case 'linear'
+        inds = 1:nB:size(x,1);
+    case 'log'
+        if nB < 30
+            error('Highly recommend nB at least 30, you chose %i', nB)
+        end
+        inds = [1, 2, 6, 11, 31, 61, 100:100:900, unique(round(logspace(3, log10(size(x,1)), nB-14)))];
+    case 'log2'
+        inds = unique(round([1, 2:3:10, ceil(1.667.^(5:size(x,1)))]));
+        inds = inds(inds<size(x,1));
+    otherwise
+        error('Unrecognised spacing: %s', spacing)
+end
+
 if inds(end) ~= size(x,1)
     inds(end) = size(x,1);
 end
