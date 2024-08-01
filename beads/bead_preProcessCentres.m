@@ -33,9 +33,9 @@ if ~isfield(data,'opts')
 end
 % Check essential fields have been put in opts
 fnames = {'cropT', 'forceRun', 'pOrder', 'angleCorrection', 'correctionAngle', ...
-    'timeRegularisation', 'downsampleR', 'UseField','bandstop'};
+    'timeRegularisation', 'downsampleR', 'UseField','bandstop','centresRow'};
 defaults = {[1 data.nPoints], 0, 0, false, [], ...
-    true, 1, '', []};
+    true, 1, '', [], size(data.raw.xCentresPx,1)};
 for fi = 1:length(fnames)
     if ~isfield(data.opts, fnames{fi})  || isempty(data.opts.(fnames{fi}))
         data.opts.(fnames{fi}) = defaults{fi};
