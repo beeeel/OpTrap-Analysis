@@ -23,8 +23,10 @@ switch spacing
             error('Highly recommend nB at least 30, you chose %i', nB)
         end
         inds = [1, 2, 6, 11, 31, 61, 100:100:900, unique(round(logspace(3, log10(size(x,1)), nB-14)))];
+        indmax = find(diff(inds)>1e4,1,'first');
+        inds = [inds(1:indmax), inds(indmax)+1e4:1e4:size(x,1)];
     case 'log2'
-        inds = unique(round([1, 2:3:10, ceil(1.667.^(5:size(x,1)))]));
+        inds = unique(round([1, 2:10:22, ceil(1.667.^(7:size(x,1)))]));
         inds = inds(inds<size(x,1));
     otherwise
         error('Unrecognised spacing: %s', spacing)
