@@ -16,8 +16,16 @@ ky = opts.kappaNm(:,2);                      % trap stiffness along y
 kz = opts.kappaNm(:,3);                      % trap stiffness along y
 
 
-E = opts.E_func;		% Force field defined via function of position
-q = 1.6e-19 * opts.q_bead;			% Charge of particle in Coulombs
+if isfield(opts, 'E_func') && ~isempty(opts.E_func)
+    f = opts.E_func;		% Force field defined via function of position
+    fSF = 1.6e-19 * opts.q_bead;			% Charge of particle in Coulombs
+elseif isfield(opts, 'F_func') && ~isempty(opts.F_func)
+    f = opts.F_func;
+    fSF = 1;
+else
+    f = @(x,y,z,t) zeros(size(x,1),3,length(t));
+    fSF = 1;
+end
 
 eta = opts.eta;			% Viscosity of solution
 
@@ -58,7 +66,7 @@ noise = randn(Nb, 3, N);
 for i=1:N-1
     
     
-    Ef = E(x(:,i), y(:,i), z(:,i), time(i)) .* q;
+    Ef = f(x(:,i), y(:,i), z(:,i), time(i)) .* fSF;;
     % Calculate position (Langevin's equation) - Volpe and Volpe 2012, 2014
     % restoring force
     x(:,i+1)= x(:,i) - (kx.*(x(:,i)-pos0(:,1)).*deltat./gamma0) ...	% Trap force
@@ -76,7 +84,7 @@ for i=1:N-1
     fs(:,i) = [-(kx(1).*(x(1,i)-pos0(:,1))), ...	% Trap force
         noise(1,1,i).*sqrt(2*D(1)*deltat).*gamma0(1)/deltat, ... 			% Diffusion
         Ef(1,1)];
-    Efs(:,1) = Ef;
+    Efs(:,i) = Ef;
 end
 
 % kxe(j) = kB*T/var(x(:,j));
