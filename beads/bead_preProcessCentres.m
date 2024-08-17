@@ -66,7 +66,7 @@ if data.opts.timeRegularisation
         % either count or skip set as appropriate
     end
     data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
-    cropT = [ceil(cropT(1)./data.opts.downsampleR) floor(cropT(1)./data.opts.downsampleR)];
+    cropT = [ceil(cropT(1)./data.opts.downsampleR) floor(cropT(2)./data.opts.downsampleR)];
     data.pro.timeVecMs = data.pro.timeVecMs(cropT(1):cropT(2));
     data.opts.cropT = cropT;
 end
