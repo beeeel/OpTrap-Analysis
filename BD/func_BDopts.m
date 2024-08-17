@@ -7,13 +7,15 @@ function opts = func_BDopts(varargin)
 %   temp        20              °C
 %   pos0        [0 0 0]         m
 %   kappaNm     [1 1 .3]*1e-6   N/m
-%   E_func      @(x,y,z,t)0     V/m
+%   E_func      []              V/m  (old default: @(x,y,z,t)0 )
+%   F_func      []              V/m  (old default: @(x,y,z,t)0 )
 %   q_bead      1               e (fundamental charge, 1.6e-19 C)
 %   dt          1e-4            s
 %   Nt          1e5             samples
 %   eta         0.97e-3         Pas
 %   rng_seed    0               dimensionless
 %   output      'data'        'tracks' OR 'data'
+%   m_bead      0               kg
 %
 % Instead of trap stiffness, you may choose to give corner time
 %   tauc        []              s
@@ -42,8 +44,10 @@ p.addOptional('radius',  2.5e-6,        posNumeric);
 p.addOptional('temp',    20,            Numeric);
 p.addOptional('pos0',    [0 0 0],       posVec);
 p.addOptional('kappaNm', [1 1 .3]*1e-6, posVec);
-p.addOptional('E_func',  @(x,y,z,t) repmat(0,size(x,1),3,numel(t)),  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0)));
+p.addOptional('E_func',  [],  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0))); % old default @(x,y,z,t) zeros(size(x,1),3,numel(t))
+p.addOptional('F_func',  @(x,y,z,t) zeros(size(x,1),3,numel(t)),  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0))); % old default @(x,y,z,t) zeros(size(x,1),3,numel(t))
 p.addOptional('q_bead',  1,             posNumeric);
+p.addOptional('m_bead',  0,             posNumeric);
 p.addOptional('dt',      1e-4,          posScalar);
 p.addOptional('Nt',      1e5,           posScalar);
 p.addOptional('eta',     0.97e-3,       posNumeric); % % eta = 2.414E-5 * 10.^(247.8 ./(T -140)); 
@@ -79,7 +83,7 @@ end
 fns = fieldnames(opts);
 
 for idx = 1:length(fns)
-    if ~strcmp(fns{idx}, {'E_func', 'Nt','dt','rng_seed', 'output','Efreq','gamma'})
+    if ~strcmp(fns{idx}, {'E_func','F_func', 'Nt','dt','rng_seed', 'output','Efreq','gamma'})
         if size(opts.(fns{idx}), 1) == 1
             opts.(fns{idx}) = repmat(opts.(fns{idx}), N_beads, 1);
         elseif size(opts.(fns{idx}),1) ~= N_beads

@@ -1,20 +1,23 @@
-function [varargout] = func_simulateDataField_v2(opts)
-%% [tracks, Xforces, stiffnesses, msdanalyzer] = func_simulateDataField_v2(opts)
-%% Perform BD of particle in optical trap and surface force, use Faxen's law for viscosity
+function [varargout] = func_simulateDataFieldInertia(opts)
+%% [tracks, Xforces, stiffnesses, msdanalyzer] = func_simulateDataFieldInertia(opts)
+%% BD of particle in optical trap and electric field, inertial regime
 % Input an opts structure from func_BDopts, outputs optional - tracks for
 % msdanalyzer, stiffnesses (kBT/variance) as [kx1 ky1 kz1; kx2...],
 % msdanalyzer with msd calculated.
+%
+% Based on Volpe 2013, adapted to include external force by Will Hardiman,
+% August 2024
 
 Nb = opts.Nbeads;
 
-r = opts.radius;                       % radius of bead
+r = opts.radius;                       % radius of bead (m)
+m = opts.m_bead;                         % Mass of bead (kg)
 t = opts.temp;                         % temperature in Celsius
 T = 273+t;                      % temperature in Kelvin
 
 kx = opts.kappaNm(:,1);                      % trap stiffness along x
 ky = opts.kappaNm(:,2);                      % trap stiffness along y
 kz = opts.kappaNm(:,3);                      % trap stiffness along y
-
 
 if isfield(opts, 'E_func') && ~isempty(opts.E_func)
     f = opts.E_func;		% Force field defined via function of position
@@ -37,11 +40,12 @@ eta = opts.eta;			% Viscosity of solution
 N = opts.Nt;                       % number of samples
 deltat = opts.dt;                 % duration of each frame
 fps = 1/deltat;                      % sample rate
+gamma0 = 6*pi*r.*eta;            % viscous drag force
 
 
 kB=1.38E-23;                    % Boltzmann's constant
-gamma0 = 6*pi*r.*eta;            % viscous drag force
-fax = @(h) [1 1 0] .* faxens_law(r, h, true) + [0 0 1] .* faxens_law(r, h, false);
+D=(kB.*T)./gamma0;                  % diffusion coefficient
+
 % Check timestep vs trap stiffness
 if any(gamma0./opts.kappaNm < 10/fps)
     warning('Large time step compared to trap relaxation time')
@@ -50,42 +54,45 @@ end
 pos0 = opts.pos0;
 x = zeros(Nb,N)+pos0(:,1);
 y = zeros(Nb,N)+pos0(:,2);
-z = zeros(Nb,N)+max(pos0(:,3), r*1.001);
+z = zeros(Nb,N)+pos0(:,3);
 fs = zeros(3, N);
-Efs = zeros(3, N);
+fEs = zeros(3, N);
 time = (0:N-1).*opts.dt;
 
 % random Gaussian noise
 if opts.rng_seed ~= 0; rng(opts.rng_seed); end
-noise = randn(Nb, 3, N);
+noise = randn(Nb, 3, N) .* sqrt(2 * kB * T * gamma0 / deltat) ;
 
 %% Simulation
 
-
-for i=1:N-1
-
-    gamma0 = 6*pi*r.*eta.*fax(z(:,i));            % viscous drag force
-    D=(kB.*T)./gamma0;                  % diffusion coefficient
-
-    Ef = f(x(:,i), y(:,i), z(:,i), time(i)) .* fSF;;
-    % Calculate position (Langevin's equation) - Volpe and Volpe 2012, 2014
-    % restoring force
-    x(:,i+1)= x(:,i) - (kx.*(x(:,i)-pos0(:,1)).*deltat./gamma0(1)) ...	% Trap force
-        + noise(:,1,i).*sqrt(2*D(1)*deltat) ... 			% Diffusion
-        + Ef(:,1)*deltat./gamma0(1);                         % Electric force
+for i=2:N-1
     
-    y(:,i+1)= y(:,i) -(ky.*deltat.*(y(:,i)-pos0(:,2))./gamma0(2)) ...
-        + noise(:,2,i).*sqrt(2*D(2)*deltat) ...
-        + Ef(:,2)*deltat./gamma0(2);
     
-    z(:,i+1)= z(:,i) -(kz.*deltat.*(z(:,i)-pos0(:,3))./gamma0(3)) ...
-        + noise(:,3,i).*sqrt(2*D(3)*deltat) ...
-        + Ef(:,3)*deltat./gamma0(3);
+    fE = f(x(:,i), y(:,i), z(:,i), time(i)) .* fSF;
     
-    fs(:,i) = [-(kz(1).*(z(1,i)-pos0(:,3))), ...	% Trap force
-        noise(1,3,i).*sqrt(2*D(3)*deltat).*gamma0(3)/deltat, ... 			% Diffusion
-        Ef(1,3)];
-    Efs(:,1) = Ef;
+    % Calculate position (Langevin's equation) - Volpe and Volpe 2012,
+    % combining elements of eq 6 and 15, then solving as in eq 7+8,
+    % including external force (my contribution)
+    x(:,i+1) = 1 ./ (m / deltat^2 + gamma0 / deltat) .*      ... % Inertial and drag scale factor
+        (x(:,i) .* (2 .* m / deltat^2 + gamma0/deltat)       ... % Inertial, and drag force
+        - (x(:,i) - pos0(1)) .* kx                           ... % Trap force
+        + x(:,i-1) .* (-m / deltat^2) + noise(:,1,i) + fE(:,1)); % Inertia, noise, and external force
+    
+    y(:,i+1) = 1 ./ (m / deltat^2 + gamma0 / deltat) .*      ... % Inertial + drag scale factor
+        (y(:,i) .* (2 .* m / deltat^2 + gamma0/deltat)       ... % Inertial, and drag force
+        - (y(:,i) - pos0(2)) .* ky                           ... % Trap force
+        + y(:,i-1) .* (-m / deltat^2) + noise(:,2,i) + fE(:,2)); % Inertia, noise, and external force
+    
+    z(:,i+1) = 1 ./ (m / deltat^2 + gamma0 / deltat)         ... % Inertial + drag scale factor
+        .* (z(:,i) .* (2 .* m / deltat^2 + gamma0/deltat)    ... % Inertial, and drag force
+        - (z(:,i) - pos0(3)) .* kz                           ... % Trap force
+        + z(:,i-1) .* (-m / deltat^2) + noise(:,3,i) + fE(:,3)); % Inertia, noise, and external force
+    
+    fs(:,i) = [- (x(1,i) - pos0(1)) .* kx, ...	% Trap force
+        noise(1,1,i),                      ...  % Diffusion
+        fE(1,1)];                               % External force
+    
+    fEs(:,i) = fE;
 end
 
 % kxe(j) = kB*T/var(x(:,j));
@@ -130,7 +137,7 @@ elseif strcmp(opts.output, 'data')
 end
 
 if nargout > 1
-    varargout{2} = struct('TotalForce',fs, 'ExternalForce', Efs);
+    varargout{2} = struct('TotalForce',fs, 'ExternalForce', fEs);
 end
 
 if nargout > 2

@@ -96,10 +96,11 @@ data.pro.meanstd = [mean([xCentres; yCentres], 2) std([xCentres; yCentres], 0, 2
 Ts = data.opts.cropT(1):data.opts.cropT(2);
 dims = [1, 3, 2];
 
-if data.opts.pOrder > 0 && data.opts.angleCorrection
-    warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
-    warning('I have not thought carefully about the implications of this. Continue at own risk')
-    
+if data.opts.pOrder > 0 
+    if data.opts.angleCorrection
+        warning('Be careful, drift removal was done ~before~ after conversion to angular co-ordinates,')
+        warning('I have not thought carefully about the implications of this. Continue at own risk')
+    end
     % Conditional drift removal only demeans when pOrder = 0
 
     
@@ -118,6 +119,7 @@ if data.opts.downsampleR > 1
     N_downsample
 end
 
+data.pro.timeVecS = 1e-3 * data.pro.timeVecMs;
 data.pro.xCentresM = ipermute(xCentres.* mPerPx, dims);
 data.pro.yCentresM = ipermute(yCentres.* mPerPx, dims);
 data.opts.UseField = 'CentresM';
