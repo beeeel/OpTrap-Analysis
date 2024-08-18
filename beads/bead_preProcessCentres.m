@@ -66,9 +66,9 @@ if data.opts.timeRegularisation
         % either count or skip set as appropriate
     end
     data.pro.timeVecMs = ( ( 1:round(data.nPoints / data.opts.downsampleR ) ) - 1 ) * dt;
-    cropT = ceil(cropT./data.opts.downsampleR);
-    %data.opts.cropT = cropT;
+    cropT = [ceil(cropT(1)./data.opts.downsampleR) floor(cropT(2)./data.opts.downsampleR)];
     data.pro.timeVecMs = data.pro.timeVecMs(cropT(1):cropT(2));
+    data.opts.cropT = cropT;
 end
 
 % These are in units of pixels
@@ -197,10 +197,12 @@ end
         xCentres = Centres(:,1,:);
         yCentres = Centres(:,2,:);
         
-        dc = data.raw.dcAvg;
-        dc = reshape(dc, r, []);
-        dc = mean(dc,1);
-        data.pro.dcAvg = dc;
+        if isfield(data.raw,'dvAvg')
+            dc = data.raw.dcAvg;
+            dc = reshape(dc, r, []);
+            dc = mean(dc,1);
+            data.pro.dcAvg = dc;
+        end
         if ~data.opts.timeRegularisation
             tmp = data.pro.timeVecMs;
             t1 = zeros(1, floor(nT./r));
