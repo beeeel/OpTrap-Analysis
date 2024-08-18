@@ -23,7 +23,7 @@ classdef msdanalyzer
         % Tolerance for binning delays together. Two delays will be binned
         % together if they differ in absolute value by less than
         % 10^-TOLERANCE.
-        TOLERANCE = 6;
+        TOLERANCE = 9;
     end
     
     properties (SetAccess = private)
