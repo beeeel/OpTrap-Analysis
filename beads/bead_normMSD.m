@@ -80,14 +80,15 @@ if isfield(data.opts, 'UseField') && ~useRaw
     
     if isfield(data.opts, 'cropTHPval')
         cropTHPval = data.opts.cropTHPval;
+        cropT = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
     else
-        cropTHPval = 0;
+        cropT = data.opts.cropT;
     end
     
-    cropTHP = [cropTHPval+1, diff(cropT) + 1 - cropTHPval];
+    
 
-    tmp = data.pro.timeVecMs;
-    tmp = tmp(cropTHP(1):cropTHP(2));
+    tmp = data.pro.timeVecS;
+    tmp = tmp(cropT(1):cropT(2));
     
     if any(strcmp(direction, {'x', 'y'}))
         centres = data.pro.([direction useField])(centresRow,cropT(1):cropT(2));
@@ -118,12 +119,12 @@ else
     % Otherwise, if told to, use raw
     if (strcmp(direction, 'x') || strcmp(direction, 'y'))
         centres = data.raw.([direction 'CentresPx'])(centresRow,cropT(1):cropT(2)) * data.mPerPx;
-        timeVec = data.raw.timeVecMs(cropT(1):cropT(2));
+        timeVec = data.raw.timeVecS(cropT(1):cropT(2));
         legCell = repmat({direction},nPerDir,1);
     else
         centres = [data.raw.xCentresPx(centresRow,cropT(1):cropT(2)) ...
             data.raw.yCentresPx(centresRow,cropT(1):cropT(2))] * data.mPerPx;
-        timeVec = [data.raw.timeVecMs(cropT(1):cropT(2)) ...
+        timeVec = [data.raw.timeVecS(cropT(1):cropT(2)) ...
             data.raw.timeVecMs(cropT(1):cropT(2))];
         
         offset = [offset (offset + length(tmp))];
@@ -159,7 +160,7 @@ if forceRun || ~isfield(data.pro, 'amsdObj') || ~isfield(data.pro, [direction(1)
             centresCrop = centresCrop - mean(centresCrop,2);
             
             for row = 1:length(centresRow)
-                tracks{idx, jdx, row} = [1e-3 .* timeVec(offset(idx) : offset(idx) + num_t(jdx) - 1)' ...
+                tracks{idx, jdx, row} = [timeVec(offset(idx) : offset(idx) + num_t(jdx) - 1)' ...
                     1e6 .* centresCrop(row,:)'];
             end
         end

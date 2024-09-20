@@ -10,7 +10,7 @@ else
     cRow = 1:size(data.pro.xCentresM,1);
 end
 
-timeVec = 1e-3 * data.pro.timeVecMs;
+timeVec = data.pro.timeVecS;
 
 xCentresM = data.pro.xCentresM(cRow,:);
 yCentresM = data.pro.yCentresM(cRow,:);
