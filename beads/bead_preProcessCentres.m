@@ -32,7 +32,7 @@ if ~isfield(data, 'dT')
 end
 
 if ~isfield(data, 'fS')
-    data.fS = 1/dT;
+    data.fS = 1/data.dT;
 end
 
 % Check opts exists before checking its contents
