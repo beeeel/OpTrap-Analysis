@@ -1,9 +1,9 @@
 function [wb, xb] = blockAverage(w, x, nB, spacing)
 % Blocking from Berg-Sørensen 2004 section IV.
-if isrow(x)
+if isrow(x) && isvector(x)
     x = x';
 end
-if isrow(w)
+if isrow(w) && isvector(w)
     w = w';
 end
 
