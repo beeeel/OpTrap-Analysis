@@ -27,6 +27,14 @@ if ~isfield(data, 'nPoints')
     data.nPoints = numel(data.raw.timeVecMs);
 end
 
+if ~isfield(data, 'dT')
+    data.dT = 1e-3*diff(data.raw.timeVecMs([1 2]));
+end
+
+if ~isfield(data, 'fS')
+    data.fS = 1/data.dT;
+end
+
 % Check opts exists before checking its contents
 if ~isfield(data,'opts')
     data.opts = struct();

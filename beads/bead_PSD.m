@@ -130,6 +130,21 @@ else
 
         data.pro.psdFits = [fc1; D1];
     end
+    
+    if isfield(data.opts,'Vfreq') && isfield(data.opts,'Vpp')
+        dI = 1; % direction index
+        dF = 1;
+        frange = [-0.5 0.5] + data.opts.Vfreq;
+        inds = find(freq > frange(1) & freq < frange(2));
+        while isempty(inds)
+            dF = dF + 1;
+            frange = [-0.5 0.5]*dF + data.opts.Vfreq;
+            inds = find(freq > frange(1) & freq < frange(2));
+        end
+        [P,ind] = max(psds(inds,dI));
+        idx = inds(ind);
+        data.pro.psdAmp = [freq(idx) psds(idx,:)];
+    end
 end
 
 if doPlots
@@ -171,17 +186,9 @@ if doPlots
             legend(legCell{idx})
         end
     end
-    if isfield(data.opts,'Vfreq') && isfield(data.opts,'Vpp') 
+    if isfield(data.opts,'Vfreq') && isfield(data.opts,'Vpp') && data.opts.Vpp ~= 0
         dI = 1; % direction index
-        
-        frange = [-0.5 0.5] + data.opts.Vfreq;
-        inds = find(freq > frange(1) & freq < frange(2));
-        [P,ind] = max(psds(inds,dI));
-        idx = inds(ind);
-        if data.opts.Vpp ~= 0
-            plot(ax(dI), freq(idx), P, 'kx')
-        end
-        data.pro.psdAmp = [freq(idx) psds(idx,:)];
+        plot(ax(dI), data.pro.psdAmp(1), data.pro.psdAmp(2), 'kx')
     end
 end
 

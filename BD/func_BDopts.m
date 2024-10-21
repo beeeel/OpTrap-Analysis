@@ -55,7 +55,7 @@ p.addOptional('m_bead',  0,             posNumeric);
 p.addOptional('dt',      1e-4,          posScalar);
 p.addOptional('Nt',      1e5,           posScalar);
 p.addOptional('eta',     0.97e-3,       posNumeric); % % eta = 2.414E-5 * 10.^(247.8 ./(T -140)); 
-p.addOptional('rng_seed',1,             @(x) isscalar(x) && isinteger(x) && x < 2^32);
+p.addOptional('rng_seed',[],             @(x) isscalar(x) && isinteger(x) && x < 2^32);
 p.addOptional('output',  'data',        @(x) any(strcmp(x, {'tracks','data'})));
 
 p.addOptional('statErrM2',[],           posScalar);

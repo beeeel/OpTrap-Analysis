@@ -55,13 +55,13 @@ pos0 = opts.pos0;
 x = zeros(Nb,N)+pos0(:,1);
 y = zeros(Nb,N)+pos0(:,2);
 z = zeros(Nb,N)+pos0(:,3);
-fs = zeros(3, N);
-fEs = zeros(3, N);
+fxs = zeros(Nb, 3, N);
+fEs = zeros(Nb, 3, N);
 time = (0:N-1).*opts.dt;
 
 % random Gaussian noise
 if opts.rng_seed ~= 0; rng(opts.rng_seed); end
-noise = randn(Nb, 3, N) .* sqrt(2 * kB * T * gamma0 / deltat) ;
+noise = randn(Nb, 3, N) .* sqrt(2 * kB * T .* gamma0 / deltat) ;
 
 %% Simulation
 
@@ -88,11 +88,11 @@ for i=2:N-1
         - (z(:,i) - pos0(3)) .* kz                           ... % Trap force
         + z(:,i-1) .* (-m / deltat^2) + noise(:,3,i) + fE(:,3)); % Inertia, noise, and external force
     
-    fs(:,i) = [- (x(1,i) - pos0(1)) .* kx, ...	% Trap force
-        noise(1,1,i),                      ...  % Diffusion
-        fE(1,1)];                               % External force
+    fxs(:,:,i) = [- (x(:,i) - pos0(:,1)) .* kx, ...	% Trap force
+        noise(:,1,i),                      ...  % Diffusion
+        fE(:,1)];                               % External force
     
-    fEs(:,i) = fE;
+    fEs(:,:,i) = fE;
 end
 
 % Simulate dynamic error by downsampling position and time traces.
@@ -140,7 +140,7 @@ elseif strcmp(opts.output, 'data')
 end
 
 if nargout > 1
-    varargout{2} = struct('TotalForce',fs, 'ExternalForce', fEs);
+    varargout{2} = struct('TotalForce',fxs, 'ExternalForce', fEs);
 end
 
 if nargout > 2
