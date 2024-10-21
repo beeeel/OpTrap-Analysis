@@ -95,9 +95,12 @@ for i=2:N-1
     fEs(:,i) = fE;
 end
 
-% kxe(j) = kB*T/var(x(:,j));
-% kye(j) = kB*T/var(y(:,j));
+% Simulate dynamic error by downsampling position and time traces.
+addDynamicError();
 
+% Simulate static error by adding Gaussian noise to position data (not
+% force or time)
+addDynamicError();
 
 %% 
 if strcmp(opts.output, 'tracks')
@@ -147,4 +150,31 @@ if nargout > 2
     varargout{3} = [kxe kye kze];
 end
 
+    function addDynamicError()
+        if isfield(opts, 'dynErrS') && ~isempty(opts.dynErrS) && opts.dynErrS > 0
+            N = opts.dynErrS / opts.dt;
+            if N ~= round(N)
+                N = round(N);
+                warning('Changed exposure time (dynamic error) to %g s', N*opts.dt)
+            end
+            order1 = [2 3 1];
+            order2 = [3 2 1]; %#ok<NASGU>
+            for fn = ["x", "y","z","time", "fs", "Efs"]
+                tmp = permute(eval(fn), order1);
+                tmp = reshape(tmp, N, [], size(tmp,3));
+                tmp = mean(tmp, 1); %#ok<NASGU>
+                eval(sprintf('%s = ipermute(tmp, order2);', fn))
+            end
+        end
+    end
 
+    function addStaticError()
+        if isfield(opts, 'statErrM2') && ~isempty(opts.statErrM2) && opts.statErrM2 > 0
+            for fn = ["x", "y", "z"]
+                tmp = randn(Nb,N); %#ok<NASGU>
+                eval(sprintf('%s = %s + tmp;', fn, fn))
+            end
+        end
+    end
+
+end

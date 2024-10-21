@@ -17,6 +17,10 @@ function opts = func_BDopts(varargin)
 %   output      'data'        'tracks' OR 'data'
 %   m_bead      0               kg
 %
+% Particle tracking errors can be simulated
+%   statErrM2   []              m^2 (Variance of apparent position for stationary bead)
+%   dynErrS     []              s (Effective exposure time, must be much larger than dt)
+%
 % Instead of trap stiffness, you may choose to give corner time
 %   tauc        []              s
 %
@@ -54,6 +58,9 @@ p.addOptional('eta',     0.97e-3,       posNumeric); % % eta = 2.414E-5 * 10.^(2
 p.addOptional('rng_seed',1,             @(x) isscalar(x) && isinteger(x) && x < 2^32);
 p.addOptional('output',  'data',        @(x) any(strcmp(x, {'tracks','data'})));
 
+p.addOptional('statErrM2',[],           posScalar);
+p.addOptional('dynErrS',  [],           posScalar);
+
 p.addOptional('tauc',    [],            posNumeric);
 
 p.addOptional('Efreq',   [],            posScalar);
@@ -86,7 +93,7 @@ for idx = 1:length(fns)
     if ~strcmp(fns{idx}, {'E_func','F_func', 'Nt','dt','rng_seed', 'output','Efreq','gamma'})
         if size(opts.(fns{idx}), 1) == 1
             opts.(fns{idx}) = repmat(opts.(fns{idx}), N_beads, 1);
-        elseif size(opts.(fns{idx}),1) ~= N_beads
+        elseif size(opts.(fns{idx}),1) ~= N_beads && ~isempty(opts.(fns{idx}))
             error('Unexpected 1st dim size for options %s: %i', fns{idx}, size(opts.(fns{idx}),1))
         end
     end
