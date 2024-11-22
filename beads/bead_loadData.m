@@ -49,32 +49,47 @@ if ~exist(data.dirPath,'dir')
     error('Folder %s does not exist!',data.dirPath)
 end
 
-dl = dir(data.dirPath);
-il = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'I'}));
-dl = dl(endsWith({dl.name}, '.dat') & startsWith({dl.name}, {'X', 'Y','T','Times'}));
-nx = sum(startsWith({dl.name}, 'X'));
-ny = sum(startsWith({dl.name}, 'Y'));
-nt = sum(startsWith({dl.name}, {'T','Times'}));
+ext = '.dat';
+nx = 0; ny = 0; nz = 0; % Declare "local-global" variables
+[dl, il] = getDL(ext);
 
-checkSizes;
+if isempty(dl)
+    ext = '.bin';
+    [dl, il] = getDL(ext);
+    loadfun = @(x) binaryToDouble(x);
+else
+    loadfun = @(x) byteStreamToDouble(x);
+end
 
 tl = dl(startsWith({dl.name}, {'T','Times'}));
 [~, tidx] = min([tl.bytes]);
-data.raw.timeVecMs  = byteStreamToDouble([data.dirPath '/' tl(tidx).name]);
+
+if strcmp(ext,'.bin')
+    M = 1e3;
+else
+    M = 1;
+end
+data.raw.timeVecMs  = M * loadfun([data.dirPath '/' tl(tidx).name]);
+
 nP = length(data.raw.timeVecMs);
+nD = sum([nx, ny, nz] ~= 0);
+data.nD = nD;
 
 nNans = zeros(nx,1);
 xdx = 1;
 ydx = 1;
+zdx = 1;
 for idx = 1:length(dl)
     fName = sprintf('%s/%s', data.dirPath, dl(idx).name);
-    suff = strsplit(dl(idx).name, {'X', 'Y', '.dat'});
+    suff = strsplit(dl(idx).name, {'X', 'Y', 'Z', ext});
     suff = suff{end-1};
+    suff = replace(suff, '_data','');
     if any(strcmp(data.opts.skipSuffixes, suff))
 %         warning('Skipping file %s because skipSuffixes',dl(idx).name)
     else
         % Screen for NaNs
-        dP = byteStreamToDouble(fName);
+        dP = loadfun(fName);
+
         if length(dP) ~= nP
             warning('Skipping file %s with %i points (Times has %i points)', fName, length(dP), nP)
         else
@@ -98,6 +113,14 @@ for idx = 1:length(dl)
                     error('Suffix mismatch like you said wouldn''t happen')
                 end
                 ydx = ydx + 1;
+            elseif startsWith(dl(idx).name, 'Z')
+                data.raw.zCentresPx(zdx,:) = dP;
+                if length(data.raw.suffixes)<zdx || strcmp(data.raw.suffixes{zdx}, suff)
+                    data.raw.suffixes{zdx} = suff;
+                else
+                    error('Suffix mismatch like you said wouldn''t happen')
+                end
+                zdx = zdx + 1;
             end
         end
     end
@@ -119,9 +142,9 @@ if exist([data.dirPath '/subWidth.dat'],'file')
     data.raw.subWidth = byteStreamToDouble([data.dirPath '/subWidth.dat']);
 end
 
-if isempty(il) 
+if isempty(il) && zdx == 1
     warning('No brightness (Z/I) data found')
-else
+elseif zdx == 1
     % Check if the opts threshold is present
     if isfield(data.opts, 'zthresh') 
         th = data.opts.zthresh;
@@ -204,25 +227,43 @@ end
 
 data.nPoints = length(data.raw.xCentresPx);
 
-function nNans = warnNaN(arr, name)
-nNans = sum(isnan(arr));
-if nNans
-    warning(['Loaded and replaced ' num2str(nNans) ' from ' name])
-end
+    function nNans = warnNaN(arr, name)
+        nNans = sum(isnan(arr));
+        if nNans
+            warning(['Loaded and replaced ' num2str(nNans) ' from ' name])
+        end
 
-end
+    end
 
-function checkSizes
+    function [dl, il] = getDL(ext)
+        %% Get the directory list
+        dl = dir(data.dirPath);
+        il = dl(endsWith({dl.name}, ext) & startsWith({dl.name}, {'I'}));
+        dl = dl(endsWith({dl.name}, ext) & startsWith({dl.name}, {'X', 'Y','Z','T','Times'}));
+        nx = sum(startsWith({dl.name}, 'X'));
+        ny = sum(startsWith({dl.name}, 'Y'));
+        nz = sum(startsWith({dl.name}, 'Z'));
+        nt = sum(startsWith({dl.name}, {'T','Times'}));
 
-if nx ~= ny
-    error('Found mismatched number of X (%i) and Y (%i) data', nx, ny)
-elseif nt ~= 1 && mod(nx, nt) ~= 0
-    error('Found mismatched number of T (%i) and XY (%i) data', nt, nx)
-elseif all([nx ny nt] == 0)
-    fprintf(errMsg);
-    error('Could not find any centres data');
-end
+        if nx ~= 0
+            checkSizes(nx, ny, nz, nt)
+        end
 
-end
+        function checkSizes(nx, ny, nz, nt)
+            if nz == 0 
+                if nx ~= ny
+                    error('Found mismatched number of X (%i), and Y (%i) data', nx, ny)
+                end
+            elseif any(nx ~= [ny nz])
+                error('Found mismatched number of X (%i), Y (%i) and Z (%i) data', nx, ny, nz)
+            end
+            if nt ~= 1 && mod(nx, nt) ~= 0
+                error('Found mismatched number of time (%i) and space (%i) data', nt, nx)
+            elseif all([nx ny nz nt] == 0)
+                fprintf(errMsg);
+                error('Could not find any centres data');
+            end
+        end
 
+    end
 end

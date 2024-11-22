@@ -40,14 +40,14 @@ else
 end
 
 % Get centres and demean
-xCentresM = data.raw.xCentresPx(cRow,cropT(1):cropT(2)) * data.mPerPx;
-xCentresM = xCentresM - mean(xCentresM, 2);
-yCentresM = data.raw.yCentresPx(cRow,cropT(1):cropT(2)) * data.mPerPx;
-yCentresM = yCentresM - mean(yCentresM, 2);
+xCentresM = data.raw.xCentresPx(cRow,cropT(1):cropT(2));
+yCentresM = data.raw.yCentresPx(cRow,cropT(1):cropT(2));
+zCentresM = data.raw.zCentresPx(cRow,cropT(1):cropT(2));
 
 % Calculate stiffness using equipartition method
 xStiff = calcStiffness(xCentresM);
 yStiff = calcStiffness(yCentresM);
+zStiff = calcStiffness(zCentresM);
 
 %% Plotting
 fh.Name = data.fName;
@@ -57,34 +57,42 @@ clf
 if size(xCentresM, 1) == 1
     subplot(3,1,1)
     hold on
-    histogram(xCentresM.*1e6,'Normalization','probability')
-    histogram(yCentresM.*1e6,'Normalization','probability')
+    histogram(xCentresM.*1e6,'Normalization','probability','DisplayName','X')
+    histogram(yCentresM.*1e6,'Normalization','probability','DisplayName','Y')
+    if isfield(data.raw,'zCentresPx'); histogram(zCentresM.*1e6,'Normalization','probability','DisplayName','Z'); end
     if ~isempty(setLims)
             xlim(setLims)
     end
     xlabel('Centre position (\mu m)')
     ylabel('Probability')
     order = num2str(data.opts.pOrder);
-    title({['Histogram of centres, unfiltered'], [ 'trap stiffness kx = ' num2str(xStiff(1)./1e-6) ' pN/\mu m, ky = ' num2str(yStiff(1)./1e-6) ' pN/\mu m']})
-    legend('X','Y')
+    str = [ 'trap stiffness \kappa_x = ' num2str(xStiff(1)./1e-6,3) ' N/Arb.U., \kappa_y = ' num2str(yStiff(1)./1e-6,3) ' N/Arb.U.']; if isfield(data.raw, 'zCentresPx'); str = [str ', \kappa_z = ' num2str(zStiff(1),3) ' N/Arb.U.']; end
+    title(['Histogram of centres, unfiltered'], str)
+    legend()
     
     % Scatterplot of each centre in units um
     subplot(3,1,2)
-    plot(xCentresM.*1e6,yCentresM.*1e6,'.')
+    if ~isfield(data.raw,'zCentresPx')
+        plot(xCentresM,yCentresM,'.')
+    else
+        scatter3(xCentresM,yCentresM,zCentresM,[],data.raw.timeVecMs*1e-3)
+        zlabel('Z (Arb. U.)')
+    end
+
     if ~isempty(setLims)
         xlim(setLims)
         ylim(setLims)
     end
     title(['Scatterplot of centres, ' num2str(length(xCentresM)) ' frames'])
-    xlabel('X (\mu m)')
-    ylabel('Y (\mu m)')
+    xlabel('X (Arb. U.)')
+    ylabel('Y (Arb. U.)')
     axis equal
     
     % Time traces of X and Y in units um
     subplot(3,2,5)
     plot(1e-3.*timeVec(cropT(1):cropT(2)), xCentresM.*1e6,'.')
     xlabel('Time (s)')
-    ylabel('X (\mu m)')
+    ylabel('X (Arb. U.)')
     title('X time trace')
     if ~isempty(setLims)
         ylim(setLims)

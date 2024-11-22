@@ -1,6 +1,6 @@
 function stiffness = calcStiffness(centresVector, varargin)
 % stiffness = calcStiffness(centresVector, [conversion (m/[unit])] )
-%% Calculate trap stiffness from centres vector
+%% Calculate trap stiffness from centres row vector
 %
 % From Sarshar et al 2014 eq 4. This gives stiffness in N/m.
 % stiffness = Kb * T ./ var(centresVectorM, 1, 2);

@@ -14,6 +14,8 @@ function data = bead_normMSD(data, varargin)
 %   doNorm          - Normalize (divide) the MSD by the variance of the position
 %   errorBars       - Plot errorbars (+/- 1 s.d.) on the MSD
 %   useField        - Specify which processed data field to use.
+%   compliance      - sorry.
+%   plotAx          - Supply an axis handly to plot on.
 
 
 % Parse the inputs
@@ -32,6 +34,8 @@ p.addParameter('doNorm',false,@(x)islogical(x))
 p.addParameter('errorBars', false, @(x)islogical(x))
 p.addParameter('useField', [], @(x)any([isfield(data.pro,x),isfield(data.raw,x)]))
 p.addParameter('compliance',false, @(x)islogical(x) && isfield(data.opts,'beadDiam'))
+p.addParameter('plotAx', [], @(x)isa(x,'matlab.graphics.axis.Axes'))
+p.addParameter('plotAlpha', false, @(x)islogical(x))
 
 % p.addParameter('lineColour', 'k', @(x)(isa(x,'char') && isscalar(x)) || (isa(x,'numeric') && all(x <= 1) && length(x) == 3))
 % p.addParameter('lineStyle', '-', @(x) any(strcmp(x,{'-',':','-.','--','none'})))
@@ -48,6 +52,8 @@ errorBars = p.Results.errorBars;
 useField = p.Results.useField;
 forceRun = p.Results.forceRun || data.opts.forceRun;
 compliance = p.Results.compliance;
+ax = p.Results.plotAx; if isempty(ax); clear ax; end
+plotAlpha = p.Results.plotAlpha;
 
 % If working with 1bead data, use 1 row, for 2bead data, take 2.
 centresRow = p.Results.centresRow;
@@ -237,7 +243,14 @@ else
 end
 
 if doPlots
-    do_plots;
+    if ~exist('ax','var')
+        fh = figure;
+        fh.Name = data.fName;
+        clf
+        ax = gca;%subplot(2,1,1);
+    end
+    hold on
+    do_plots(ax);
 end
 
 %%
@@ -279,11 +292,8 @@ end
         
     end
 
-    function do_plots
-        fh = figure;
-        fh.Name = data.fName;
-        clf
-        hold on
+    function do_plots(ax)
+        
         
         if strcmp( direction(1) , 'a')
             legCell = {[]};
@@ -291,8 +301,6 @@ end
                 legCell{Idx,1} = [num2str(round(tracks{Idx}(1,1))) 's - ' num2str(round(tracks{Idx}(end,1))) 's'];
             end
             
-            ax = gca;%subplot(2,1,1);
-            hold on
             if ~isempty(msdStd)
                 h(1) = errorbar(dTs(:,1:end/2), MSDnorm(:,1:end/2), msdStd(:,1), 'LineWidth',2);
                 h(2) = errorbar(dTs(:,1+end/2:end), MSDnorm(:,1+end/2:end), msdStd(:,2), 'LineWidth',2);
@@ -314,23 +322,24 @@ end
                 title({'Mean square displacement', filtStr , ['From t = ' num2str(diff(tracks{1}([1, end], 1))) 's of observations']})
             end
             
+            if plotAlpha
 %             x = {dTs(:,1:end/2), dTs(:,1+end/2:end)};
 %             y = {MSDnorm(:,1:end/2), MSDnorm(:,1+end/2:end)};
+            yyaxis(ax, 'right')
             hold(ax, 'on')
             cols = {ax.Children.Color}; %{[0 0.447 0.741] [0.85 0.325 0.098]};
             cols = cols(end:-1:1);
             for Idx = 1:size(dTs,2)
                 [dydx, tout] = msd_gradientor(dTs(:,Idx), MSDnorm(:,Idx), 'lsq', 10);
-                yyaxis(ax, 'right')
                 semilogx(ax, tout, dydx, '--','LineWidth',2, 'Color',cols{Idx})
             end
             plot(ax, xlim(ax), [1 1], ':','Color',0.75*[1 1 1], 'LineWidth', 3)
             ylim(ax, [0 2])
-            
+            end
+
             %             legend(legCell,'Location','best')
             legend(h, 'X','Y')
         else
-            ax = gca;
             errorbar(dTs, MSDnorm, msdStd, 'LineWidth',2)
             ax.XScale = 'log';
             ax.YScale = 'log';
