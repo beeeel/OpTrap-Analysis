@@ -8,13 +8,13 @@ function opts = func_BDopts(varargin)
 %   pos0        [0 0 0]         m
 %   kappaNm     [1 1 .3]*1e-6   N/m
 %   E_func      []              V/m  (old default: @(x,y,z,t)0 )
-%   F_func      []              V/m  (old default: @(x,y,z,t)0 )
+%   F_func      []              N  (old default: @(x,y,z,t)0 )
 %   q_bead      1               e (fundamental charge, 1.6e-19 C)
 %   dt          1e-4            s
 %   Nt          1e5             samples
 %   eta         0.97e-3         Pas
-%   rng_seed    0               dimensionless
-%   output      'data'        'tracks' OR 'data'
+%   rng_seed    [               dimensionless
+%   output      'data'          'tracks' OR 'data'
 %   m_bead      0               kg
 %
 % Particle tracking errors can be simulated
@@ -49,7 +49,7 @@ p.addOptional('temp',    20,            Numeric);
 p.addOptional('pos0',    [0 0 0],       posVec);
 p.addOptional('kappaNm', [1 1 .3]*1e-6, posVec);
 p.addOptional('E_func',  [],  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0))); % old default @(x,y,z,t) zeros(size(x,1),3,numel(t))
-p.addOptional('F_func',  @(x,y,z,t) zeros(size(x,1),3,numel(t)),  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0))); % old default @(x,y,z,t) zeros(size(x,1),3,numel(t))
+p.addOptional('F_func',  [],  @(x) isa(x, 'function_handle') && isnumeric(x(0,0,0,0))); % old default @(x,y,z,t) zeros(size(x,1),3,numel(t))
 p.addOptional('q_bead',  1,             posNumeric);
 p.addOptional('m_bead',  0,             posNumeric);
 p.addOptional('dt',      1e-4,          posScalar);
